@@ -38,9 +38,11 @@ export default function LoginPage() {
 
       // User exists, redirect directly to PIN page
       router.push(`/login/pin?email=${encodeURIComponent(email)}`)
+      // Don't set loading to false here, let the redirect happen
+      return
     } catch (err) {
+      console.error('Login error:', err)
       setError('Er is een fout opgetreden')
-    } finally {
       setLoading(false)
     }
   }
