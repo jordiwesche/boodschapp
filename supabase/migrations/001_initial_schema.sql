@@ -2,7 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create households table first (users references it)
-CREATE TABLE households (
+CREATE TABLE IF NOT EXISTS households (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -10,7 +10,7 @@ CREATE TABLE households (
 );
 
 -- Create users table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email TEXT UNIQUE NOT NULL,
   pin_hash TEXT NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE users (
 );
 
 -- Create household_invitations table
-CREATE TABLE household_invitations (
+CREATE TABLE IF NOT EXISTS household_invitations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
@@ -31,12 +31,12 @@ CREATE TABLE household_invitations (
   UNIQUE(household_id, email)
 );
 
--- Create indexes for better performance
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_household_id ON users(household_id);
-CREATE INDEX idx_household_invitations_email ON household_invitations(email);
-CREATE INDEX idx_household_invitations_household_id ON household_invitations(household_id);
-CREATE INDEX idx_household_invitations_accepted ON household_invitations(email, accepted_at) WHERE accepted_at IS NULL;
+-- Create indexes for better performance (idempotent)
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_household_id ON users(household_id);
+CREATE INDEX IF NOT EXISTS idx_household_invitations_email ON household_invitations(email);
+CREATE INDEX IF NOT EXISTS idx_household_invitations_household_id ON household_invitations(household_id);
+CREATE INDEX IF NOT EXISTS idx_household_invitations_accepted ON household_invitations(email, accepted_at) WHERE accepted_at IS NULL;
 
 -- Note: RLS is disabled for MVP. Security is handled at application level.
 -- For production, consider implementing RLS policies based on your authentication system.
@@ -44,9 +44,23 @@ CREATE INDEX idx_household_invitations_accepted ON household_invitations(email, 
 -- ALTER TABLE households ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE household_invitations ENABLE ROW LEVEL SECURITY;
 
--- Enable Realtime for households and users
-ALTER PUBLICATION supabase_realtime ADD TABLE households;
-ALTER PUBLICATION supabase_realtime ADD TABLE users;
+-- Enable Realtime for households and users (idempotent)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'households'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE households;
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND tablename = 'users'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE users;
+  END IF;
+END $$;
 
 -- Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -57,9 +71,11 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Create triggers for updated_at
+-- Create triggers for updated_at (idempotent)
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_households_updated_at ON households;
 CREATE TRIGGER update_households_updated_at BEFORE UPDATE ON households
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

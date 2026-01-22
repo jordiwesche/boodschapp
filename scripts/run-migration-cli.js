@@ -112,11 +112,19 @@ try {
   // Push migrations
   console.log('📤 Pushing migrations to Supabase...');
   try {
+    // Use --yes flag to skip interactive prompts in CI
+    const pushCommand = isCI ? 'supabase db push --yes' : 'supabase db push';
+    
     execSync(
-      `supabase db push`,
+      pushCommand,
       { 
         stdio: 'inherit',
-        env: { ...process.env, SUPABASE_ACCESS_TOKEN },
+        env: { 
+          ...process.env, 
+          SUPABASE_ACCESS_TOKEN,
+          // Suppress interactive prompts
+          ...(isCI && { CI: 'true' })
+        },
         cwd: path.join(__dirname, '..')
       }
     );
