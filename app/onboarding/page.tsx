@@ -128,7 +128,7 @@ function OnboardingForm() {
                 setEmail(e.target.value)
                 checkInvitation(e.target.value)
               }}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
               placeholder="jouw@email.nl"
             />
           </div>
@@ -141,12 +141,13 @@ function OnboardingForm() {
               id="pin"
               name="pin"
               type="password"
+              inputMode="numeric"
               required
               maxLength={6}
               pattern="[0-9]{6}"
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-center text-2xl tracking-widest shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-center text-2xl tracking-widest text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
               placeholder="000000"
             />
             <p className="mt-1 text-xs text-gray-500">Kies een 6-cijferige PIN die je makkelijk onthoudt</p>
@@ -163,7 +164,7 @@ function OnboardingForm() {
               required
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
               placeholder="Jan"
             />
           </div>
@@ -181,7 +182,7 @@ function OnboardingForm() {
                   required
                   value={householdName}
                   onChange={(e) => setHouseholdName(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                   placeholder="Janssen"
                 />
               </div>
@@ -196,7 +197,7 @@ function OnboardingForm() {
                       type="email"
                       value={email}
                       onChange={(e) => updateEmail(index, e.target.value)}
-                      className="flex-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                      className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                       placeholder="email@voorbeeld.nl"
                     />
                     {invitedEmails.length > 1 && (
