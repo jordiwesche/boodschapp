@@ -66,20 +66,32 @@ try {
   // Set access token for CLI
   process.env.SUPABASE_ACCESS_TOKEN = SUPABASE_ACCESS_TOKEN;
 
-  // Check if project is already linked
+  // In CI, always link fresh (remove existing config if present)
   const configPath = path.join(__dirname, '../supabase/config.toml');
-  const isLinked = fs.existsSync(configPath) && 
+  if (isCI && fs.existsSync(configPath)) {
+    console.log('🧹 Removing existing config for fresh link in CI...');
+    fs.unlinkSync(configPath);
+  }
+
+  // Check if project is already linked (only for local dev)
+  const isLinked = !isCI && fs.existsSync(configPath) && 
                    fs.readFileSync(configPath, 'utf8').includes('project_id');
 
-  if (!isLinked || isCI) {
+  if (!isLinked) {
     console.log('🔗 Linking Supabase project...');
     try {
       // Link project using access token
+      // Use --password flag if available, otherwise let CLI prompt or use env
       execSync(
         `supabase link --project-ref ${SUPABASE_PROJECT_REF}`,
         { 
           stdio: 'inherit',
-          env: { ...process.env, SUPABASE_ACCESS_TOKEN },
+          env: { 
+            ...process.env, 
+            SUPABASE_ACCESS_TOKEN,
+            // Suppress interactive prompts in CI
+            ...(isCI && { CI: 'true' })
+          },
           cwd: path.join(__dirname, '..')
         }
       );
