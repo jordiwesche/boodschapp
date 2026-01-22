@@ -35,6 +35,7 @@ export async function updateSession(request: NextRequest) {
   const userId = request.cookies.get('user_id')?.value
 
   // Allow access to login, onboarding, auth callback, and API routes without authentication
+  // Note: /login/pin is allowed because PIN verification happens there before setting user_id cookie
   if (
     pathname.startsWith('/login') ||
     pathname.startsWith('/onboarding') ||
@@ -44,8 +45,9 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
-  // Redirect to login if not authenticated (both Supabase Auth and our user_id cookie)
-  if (!user || !userId) {
+  // Redirect to login if not authenticated
+  // We only check user_id cookie now (Supabase Auth is optional since we removed magic link)
+  if (!userId) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
