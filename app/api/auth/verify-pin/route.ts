@@ -20,26 +20,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify Supabase Auth session
-    const supabase = await createClient()
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json(
-        { error: 'Niet geauthenticeerd. Log opnieuw in.' },
-        { status: 401 }
-      )
-    }
-
-    // Verify email matches
-    if (authUser.email?.toLowerCase() !== email.toLowerCase().trim()) {
-      return NextResponse.json(
-        { error: 'Email komt niet overeen' },
-        { status: 401 }
-      )
-    }
-
     // Get user from our users table
+    const supabase = await createClient()
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id, email, pin_hash, first_name, household_id')

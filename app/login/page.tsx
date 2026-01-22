@@ -36,22 +36,8 @@ export default function LoginPage() {
         return
       }
 
-      // User exists, send magic link via Supabase Auth
-      const magicLinkResponse = await fetch('/api/auth/send-magic-link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
-
-      const magicLinkData = await magicLinkResponse.json()
-
-      if (magicLinkResponse.ok) {
-        setError('')
-        // Show success message
-        alert('Check je email voor de verificatielink!')
-      } else {
-        setError(magicLinkData.error || 'Kon magic link niet versturen')
-      }
+      // User exists, redirect directly to PIN page
+      router.push(`/login/pin?email=${encodeURIComponent(email)}`)
     } catch (err) {
       setError('Er is een fout opgetreden')
     } finally {
@@ -68,7 +54,7 @@ export default function LoginPage() {
             Boodschapp
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Log in met je email. Je ontvangt een magic link.
+            Log in met je emailadres
           </p>
         </div>
 
@@ -100,7 +86,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
           >
-            {loading ? 'Bezig...' : 'Verstuur magic link'}
+            {loading ? 'Bezig...' : 'Doorgaan'}
           </button>
         </form>
       </div>

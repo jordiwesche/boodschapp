@@ -17,23 +17,11 @@ function PinVerification() {
     const emailParam = searchParams.get('email')
     if (emailParam) {
       setEmail(emailParam)
-    }
-
-    // Check if user is authenticated via Supabase Auth
-    const checkAuth = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      setEmail(user.email || emailParam || '')
       setCheckingAuth(false)
+    } else {
+      // No email parameter, redirect to login
+      router.push('/login')
     }
-
-    checkAuth()
   }, [searchParams, router])
 
   const handlePinSubmit = async (e: React.FormEvent) => {
