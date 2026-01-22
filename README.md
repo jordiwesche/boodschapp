@@ -29,6 +29,24 @@ npm install
 
 ### 3. Database migratie uitvoeren
 
+**Lokaal (Development):**
+
+```bash
+# Installeer dependencies (inclusief Supabase CLI)
+npm install
+
+# Link Supabase project (eenmalig)
+# Je hebt een Supabase Access Token nodig: https://supabase.com/dashboard/account/tokens
+export SUPABASE_ACCESS_TOKEN=your_token_here
+export SUPABASE_PROJECT_REF=medmrhmuhghcozfydxov
+supabase link --project-ref medmrhmuhghcozfydxov
+
+# Voer migraties uit
+npm run migrate
+```
+
+**Of handmatig via Supabase Dashboard:**
+
 1. Ga naar je Supabase project dashboard
 2. Ga naar SQL Editor
 3. Open het bestand `supabase/migrations/001_initial_schema.sql`
@@ -39,10 +57,20 @@ npm install
 Maak een `.env.local` bestand in de root van het project:
 
 ```env
+# Supabase Configuration (verplicht)
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+SUPABASE_SERVICE_ROLE=your_supabase_service_role_key
+
+# Voor automatische migraties (optioneel voor lokaal)
+SUPABASE_ACCESS_TOKEN=your_supabase_access_token
+SUPABASE_PROJECT_REF=medmrhmuhghcozfydxov
 ```
+
+**Waar te vinden:**
+- `NEXT_PUBLIC_SUPABASE_URL` en `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase Dashboard → Project Settings → API
+- `SUPABASE_SERVICE_ROLE`: Supabase Dashboard → Project Settings → API → `service_role` secret key
+- `SUPABASE_ACCESS_TOKEN`: https://supabase.com/dashboard/account/tokens (genereer nieuwe token)
 
 ### 5. Development server starten
 
@@ -68,16 +96,39 @@ Open [http://localhost:3000](http://localhost:3000) in je browser.
      - Value: Je Supabase `anon` `public` key
      - Environment: Production, Preview, Development
    
-   - **SUPABASE_SERVICE_ROLE_KEY**
+   - **SUPABASE_SERVICE_ROLE**
      - Value: Je Supabase `service_role` `secret` key
      - Environment: Production, Preview, Development
      - ⚠️ **Belangrijk**: Deze key is gevoelig, gebruik alleen voor server-side operaties
+   
+   - **SUPABASE_ACCESS_TOKEN** (voor automatische migraties)
+     - Value: Je Supabase Access Token (genereer via https://supabase.com/dashboard/account/tokens)
+     - Environment: Production, Preview, Development
+     - ⚠️ **Belangrijk**: Deze token is nodig voor automatische database migraties
+
+   - **SUPABASE_PROJECT_REF** (optioneel)
+     - Value: `medmrhmuhghcozfydxov` (of je project reference ID)
+     - Environment: Production, Preview, Development
 
 4. Na het toevoegen van de variabelen, redeploy je app
 
-### Database migratie op Supabase
+### Automatische Database Migraties
 
-De database migratie moet handmatig worden uitgevoerd in je Supabase project:
+Database migraties worden **automatisch** uitgevoerd tijdens Vercel deployments!
+
+**Hoe het werkt:**
+- Bij elke deployment wordt `npm run build:with-migration` uitgevoerd
+- Dit script voert eerst `npm run migrate` uit (Supabase CLI)
+- Daarna wordt de Next.js build uitgevoerd
+- Migraties worden alleen uitgevoerd als er nieuwe of gewijzigde bestanden zijn
+
+**Vereisten:**
+- `SUPABASE_ACCESS_TOKEN` moet ingesteld zijn in Vercel environment variabelen
+- `SUPABASE_PROJECT_REF` is optioneel (standaard: `medmrhmuhghcozfydxov`)
+
+**Handmatige migratie (fallback):**
+
+Als automatische migratie faalt:
 
 1. Ga naar je Supabase project dashboard
 2. Ga naar SQL Editor

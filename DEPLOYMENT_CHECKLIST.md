@@ -9,9 +9,31 @@
 
 ## 🔄 Te doen
 
-### 1. Database Migratie (HANDMATIG)
+### 1. Database Migratie (AUTOMATISCH)
 
-De database migratie moet handmatig worden uitgevoerd in Supabase:
+Database migraties worden nu automatisch uitgevoerd tijdens Vercel deployments! 
+
+**Eerste keer setup (eenmalig):**
+
+1. Genereer een Supabase Access Token:
+   - Ga naar: https://supabase.com/dashboard/account/tokens
+   - Klik op "Generate new token"
+   - Kopieer de token (deze zie je maar één keer!)
+
+2. Voeg de token toe aan Vercel environment variabelen:
+   - Ga naar Vercel Dashboard → Settings → Environment Variables
+   - Voeg toe: `SUPABASE_ACCESS_TOKEN` = `jouw_token_hier`
+   - Selecteer: Production, Preview, en Development
+   - Optioneel: `SUPABASE_PROJECT_REF` = `medmrhmuhghcozfydxov` (standaard al ingesteld)
+
+**Hoe het werkt:**
+- Bij elke Vercel deployment wordt automatisch `npm run migrate` uitgevoerd
+- Het script gebruikt Supabase CLI om migraties uit `supabase/migrations/` te pushen
+- Migraties worden alleen uitgevoerd als er nieuwe of gewijzigde bestanden zijn
+
+**Handmatige migratie (fallback):**
+
+Als automatische migratie faalt, kun je handmatig migreren:
 
 1. Ga naar: https://supabase.com/dashboard/project/medmrhmuhghcozfydxov/sql/new
 2. Open het bestand: `supabase/migrations/001_initial_schema.sql`
@@ -103,24 +125,50 @@ http://localhost:3000/auth/callback
 
 In Vercel Dashboard → Settings → Environment Variables, voeg toe:
 
+**Verplicht:**
 - `NEXT_PUBLIC_SUPABASE_URL` = `https://medmrhmuhghcozfydxov.supabase.co`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lZG1yaG11aGdoY296ZnlkeG92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkwODgyNTUsImV4cCI6MjA4NDY2NDI1NX0.ZaCzesJmEXv27eGXXJ9WuN5sfqLov_Rh_fOLj_lNCK0`
 - `SUPABASE_SERVICE_ROLE` = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lZG1yaG11aGdoY296ZnlkeG92Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTA4ODI1NSwiZXhwIjoyMDg0NjY0MjU1fQ.eKV1Kj7Kc5Kw1yrtYTiR3gnT74JHB4g_RX5JWJJRI5o`
+- `SUPABASE_ACCESS_TOKEN` = `jouw_access_token` (voor automatische migraties - zie stap 1)
+
+**Optioneel:**
+- `SUPABASE_PROJECT_REF` = `medmrhmuhghcozfydxov` (standaard, alleen nodig als anders)
 - `NEXT_PUBLIC_SITE_URL` = `https://boodschapp.vercel.app` (optioneel, voor production)
 
 **Belangrijk:** Selecteer voor alle variabelen: Production, Preview, en Development
 
 ### 4. Vercel Deployment
 
-Als Vercel al gekoppeld is aan je GitHub repo, zou de deployment automatisch moeten starten na de push.
+**GitHub Integratie (Aanbevolen):**
 
-Anders:
 1. Ga naar https://vercel.com/dashboard
 2. Klik op "Add New Project"
 3. Import je GitHub repo: `jordiwesche/boodschapp`
 4. Vercel detecteert automatisch Next.js
 5. Voeg de environment variabelen toe (zie stap 3)
 6. Klik op "Deploy"
+
+**Automatische Deployments:**
+
+Na de eerste setup:
+- Elke push naar `main` branch triggert automatisch een nieuwe deployment
+- Migraties worden automatisch uitgevoerd tijdens de build
+- Je kunt deployments zien in Vercel Dashboard → Deployments
+
+**Als je geen deployments ziet:**
+
+1. Controleer of Vercel GitHub App geïnstalleerd is:
+   - Ga naar GitHub repo → Settings → Integrations → Vercel
+   - Zorg dat de app geïnstalleerd is en toegang heeft
+
+2. Controleer of project gekoppeld is:
+   - Ga naar Vercel Dashboard
+   - Zoek je project
+   - Controleer of GitHub repo gekoppeld is onder Settings → Git
+
+3. Test handmatig:
+   - Maak een kleine wijziging en push naar `main`
+   - Controleer Vercel Dashboard voor nieuwe deployment
 
 ### 5. Testen
 

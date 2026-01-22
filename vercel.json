@@ -1,7 +1,10 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "npm run build:with-migration",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["ams1"]
+  "regions": ["fra1"],
+  "env": {
+    "SKIP_ENV_VALIDATION": "1"
+  }
 }
