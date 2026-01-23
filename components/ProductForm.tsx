@@ -189,8 +189,28 @@ export default function ProductForm({
   const toSingular = (word: string): string => {
     const lower = word.toLowerCase()
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:189',message:'toSingular called',data:{input:word,lower},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:189',message:'toSingular called',data:{input:word,lower},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
     // #endregion
+    
+    // Special cases for irregular plurals
+    const irregularPlurals: Record<string, string> = {
+      'peren': 'peer',
+      'appels': 'appel',
+      'bananen': 'banaan',
+      'druiven': 'druif',
+      'aardbeien': 'aardbei',
+      'citroenen': 'citroen',
+      'watermeloenen': 'watermeloen',
+      'wortelen': 'wortel',
+      'komkommers': 'komkommer',
+    }
+    if (irregularPlurals[lower]) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:200',message:'toSingular: irregular plural',data:{input:word,result:irregularPlurals[lower]},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      return irregularPlurals[lower]
+    }
+    
     // Common Dutch plural patterns
     if (lower.endsWith('en') && lower.length > 4) {
       // peren -> peer, appels -> appel
@@ -198,7 +218,7 @@ export default function ProductForm({
       // Check if it ends with double consonant (e.g., "peren" -> "peer" not "per")
       if (withoutEn.length >= 3) {
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:197',message:'toSingular: endsWith en',data:{input:word,result:withoutEn},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:210',message:'toSingular: endsWith en',data:{input:word,result:withoutEn},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
         // #endregion
         return withoutEn
       }
@@ -208,13 +228,13 @@ export default function ProductForm({
       const withoutS = lower.slice(0, -1)
       if (withoutS.length >= 3) {
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:204',message:'toSingular: endsWith s',data:{input:word,result:withoutS},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:218',message:'toSingular: endsWith s',data:{input:word,result:withoutS},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
         // #endregion
         return withoutS
       }
     }
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:207',message:'toSingular: no change',data:{input:word,result:lower},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:223',message:'toSingular: no change',data:{input:word,result:lower},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
     // #endregion
     return lower
   }
@@ -336,34 +356,55 @@ export default function ProductForm({
     }
     
     // Try to find matching category using keywords (check both plural and singular)
+    // Use word boundary matching to avoid substring matches (e.g., "ei" in "aardbei")
+    const wordBoundaryRegex = (word: string) => {
+      // Match whole word or at word boundaries (start/end of string, or non-word characters)
+      return new RegExp(`(^|\\W)${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\W|$)`, 'i')
+    }
+    
     for (const [categoryName, keywords] of Object.entries(categoryKeywords)) {
       for (const keyword of keywords) {
-        // Check if product name contains keyword (both original and singular)
-        if (normalizedName.includes(keyword) || singularName.includes(keyword)) {
+        // Skip very short keywords (less than 3 chars) to avoid false matches
+        if (keyword.length < 3) continue
+        
+        // Check if product name contains keyword as whole word (both original and singular)
+        const keywordRegex = wordBoundaryRegex(keyword)
+        if (keywordRegex.test(normalizedName) || keywordRegex.test(singularName)) {
           // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:320',message:'Keyword match found (normalized)',data:{productName,normalizedName,singularName,keyword,categoryName,matched:normalizedName.includes(keyword)||singularName.includes(keyword)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:333',message:'Keyword match found (normalized)',data:{productName,normalizedName,singularName,keyword,categoryName},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
           // #endregion
           // Find category ID
           const category = categories.find(cat => cat.name === categoryName)
           if (category) {
             // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:324',message:'Category found and returning',data:{productName,keyword,categoryName,categoryId:category.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:337',message:'Category found and returning',data:{productName,keyword,categoryName,categoryId:category.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
             // #endregion
             return category.id
+          } else {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:340',message:'Category not found in categories array',data:{productName,keyword,categoryName,categoriesCount:categories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'C'})}).catch(()=>{});
+            // #endregion
           }
         }
-        // Also check if keyword is in product name (for partial matches)
+        // Also check if keyword singular is in product name (for partial matches)
         const keywordSingular = toSingular(keyword)
-        if (normalizedName.includes(keywordSingular) || singularName.includes(keywordSingular)) {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:329',message:'Keyword match found (singular)',data:{productName,normalizedName,singularName,keyword,keywordSingular,categoryName,matched:normalizedName.includes(keywordSingular)||singularName.includes(keywordSingular)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
-          const category = categories.find(cat => cat.name === categoryName)
-          if (category) {
+        if (keywordSingular !== keyword && keywordSingular.length >= 3) {
+          const keywordSingularRegex = wordBoundaryRegex(keywordSingular)
+          if (keywordSingularRegex.test(normalizedName) || keywordSingularRegex.test(singularName)) {
             // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:332',message:'Category found and returning (singular)',data:{productName,keywordSingular,categoryName,categoryId:category.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:348',message:'Keyword match found (singular)',data:{productName,normalizedName,singularName,keyword,keywordSingular,categoryName},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
             // #endregion
-            return category.id
+            const category = categories.find(cat => cat.name === categoryName)
+            if (category) {
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:352',message:'Category found and returning (singular)',data:{productName,keywordSingular,categoryName,categoryId:category.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
+              // #endregion
+              return category.id
+            } else {
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:356',message:'Category not found in categories array (singular)',data:{productName,keywordSingular,categoryName,categoriesCount:categories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'C'})}).catch(()=>{});
+              // #endregion
+            }
           }
         }
       }
@@ -374,13 +415,13 @@ export default function ProductForm({
     const overigCategory = categories.find(cat => cat.name === 'Overig')
     if (overigCategory) {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:342',message:'No match found, using Overig',data:{productName,normalizedName,singularName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:365',message:'No match found, using Overig',data:{productName,normalizedName,singularName},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'D'})}).catch(()=>{});
       // #endregion
       return overigCategory.id
     }
     
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:345',message:'No category found, returning null',data:{productName,normalizedName,singularName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:369',message:'No category found, returning null',data:{productName,normalizedName,singularName},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'D'})}).catch(()=>{});
     // #endregion
     return null
   }
