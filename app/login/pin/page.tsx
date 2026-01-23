@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
@@ -12,6 +12,7 @@ function PinVerification() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const pinInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const emailParam = searchParams.get('email')
@@ -23,6 +24,15 @@ function PinVerification() {
       router.push('/login')
     }
   }, [searchParams, router])
+
+  useEffect(() => {
+    if (!checkingAuth && pinInputRef.current) {
+      // Small delay for mobile keyboard to open
+      setTimeout(() => {
+        pinInputRef.current?.focus()
+      }, 100)
+    }
+  }, [checkingAuth])
 
   const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,6 +98,7 @@ function PinVerification() {
               6-cijferige PIN
             </label>
             <input
+              ref={pinInputRef}
               id="pin"
               name="pin"
               type="password"

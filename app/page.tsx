@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser, getHousehold } from '@/lib/db'
-import LogoutButton from '@/components/LogoutButton'
 
 export default async function HomePage() {
   const user = await getCurrentUser()
@@ -18,13 +17,10 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
       <header className="bg-white shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-gray-900">Boodschapp</h1>
-            <LogoutButton />
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Boodschappen</h1>
         </div>
       </header>
 

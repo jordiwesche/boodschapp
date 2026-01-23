@@ -1,0 +1,141 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { getCurrentUser } from '@/lib/db'
+
+export default function ProfielNaamPage() {
+  const router = useRouter()
+  const [firstName, setFirstName] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [initialLoading, setInitialLoading] = useState(true)
+
+  useEffect(() => {
+    // Fetch current user name
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('/api/user/current')
+        if (response.ok) {
+          const data = await response.json()
+          setFirstName(data.first_name || '')
+        }
+      } catch (err) {
+        console.error('Error fetching user:', err)
+      } finally {
+        setInitialLoading(false)
+      }
+    }
+    fetchUser()
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      const response = await fetch('/api/user/update-name', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ first_name: firstName }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        router.push('/profiel')
+        router.refresh()
+      } else {
+        setError(data.error || 'Kon naam niet updaten')
+      }
+    } catch (err) {
+      setError('Er is een fout opgetreden')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (initialLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p>Laden...</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
+      <header className="bg-white shadow">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.back()}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+            <h1 className="text-3xl font-bold text-gray-900">Naam wijzigen</h1>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        <div className="rounded-lg bg-white p-8 shadow">
+          {error && (
+            <div className="mb-4 rounded-md bg-red-50 p-4">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                Voornaam
+              </label>
+              <input
+                id="firstName"
+                name="firstName"
+                type="text"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                placeholder="Jan"
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Annuleren
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !firstName.trim()}
+                className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {loading ? 'Opslaan...' : 'Opslaan'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  )
+}
