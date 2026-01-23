@@ -197,14 +197,15 @@ export default function ProductForm({
     )
     if (exactMatch) return exactMatch.emoji
     
-    // Try partial match (name contains emoji name or vice versa) - minimum 3 characters
+    // Try partial match (name contains emoji name or vice versa) - minimum 3 character overlap
     const partialMatch = uniqueFoodEmojis.find(
       (item) => {
         const emojiName = item.name.toLowerCase()
-        // Check if product name contains emoji name (min 3 chars) or vice versa
+        // Check if product name contains emoji name - the overlap must be at least 3 chars
         if (normalizedName.includes(emojiName) && emojiName.length >= 3) {
           return true
         }
+        // Check if emoji name contains product name - the overlap must be at least 3 chars
         if (emojiName.includes(normalizedName) && normalizedName.length >= 3) {
           return true
         }
@@ -239,7 +240,7 @@ export default function ProductForm({
     }
     
     for (const [keyword, emoji] of Object.entries(keywordMap)) {
-      if (normalizedName.includes(keyword) && keyword.length >= 3) {
+      if (normalizedName.includes(keyword)) {
         return emoji
       }
     }
