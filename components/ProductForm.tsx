@@ -20,6 +20,10 @@ interface Product {
   is_popular: boolean
   purchase_pattern_frequency?: number | null
   purchase_pattern_unit?: string | null
+  purchase_pattern?: {
+    frequency: number
+    unit: string
+  } | null
 }
 
 interface ProductFormProps {
