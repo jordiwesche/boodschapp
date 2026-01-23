@@ -1,9 +1,9 @@
 -- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
 -- Create households table first (users references it)
 CREATE TABLE IF NOT EXISTS households (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
   name TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS households (
 
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
   email TEXT UNIQUE NOT NULL,
   pin_hash TEXT NOT NULL,
   first_name TEXT NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Create household_invitations table
 CREATE TABLE IF NOT EXISTS household_invitations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
   household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   invited_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
