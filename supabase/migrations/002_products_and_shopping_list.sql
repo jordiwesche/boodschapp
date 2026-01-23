@@ -1,9 +1,38 @@
 -- Migration: Products and Shopping List Tables
 -- This migration adds product management and shopping list functionality
 
--- Ensure UUID extension is enabled (idempotent)
--- Note: Extension should already exist from migration 001, but ensure it's in public schema
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+-- Fix: Ensure UUID extension functions are available in public schema
+-- This handles the case where the extension was created in a different schema in migration 001
+DO $$
+DECLARE
+  ext_schema TEXT;
+  func_exists BOOLEAN;
+BEGIN
+  -- Check if the function exists in public schema
+  SELECT EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON p.pronamespace = n.oid
+    WHERE n.nspname = 'public' AND p.proname = 'uuid_generate_v4'
+  ) INTO func_exists;
+  
+  IF NOT func_exists THEN
+    -- Find where the extension currently is
+    SELECT n.nspname INTO ext_schema
+    FROM pg_extension e
+    JOIN pg_namespace n ON e.extnamespace = n.oid
+    WHERE e.extname = 'uuid-ossp';
+    
+    IF ext_schema IS NOT NULL AND ext_schema != 'public' THEN
+      -- Extension exists in wrong schema, create wrapper function in public
+      -- This is safer than dropping/recreating the extension
+      EXECUTE format('CREATE OR REPLACE FUNCTION public.uuid_generate_v4() RETURNS uuid AS $func$ SELECT %I.uuid_generate_v4() $func$ LANGUAGE sql;', ext_schema);
+      GRANT EXECUTE ON FUNCTION public.uuid_generate_v4() TO PUBLIC;
+    ELSIF ext_schema IS NULL THEN
+      -- Extension doesn't exist, create it in public
+      CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
+    END IF;
+  END IF;
+END $$;
 
 -- Create product_categories table (per household, with order)
 CREATE TABLE IF NOT EXISTS product_categories (
