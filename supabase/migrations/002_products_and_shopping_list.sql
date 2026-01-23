@@ -1,6 +1,9 @@
 -- Migration: Products and Shopping List Tables
 -- This migration adds product management and shopping list functionality
 
+-- Ensure UUID extension is enabled (idempotent)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Create product_categories table (per household, with order)
 CREATE TABLE IF NOT EXISTS product_categories (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
