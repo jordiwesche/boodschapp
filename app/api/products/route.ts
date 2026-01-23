@@ -107,7 +107,8 @@ export async function GET(request: NextRequest) {
       } : null,
       created_at: product.created_at,
       updated_at: product.updated_at,
-    }))
+      }
+    })
 
     return NextResponse.json({
       products: transformedProducts || [],
