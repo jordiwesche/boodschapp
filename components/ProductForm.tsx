@@ -188,12 +188,18 @@ export default function ProductForm({
   // Convert plural to singular (Dutch)
   const toSingular = (word: string): string => {
     const lower = word.toLowerCase()
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:189',message:'toSingular called',data:{input:word,lower},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     // Common Dutch plural patterns
     if (lower.endsWith('en') && lower.length > 4) {
       // peren -> peer, appels -> appel
       const withoutEn = lower.slice(0, -2)
       // Check if it ends with double consonant (e.g., "peren" -> "peer" not "per")
       if (withoutEn.length >= 3) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:197',message:'toSingular: endsWith en',data:{input:word,result:withoutEn},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         return withoutEn
       }
     }
@@ -201,9 +207,15 @@ export default function ProductForm({
       // appels -> appel, bananen -> banaan (but keep if it's part of the word)
       const withoutS = lower.slice(0, -1)
       if (withoutS.length >= 3) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:204',message:'toSingular: endsWith s',data:{input:word,result:withoutS},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         return withoutS
       }
     }
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:207',message:'toSingular: no change',data:{input:word,result:lower},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     return lower
   }
 
@@ -285,16 +297,26 @@ export default function ProductForm({
     const normalizedName = productName.toLowerCase().trim()
     const singularName = toSingular(normalizedName)
     
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:281',message:'findCategoryByName called',data:{productName,normalizedName,singularName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    
     // FIRST: Try direct matching with category names (e.g., "brood" matches "Brood & Bakkerij")
     for (const category of categories) {
       const normalizedCategoryName = category.name.toLowerCase()
       // Check if product name is part of category name (min 3 chars for meaningful match)
       if ((normalizedCategoryName.includes(normalizedName) || normalizedCategoryName.includes(singularName)) && normalizedName.length >= 3) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:293',message:'Direct category match found',data:{productName,categoryName:category.name,categoryId:category.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         return category.id
       }
       // Check if category name starts with product name (min 3 chars)
       const categoryFirstWord = normalizedCategoryName.split(' ')[0]
       if ((normalizedName === categoryFirstWord || singularName === categoryFirstWord) && normalizedName.length >= 3) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:297',message:'Category first word match',data:{productName,categoryName:category.name,categoryId:category.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         return category.id
       }
     }
@@ -318,17 +340,29 @@ export default function ProductForm({
       for (const keyword of keywords) {
         // Check if product name contains keyword (both original and singular)
         if (normalizedName.includes(keyword) || singularName.includes(keyword)) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:320',message:'Keyword match found (normalized)',data:{productName,normalizedName,singularName,keyword,categoryName,matched:normalizedName.includes(keyword)||singularName.includes(keyword)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
           // Find category ID
           const category = categories.find(cat => cat.name === categoryName)
           if (category) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:324',message:'Category found and returning',data:{productName,keyword,categoryName,categoryId:category.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
             return category.id
           }
         }
         // Also check if keyword is in product name (for partial matches)
         const keywordSingular = toSingular(keyword)
         if (normalizedName.includes(keywordSingular) || singularName.includes(keywordSingular)) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:329',message:'Keyword match found (singular)',data:{productName,normalizedName,singularName,keyword,keywordSingular,categoryName,matched:normalizedName.includes(keywordSingular)||singularName.includes(keywordSingular)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
           const category = categories.find(cat => cat.name === categoryName)
           if (category) {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:332',message:'Category found and returning (singular)',data:{productName,keywordSingular,categoryName,categoryId:category.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
             return category.id
           }
         }
@@ -339,9 +373,15 @@ export default function ProductForm({
     // Don't use Overig too quickly - only as last resort
     const overigCategory = categories.find(cat => cat.name === 'Overig')
     if (overigCategory) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:342',message:'No match found, using Overig',data:{productName,normalizedName,singularName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
       return overigCategory.id
     }
     
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:345',message:'No category found, returning null',data:{productName,normalizedName,singularName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     return null
   }
 
