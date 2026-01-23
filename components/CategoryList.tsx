@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Pencil } from 'lucide-react'
 import CategoryForm from './CategoryForm'
 
 interface Category {
@@ -228,12 +227,16 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
           {categories.map((category, index) => (
             <div
               key={category.id}
-              className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+              onClick={() => handleEdit(category)}
+              className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="flex items-center gap-4">
                 <div className="flex flex-col gap-1">
                   <button
-                    onClick={() => handleMoveUp(category, index)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleMoveUp(category, index)
+                    }}
                     disabled={index === 0 || loading}
                     className="text-gray-400 hover:text-gray-600 disabled:opacity-30"
                     aria-label="Omhoog"
@@ -241,7 +244,10 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
                     ↑
                   </button>
                   <button
-                    onClick={() => handleMoveDown(category, index)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleMoveDown(category, index)
+                    }}
                     disabled={index === categories.length - 1 || loading}
                     className="text-gray-400 hover:text-gray-600 disabled:opacity-30"
                     aria-label="Omlaag"
@@ -253,15 +259,6 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
                   <h3 className="font-semibold text-gray-900">{category.name}</h3>
                   <p className="text-xs text-gray-500">Volgorde: {category.display_order}</p>
                 </div>
-              </div>
-              <div>
-                <button
-                  onClick={() => handleEdit(category)}
-                  className="rounded-md bg-blue-50 p-2 text-blue-700 hover:bg-blue-100"
-                  aria-label="Bewerk categorie"
-                >
-                  <Pencil size={18} />
-                </button>
               </div>
             </div>
           ))}

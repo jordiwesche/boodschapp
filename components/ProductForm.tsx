@@ -294,11 +294,18 @@ export default function ProductForm({
       setEmoji(product.emoji || '📦')
       setName(product.name || '')
       setDescription(product.description || '')
-      setDefaultQuantity(product.default_quantity ? parseQuantityToNumber(product.default_quantity).toString() : '1')
+      setDefaultQuantity(product.default_quantity ? parseQuantityToNumber(product.default_quantity).toString() : '')
       setCategoryId(product.category_id || '')
       setIsBasic(product.is_basic || false)
-      setPurchaseFrequency(product.purchase_pattern_frequency?.toString() || '')
-      setPurchaseUnit(product.purchase_pattern_unit || '')
+      // Handle purchase_pattern from API (can be object or direct properties)
+      if (product.purchase_pattern) {
+        setPurchaseFrequency(product.purchase_pattern.frequency?.toString() || '')
+        setPurchaseUnit(product.purchase_pattern.unit || '')
+      } else {
+        // Fallback to direct properties if purchase_pattern object doesn't exist
+        setPurchaseFrequency((product as any).purchase_pattern_frequency?.toString() || '')
+        setPurchaseUnit((product as any).purchase_pattern_unit || '')
+      }
     } else {
       // Reset form for new product
       setEmoji('📦')
@@ -319,8 +326,8 @@ export default function ProductForm({
     // 2. Categories are loaded
     // 3. It's a new product (no product prop) OR the current values are defaults
     // 4. The name has at least 2 characters (to avoid matching on single letters)
-    if (name && name.trim().length >= 2 && categories.length > 0 && (!product || emoji === '📦' || !categoryId)) {
-      // Auto-select emoji
+    if (name && name.trim().length >= 2 && categories.length > 0) {
+      // Auto-select emoji (only for new products or when emoji is default)
       if (!product || emoji === '📦') {
         const suggestedEmoji = findEmojiByName(name)
         if (suggestedEmoji && suggestedEmoji !== emoji) {
@@ -328,8 +335,8 @@ export default function ProductForm({
         }
       }
       
-      // Auto-select category
-      if (!product || !categoryId) {
+      // Auto-select category (only for new products or when category is not set)
+      if (!product || !categoryId || categoryId === '') {
         const suggestedCategoryId = findCategoryByName(name)
         if (suggestedCategoryId && suggestedCategoryId !== categoryId) {
           setCategoryId(suggestedCategoryId)
