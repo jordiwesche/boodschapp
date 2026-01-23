@@ -251,10 +251,25 @@ export default function ProductForm({
   // Auto-select category based on product name
   const findCategoryByName = (productName: string): string | null => {
     if (!productName || productName.trim().length === 0) return null
+    if (categories.length === 0) return null // Categories not loaded yet
     
     const normalizedName = productName.toLowerCase().trim()
     
-    // Category keyword mapping
+    // FIRST: Try direct matching with category names (e.g., "brood" matches "Brood & Bakkerij")
+    for (const category of categories) {
+      const normalizedCategoryName = category.name.toLowerCase()
+      // Check if product name is part of category name (min 3 chars for meaningful match)
+      if (normalizedCategoryName.includes(normalizedName) && normalizedName.length >= 3) {
+        return category.id
+      }
+      // Check if category name starts with product name (min 3 chars)
+      const categoryFirstWord = normalizedCategoryName.split(' ')[0]
+      if (normalizedName === categoryFirstWord && normalizedName.length >= 3) {
+        return category.id
+      }
+    }
+    
+    // SECOND: Try keyword matching
     const categoryKeywords: Record<string, string[]> = {
       'Groente & Fruit': ['appel', 'banaan', 'sinaasappel', 'citroen', 'druiven', 'aardbei', 'perzik', 'kersen', 'kiwi', 'watermeloen', 'tomaat', 'avocado', 'komkommer', 'wortel', 'maïs', 'peper', 'paprika', 'bladgroente', 'broccoli', 'knoflook', 'ui', 'aardappel', 'zoete aardappel', 'groente', 'fruit', 'sla', 'spinazie', 'wortelen', 'tomaat', 'komkommer'],
       'Vlees & Vis': ['vlees', 'kip', 'vis', 'zalm', 'tonijn', 'kabeljauw', 'haring', 'makreel', 'rundvlees', 'varkensvlees', 'lam', 'kalkoen', 'worst', 'ham', 'spek', 'gehakt', 'biefstuk', 'karbonade', 'rib', 'filet'],
@@ -268,7 +283,7 @@ export default function ProductForm({
       'Huishoudelijke Artikelen': ['afwasmiddel', 'wasmiddel', 'schoonmaak', 'doekjes', 'vuilniszakken', 'keukenrol', 'wc-papier', 'papier', 'folie', 'plastic', 'zakken']
     }
     
-    // Try to find matching category
+    // Try to find matching category using keywords
     for (const [categoryName, keywords] of Object.entries(categoryKeywords)) {
       for (const keyword of keywords) {
         if (normalizedName.includes(keyword)) {
@@ -281,7 +296,7 @@ export default function ProductForm({
       }
     }
     
-    // If no match found, try to find "Overig" category
+    // THIRD: If no match found, try to find "Overig" category
     const overigCategory = categories.find(cat => cat.name === 'Overig')
     if (overigCategory) {
       return overigCategory.id
