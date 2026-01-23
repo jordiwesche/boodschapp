@@ -82,18 +82,23 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform response to flatten category data
-    const transformedProducts = (products || []).map(product => ({
-      id: product.id,
-      emoji: product.emoji,
-      name: product.name,
-      description: product.description,
-      default_quantity: product.default_quantity,
-      category_id: product.category_id,
-      category: product.product_categories ? {
-        id: product.product_categories.id,
-        name: product.product_categories.name,
-        display_order: product.product_categories.display_order,
-      } : null,
+    const transformedProducts = (products || []).map(product => {
+      const category = Array.isArray(product.product_categories) && product.product_categories.length > 0
+        ? product.product_categories[0]
+        : null
+
+      return {
+        id: product.id,
+        emoji: product.emoji,
+        name: product.name,
+        description: product.description,
+        default_quantity: product.default_quantity,
+        category_id: product.category_id,
+        category: category ? {
+          id: category.id,
+          name: category.name,
+          display_order: category.display_order,
+        } : null,
       is_basic: product.is_basic,
       is_popular: product.is_popular,
       purchase_pattern: product.purchase_pattern_frequency && product.purchase_pattern_unit ? {
@@ -232,6 +237,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Transform response
+    const category = Array.isArray(product.product_categories) && product.product_categories.length > 0
+      ? product.product_categories[0]
+      : null
+
     const transformedProduct = {
       id: product.id,
       emoji: product.emoji,
@@ -239,10 +248,10 @@ export async function POST(request: NextRequest) {
       description: product.description,
       default_quantity: product.default_quantity,
       category_id: product.category_id,
-      category: product.product_categories ? {
-        id: product.product_categories.id,
-        name: product.product_categories.name,
-        display_order: product.product_categories.display_order,
+      category: category ? {
+        id: category.id,
+        name: category.name,
+        display_order: category.display_order,
       } : null,
       is_basic: product.is_basic,
       is_popular: product.is_popular,
