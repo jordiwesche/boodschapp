@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Info, Trash2, Search } from 'lucide-react'
+import { Info, Trash2, Search, Star } from 'lucide-react'
 
 interface Category {
   id: string
@@ -49,7 +49,7 @@ export default function ProductForm({
     return match ? parseInt(match[1]) : 1
   }
   const [defaultQuantity, setDefaultQuantity] = useState(
-    product?.default_quantity ? parseQuantityToNumber(product.default_quantity).toString() : '1'
+    product?.default_quantity ? parseQuantityToNumber(product.default_quantity).toString() : ''
   )
   const [categoryId, setCategoryId] = useState(product?.category_id || '')
   const [isBasic, setIsBasic] = useState(product?.is_basic || false)
@@ -236,6 +236,42 @@ export default function ProductForm({
     return null
   }
 
+  // Auto-select category based on product name
+  const findCategoryByName = (productName: string): string | null => {
+    if (!productName || productName.trim().length === 0) return null
+    
+    const normalizedName = productName.toLowerCase().trim()
+    
+    // Category keyword mapping
+    const categoryKeywords: Record<string, string[]> = {
+      'Groente & Fruit': ['appel', 'banaan', 'sinaasappel', 'citroen', 'druiven', 'aardbei', 'perzik', 'kersen', 'kiwi', 'watermeloen', 'tomaat', 'avocado', 'komkommer', 'wortel', 'maïs', 'peper', 'paprika', 'bladgroente', 'broccoli', 'knoflook', 'ui', 'aardappel', 'zoete aardappel', 'groente', 'fruit', 'sla', 'spinazie', 'wortelen', 'tomaat', 'komkommer'],
+      'Vlees & Vis': ['vlees', 'kip', 'vis', 'zalm', 'tonijn', 'kabeljauw', 'haring', 'makreel', 'rundvlees', 'varkensvlees', 'lam', 'kalkoen', 'worst', 'ham', 'spek', 'gehakt', 'biefstuk', 'karbonade', 'rib', 'filet'],
+      'Zuivel': ['melk', 'kaas', 'yoghurt', 'kwark', 'boter', 'room', 'slagroom', 'crème', 'zuivel', 'eieren', 'ei', 'eier', 'mozzarella', 'cheddar', 'gouda', 'brie', 'feta'],
+      'Brood & Bakkerij': ['brood', 'croissant', 'stokbrood', 'pretzel', 'bagel', 'muffin', 'pancake', 'wafel', 'koek', 'koekje', 'cake', 'taart', 'gebak', 'donut', 'broodje'],
+      'Dranken': ['koffie', 'thee', 'water', 'sap', 'frisdrank', 'cola', 'bier', 'wijn', 'champagne', 'whisky', 'cocktail', 'smoothie', 'limonade', 'drank', 'drink', 'beverage'],
+      'Droge Kruidenierswaren': ['pasta', 'rijst', 'noedels', 'spaghetti', 'macaroni', 'couscous', 'quinoa', 'bulgur', 'meel', 'bloem', 'suiker', 'zout', 'peper', 'kruiden', 'specerijen', 'olie', 'azijn', 'saus', 'ketchup', 'mayonaise', 'mosterd'],
+      'Diepvries': ['diepvries', 'ijs', 'frozen', 'ijsje', 'softijs', 'pizza', 'friet', 'nuggets', 'groente', 'fruit'],
+      'Houdbare Producten': ['blik', 'pot', 'conserven', 'ingeblikt', 'jam', 'honing', 'pindakaas', 'chocolade', 'snoep', 'chips', 'crackers', 'biscuits', 'ontbijtgranen', 'muesli'],
+      'Persoonlijke Verzorging': ['shampoo', 'zeep', 'tandpasta', 'deodorant', 'douchegel', 'handzeep', 'tissues', 'wattenschijfjes', 'maandverband', 'tampons'],
+      'Huishoudelijke Artikelen': ['afwasmiddel', 'wasmiddel', 'schoonmaak', 'doekjes', 'vuilniszakken', 'keukenrol', 'wc-papier', 'papier', 'folie', 'plastic', 'zakken']
+    }
+    
+    // Try to find matching category
+    for (const [categoryName, keywords] of Object.entries(categoryKeywords)) {
+      for (const keyword of keywords) {
+        if (normalizedName.includes(keyword)) {
+          // Find category ID
+          const category = categories.find(cat => cat.name === categoryName)
+          if (category) {
+            return category.id
+          }
+        }
+      }
+    }
+    
+    return null
+  }
+
   // Close emoji picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -268,7 +304,7 @@ export default function ProductForm({
       setEmoji('📦')
       setName('')
       setDescription('')
-      setDefaultQuantity('1')
+      setDefaultQuantity('')
       setCategoryId('')
       setIsBasic(false)
       setPurchaseFrequency('')
@@ -276,20 +312,31 @@ export default function ProductForm({
     }
   }, [product])
 
-  // Auto-select emoji when name changes (only for new products or when emoji is default)
+  // Auto-select emoji and category when name changes (only for new products or when values are default)
   useEffect(() => {
-    // Only auto-select emoji if:
+    // Only auto-select if:
     // 1. There's a name entered
-    // 2. It's a new product (no product prop) OR the current emoji is the default
+    // 2. It's a new product (no product prop) OR the current values are defaults
     // 3. The name has at least 2 characters (to avoid matching on single letters)
-    if (name && name.trim().length >= 2 && (!product || emoji === '📦')) {
-      const suggestedEmoji = findEmojiByName(name)
-      if (suggestedEmoji && suggestedEmoji !== emoji) {
-        setEmoji(suggestedEmoji)
+    if (name && name.trim().length >= 2 && (!product || emoji === '📦' || !categoryId)) {
+      // Auto-select emoji
+      if (!product || emoji === '📦') {
+        const suggestedEmoji = findEmojiByName(name)
+        if (suggestedEmoji && suggestedEmoji !== emoji) {
+          setEmoji(suggestedEmoji)
+        }
+      }
+      
+      // Auto-select category
+      if (!product || !categoryId) {
+        const suggestedCategoryId = findCategoryByName(name)
+        if (suggestedCategoryId && suggestedCategoryId !== categoryId) {
+          setCategoryId(suggestedCategoryId)
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name])
+  }, [name, categories])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -316,7 +363,7 @@ export default function ProductForm({
         emoji: emoji.trim() || '📦',
         name: name.trim(),
         description: description.trim() || null,
-        default_quantity: defaultQuantity.trim() || '1',
+        default_quantity: defaultQuantity.trim() || '',
         category_id: categoryId,
         is_basic: isBasic,
         is_popular: false, // Will be calculated automatically later
@@ -329,7 +376,7 @@ export default function ProductForm({
   }
 
   const handleQuantityChange = (delta: number) => {
-    const current = parseInt(defaultQuantity) || 1
+    const current = defaultQuantity ? parseInt(defaultQuantity) : 0
     const newValue = Math.max(1, current + delta)
     setDefaultQuantity(newValue.toString())
   }
@@ -379,9 +426,23 @@ export default function ProductForm({
       )}
 
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-          Naam <span className="text-red-500">*</span>
-        </label>
+        <div className="flex items-center justify-between">
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+            Naam <span className="text-red-500">*</span>
+          </label>
+          <button
+            type="button"
+            onClick={() => setIsBasic(!isBasic)}
+            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            aria-label={isBasic ? 'Verwijder basis product' : 'Markeer als basis product'}
+          >
+            {isBasic ? (
+              <Star size={20} className="fill-yellow-500 text-yellow-500" />
+            ) : (
+              <Star size={20} className="stroke-2" />
+            )}
+          </button>
+        </div>
         <input
           type="text"
           id="name"
@@ -488,7 +549,7 @@ export default function ProductForm({
           <button
             type="button"
             onClick={() => handleQuantityChange(-1)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Verminder hoeveelheid"
           >
             <span className="text-lg font-medium">−</span>
@@ -505,11 +566,12 @@ export default function ProductForm({
             }}
             min="1"
             className="block flex-1 rounded-md border-gray-300 bg-white px-3 py-2 text-center text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            placeholder="1"
           />
           <button
             type="button"
             onClick={() => handleQuantityChange(1)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Verhoog hoeveelheid"
           >
             <span className="text-lg font-medium">+</span>
@@ -517,17 +579,6 @@ export default function ProductForm({
         </div>
       </div>
 
-      <div>
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={isBasic}
-            onChange={(e) => setIsBasic(e.target.checked)}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span className="ml-2 text-sm text-gray-700">Basis product</span>
-        </label>
-      </div>
 
       <div>
         <label htmlFor="purchaseFrequency" className="block text-sm font-medium text-gray-700">
@@ -537,7 +588,7 @@ export default function ProductForm({
           <button
             type="button"
             onClick={() => handleFrequencyChange(-1)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Verminder frequentie"
           >
             <span className="text-lg font-medium">−</span>
@@ -558,7 +609,7 @@ export default function ProductForm({
           <button
             type="button"
             onClick={() => handleFrequencyChange(1)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Verhoog frequentie"
           >
             <span className="text-lg font-medium">+</span>
