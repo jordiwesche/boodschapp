@@ -62,7 +62,7 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
               </div>
               {product.purchase_pattern && (
                 <p className="mt-1 text-xs text-gray-500">
-                  Aankoop patroon: elke {product.purchase_pattern.frequency} {product.purchase_pattern.unit === 'days' ? 'dagen' : 'weken'}
+                  Elke {product.purchase_pattern.frequency} {product.purchase_pattern.unit === 'days' ? 'dagen' : 'weken'}
                 </p>
               )}
             </div>

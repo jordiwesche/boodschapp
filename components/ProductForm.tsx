@@ -62,7 +62,7 @@ export default function ProductForm({
   const [error, setError] = useState('')
   const emojiPickerRef = useRef<HTMLDivElement>(null)
 
-  // Food & drink emojis with names for search
+  // Food & drink emojis with names for search (deduplicated)
   const foodEmojis: Array<{ emoji: string; name: string }> = [
     { emoji: '🍎', name: 'appel' },
     { emoji: '🍊', name: 'sinaasappel' },
@@ -143,8 +143,6 @@ export default function ProductForm({
     { emoji: '🍿', name: 'popcorn' },
     { emoji: '🍩', name: 'donut' },
     { emoji: '🍪', name: 'koekje' },
-    { emoji: '🌰', name: 'kastanje' },
-    { emoji: '🥜', name: 'pinda' },
     { emoji: '🍯', name: 'honing' },
     { emoji: '🥛', name: 'glas melk' },
     { emoji: '☕', name: 'koffie' },
@@ -171,12 +169,72 @@ export default function ProductForm({
     { emoji: '📦', name: 'pakket' },
   ]
 
+  // Remove duplicate emojis (keep first occurrence)
+  const uniqueFoodEmojis = foodEmojis.filter(
+    (item, index, self) => index === self.findIndex((t) => t.emoji === item.emoji)
+  )
+
   // Filter emojis based on search query
   const filteredEmojis = emojiSearchQuery
-    ? foodEmojis.filter((item) =>
+    ? uniqueFoodEmojis.filter((item) =>
         item.name.toLowerCase().includes(emojiSearchQuery.toLowerCase())
       )
-    : foodEmojis
+    : uniqueFoodEmojis
+
+  // Auto-select emoji based on product name
+  const findEmojiByName = (productName: string): string | null => {
+    if (!productName || productName.trim().length === 0) return null
+    
+    const normalizedName = productName.toLowerCase().trim()
+    
+    // Try exact match first
+    const exactMatch = uniqueFoodEmojis.find(
+      (item) => item.name.toLowerCase() === normalizedName
+    )
+    if (exactMatch) return exactMatch.emoji
+    
+    // Try partial match (name contains emoji name or vice versa)
+    const partialMatch = uniqueFoodEmojis.find(
+      (item) =>
+        normalizedName.includes(item.name.toLowerCase()) ||
+        item.name.toLowerCase().includes(normalizedName)
+    )
+    if (partialMatch) return partialMatch.emoji
+    
+    // Try keyword matching for common products
+    const keywordMap: Record<string, string> = {
+      melk: '🥛',
+      koffie: '☕',
+      thee: '🍵',
+      brood: '🍞',
+      ei: '🥚',
+      kaas: '🧀',
+      vlees: '🥩',
+      kip: '🍗',
+      vis: '🐟',
+      appel: '🍎',
+      banaan: '🍌',
+      sinaasappel: '🍊',
+      tomaat: '🍅',
+      ui: '🧅',
+      knoflook: '🧄',
+      wortel: '🥕',
+      aardappel: '🥔',
+      pizza: '🍕',
+      pasta: '🍝',
+      rijst: '🍚',
+      salade: '🥗',
+      soep: '🍲',
+    }
+    
+    for (const [keyword, emoji] of Object.entries(keywordMap)) {
+      if (normalizedName.includes(keyword)) {
+        return emoji
+      }
+    }
+    
+    return null
+  }
 
   // Close emoji picker when clicking outside
   useEffect(() => {
@@ -205,8 +263,33 @@ export default function ProductForm({
       setIsBasic(product.is_basic || false)
       setPurchaseFrequency(product.purchase_pattern_frequency?.toString() || '')
       setPurchaseUnit(product.purchase_pattern_unit || '')
+    } else {
+      // Reset form for new product
+      setEmoji('📦')
+      setName('')
+      setDescription('')
+      setDefaultQuantity('1')
+      setCategoryId('')
+      setIsBasic(false)
+      setPurchaseFrequency('')
+      setPurchaseUnit('')
     }
   }, [product])
+
+  // Auto-select emoji when name changes (only for new products or when emoji is default)
+  useEffect(() => {
+    // Only auto-select emoji if:
+    // 1. There's a name entered
+    // 2. It's a new product (no product prop) OR the current emoji is the default
+    // 3. The name has at least 2 characters (to avoid matching on single letters)
+    if (name && name.trim().length >= 2 && (!product || emoji === '📦')) {
+      const suggestedEmoji = findEmojiByName(name)
+      if (suggestedEmoji && suggestedEmoji !== emoji) {
+        setEmoji(suggestedEmoji)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -296,6 +379,55 @@ export default function ProductForm({
       )}
 
       <div>
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          Naam <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          id="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
+          placeholder="Bijv. Melk"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+          Beschrijving
+        </label>
+        <textarea
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
+          placeholder="Optionele beschrijving"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+          Categorie <span className="text-red-500">*</span>
+        </label>
+        <select
+          id="category"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          required
+          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+        >
+          <option value="" className="text-gray-500">Selecteer categorie</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
         <label htmlFor="emoji" className="block text-sm font-medium text-gray-700">
           Emoji
         </label>
@@ -349,63 +481,14 @@ export default function ProductForm({
       </div>
 
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-          Naam <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
-          placeholder="Bijv. Melk"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-          Beschrijving
-        </label>
-        <textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={2}
-          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
-          placeholder="Optionele beschrijving"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-          Categorie <span className="text-red-500">*</span>
-        </label>
-        <select
-          id="category"
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          required
-          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        >
-          <option value="" className="text-gray-500">Selecteer categorie</option>
-          {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
         <label htmlFor="defaultQuantity" className="block text-sm font-medium text-gray-700">
           Hoeveelheid
         </label>
-        <div className="mt-1 flex items-center gap-2">
+        <div className="mt-1 flex w-full items-center gap-2">
           <button
             type="button"
             onClick={() => handleQuantityChange(-1)}
-            className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Verminder hoeveelheid"
           >
             <span className="text-lg font-medium">−</span>
@@ -421,12 +504,12 @@ export default function ProductForm({
               }
             }}
             min="1"
-            className="block w-20 rounded-md border-gray-300 bg-white px-3 py-2 text-center text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="block flex-1 rounded-md border-gray-300 bg-white px-3 py-2 text-center text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
           <button
             type="button"
             onClick={() => handleQuantityChange(1)}
-            className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Verhoog hoeveelheid"
           >
             <span className="text-lg font-medium">+</span>
@@ -450,11 +533,11 @@ export default function ProductForm({
         <label htmlFor="purchaseFrequency" className="block text-sm font-medium text-gray-700">
           Nodig elke
         </label>
-        <div className="mt-1 flex items-center gap-2">
+        <div className="mt-1 flex w-full items-center gap-2">
           <button
             type="button"
             onClick={() => handleFrequencyChange(-1)}
-            className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Verminder frequentie"
           >
             <span className="text-lg font-medium">−</span>
@@ -470,12 +553,12 @@ export default function ProductForm({
               }
             }}
             min="1"
-            className="block w-20 rounded-md border-gray-300 bg-white px-3 py-2 text-center text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="block flex-1 rounded-md border-gray-300 bg-white px-3 py-2 text-center text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           />
           <button
             type="button"
             onClick={() => handleFrequencyChange(1)}
-            className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Verhoog frequentie"
           >
             <span className="text-lg font-medium">+</span>
