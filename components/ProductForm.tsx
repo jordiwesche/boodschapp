@@ -316,9 +316,10 @@ export default function ProductForm({
   useEffect(() => {
     // Only auto-select if:
     // 1. There's a name entered
-    // 2. It's a new product (no product prop) OR the current values are defaults
-    // 3. The name has at least 2 characters (to avoid matching on single letters)
-    if (name && name.trim().length >= 2 && (!product || emoji === '📦' || !categoryId)) {
+    // 2. Categories are loaded
+    // 3. It's a new product (no product prop) OR the current values are defaults
+    // 4. The name has at least 2 characters (to avoid matching on single letters)
+    if (name && name.trim().length >= 2 && categories.length > 0 && (!product || emoji === '📦' || !categoryId)) {
       // Auto-select emoji
       if (!product || emoji === '📦') {
         const suggestedEmoji = findEmojiByName(name)
@@ -549,7 +550,7 @@ export default function ProductForm({
           <button
             type="button"
             onClick={() => handleQuantityChange(-1)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Verminder hoeveelheid"
           >
             <span className="text-lg font-medium">−</span>
@@ -571,7 +572,7 @@ export default function ProductForm({
           <button
             type="button"
             onClick={() => handleQuantityChange(1)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Verhoog hoeveelheid"
           >
             <span className="text-lg font-medium">+</span>
@@ -588,7 +589,7 @@ export default function ProductForm({
           <button
             type="button"
             onClick={() => handleFrequencyChange(-1)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Verminder frequentie"
           >
             <span className="text-lg font-medium">−</span>
@@ -609,7 +610,7 @@ export default function ProductForm({
           <button
             type="button"
             onClick={() => handleFrequencyChange(1)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
             aria-label="Verhoog frequentie"
           >
             <span className="text-lg font-medium">+</span>

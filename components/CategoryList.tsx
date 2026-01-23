@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Pencil } from 'lucide-react'
 import CategoryForm from './CategoryForm'
 
 interface Category {
@@ -95,6 +96,39 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
     }
   }
 
+  const handleDeleteFromForm = async () => {
+    if (!editingCategory) return
+    
+    if (!confirm('Weet je zeker dat je deze categorie wilt verwijderen? Als er producten in deze categorie zitten, kan deze niet worden verwijderd.')) {
+      return
+    }
+
+    setDeletingCategoryId(editingCategory.id)
+    setError('')
+    setSuccess('')
+
+    try {
+      const response = await fetch(`/api/categories/${editingCategory.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Kon categorie niet verwijderen')
+      }
+
+      setSuccess('Categorie verwijderd')
+      setShowForm(false)
+      setEditingCategory(null)
+      onRefresh()
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Er is een fout opgetreden')
+    } finally {
+      setDeletingCategoryId(null)
+    }
+  }
+
   const handleCancel = () => {
     setShowForm(false)
     setEditingCategory(null)
@@ -156,13 +190,11 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
   if (showForm) {
     return (
       <div className="rounded-lg bg-white p-6 shadow">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">
-          {editingCategory ? 'Categorie bewerken' : 'Nieuwe categorie toevoegen'}
-        </h2>
         <CategoryForm
           category={editingCategory || undefined}
           onSave={handleSave}
           onCancel={handleCancel}
+          onDelete={editingCategory ? handleDeleteFromForm : undefined}
           loading={loading}
         />
       </div>
@@ -222,21 +254,13 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
                   <p className="text-xs text-gray-500">Volgorde: {category.display_order}</p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div>
                 <button
                   onClick={() => handleEdit(category)}
-                  className="rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                  className="rounded-md bg-blue-50 p-2 text-blue-700 hover:bg-blue-100"
                   aria-label="Bewerk categorie"
                 >
-                  Bewerk
-                </button>
-                <button
-                  onClick={() => handleDelete(category.id)}
-                  disabled={deletingCategoryId === category.id}
-                  className="rounded-md bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
-                  aria-label="Verwijder categorie"
-                >
-                  {deletingCategoryId === category.id ? 'Verwijderen...' : 'Verwijder'}
+                  <Pencil size={18} />
                 </button>
               </div>
             </div>
