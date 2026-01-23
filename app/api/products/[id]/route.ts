@@ -67,7 +67,7 @@ export async function GET(
     }
 
     // Transform response
-    const category = Array.isArray(product.product_categories) && product.product_categories.length > 0
+    const productCategory = Array.isArray(product.product_categories) && product.product_categories.length > 0
       ? product.product_categories[0]
       : null
 
@@ -78,10 +78,10 @@ export async function GET(
       description: product.description,
       default_quantity: product.default_quantity,
       category_id: product.category_id,
-      category: category ? {
-        id: category.id,
-        name: category.name,
-        display_order: category.display_order,
+      category: productCategory ? {
+        id: productCategory.id,
+        name: productCategory.name,
+        display_order: productCategory.display_order,
       } : null,
       is_basic: product.is_basic,
       is_popular: product.is_popular,
@@ -241,7 +241,7 @@ export async function PUT(
     }
 
     // Transform response
-    const category = Array.isArray(product.product_categories) && product.product_categories.length > 0
+    const productCategory = Array.isArray(product.product_categories) && product.product_categories.length > 0
       ? product.product_categories[0]
       : null
 
@@ -252,10 +252,10 @@ export async function PUT(
       description: product.description,
       default_quantity: product.default_quantity,
       category_id: product.category_id,
-      category: category ? {
-        id: category.id,
-        name: category.name,
-        display_order: category.display_order,
+      category: productCategory ? {
+        id: productCategory.id,
+        name: productCategory.name,
+        display_order: productCategory.display_order,
       } : null,
       is_basic: product.is_basic,
       is_popular: product.is_popular,
