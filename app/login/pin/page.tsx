@@ -27,10 +27,24 @@ function PinVerification() {
 
   useEffect(() => {
     if (!checkingAuth && pinInputRef.current) {
-      // Small delay for mobile keyboard to open
-      setTimeout(() => {
-        pinInputRef.current?.focus()
-      }, 100)
+      // Use requestAnimationFrame for better timing, then focus with multiple attempts
+      const focusInput = () => {
+        if (pinInputRef.current) {
+          pinInputRef.current.focus()
+          // Try again after a short delay for mobile devices
+          setTimeout(() => {
+            pinInputRef.current?.focus()
+          }, 200)
+          // One more attempt for stubborn mobile browsers
+          setTimeout(() => {
+            pinInputRef.current?.focus()
+          }, 500)
+        }
+      }
+      
+      requestAnimationFrame(() => {
+        setTimeout(focusInput, 50)
+      })
     }
   }, [checkingAuth])
 
@@ -101,7 +115,7 @@ function PinVerification() {
               ref={pinInputRef}
               id="pin"
               name="pin"
-              type="password"
+              type="tel"
               inputMode="numeric"
               required
               maxLength={6}
@@ -111,6 +125,7 @@ function PinVerification() {
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-center text-2xl tracking-widest text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
               placeholder="000000"
               autoFocus
+              autoComplete="one-time-code"
             />
           </div>
 
