@@ -39,7 +39,14 @@ export default function ProductForm({
   const [emoji, setEmoji] = useState(product?.emoji || '📦')
   const [name, setName] = useState(product?.name || '')
   const [description, setDescription] = useState(product?.description || '')
-  const [defaultQuantity, setDefaultQuantity] = useState(product?.default_quantity || '1')
+  // Parse quantity to number for stepper (extract first number from string)
+  const parseQuantityToNumber = (quantity: string): number => {
+    const match = quantity.match(/^(\d+)/)
+    return match ? parseInt(match[1]) : 1
+  }
+  const [defaultQuantity, setDefaultQuantity] = useState(
+    product?.default_quantity ? parseQuantityToNumber(product.default_quantity).toString() : '1'
+  )
   const [categoryId, setCategoryId] = useState(product?.category_id || '')
   const [isBasic, setIsBasic] = useState(product?.is_basic || false)
   const [isPopular, setIsPopular] = useState(product?.is_popular || false)
@@ -54,7 +61,7 @@ export default function ProductForm({
       setEmoji(product.emoji || '📦')
       setName(product.name || '')
       setDescription(product.description || '')
-      setDefaultQuantity(product.default_quantity || '1')
+      setDefaultQuantity(product.default_quantity ? parseQuantityToNumber(product.default_quantity).toString() : '1')
       setCategoryId(product.category_id || '')
       setIsBasic(product.is_basic || false)
       setIsPopular(product.is_popular || false)
@@ -98,6 +105,12 @@ export default function ProductForm({
     } catch (err) {
       setError('Er is een fout opgetreden bij het opslaan')
     }
+  }
+
+  const handleQuantityChange = (delta: number) => {
+    const current = parseInt(defaultQuantity) || 1
+    const newValue = Math.max(1, current + delta)
+    setDefaultQuantity(newValue.toString())
   }
 
   return (
@@ -174,16 +187,39 @@ export default function ProductForm({
 
       <div>
         <label htmlFor="defaultQuantity" className="block text-sm font-medium text-gray-700">
-          Standaard hoeveelheid
+          Hoeveelheid
         </label>
-        <input
-          type="text"
-          id="defaultQuantity"
-          value={defaultQuantity}
-          onChange={(e) => setDefaultQuantity(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
-          placeholder="Bijv. 1 liter, 500g"
-        />
+        <div className="mt-1 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleQuantityChange(-1)}
+            className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Verminder hoeveelheid"
+          >
+            <span className="text-lg font-medium">−</span>
+          </button>
+          <input
+            type="number"
+            id="defaultQuantity"
+            value={defaultQuantity}
+            onChange={(e) => {
+              const value = e.target.value
+              if (value === '' || (parseInt(value) >= 1)) {
+                setDefaultQuantity(value)
+              }
+            }}
+            min="1"
+            className="block w-20 rounded-md border-gray-300 bg-white px-3 py-2 text-center text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          />
+          <button
+            type="button"
+            onClick={() => handleQuantityChange(1)}
+            className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Verhoog hoeveelheid"
+          >
+            <span className="text-lg font-medium">+</span>
+          </button>
+        </div>
       </div>
 
       <div className="flex gap-4">

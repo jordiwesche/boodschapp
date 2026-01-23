@@ -1,5 +1,7 @@
 'use client'
 
+import { Pencil, Trash2 } from 'lucide-react'
+
 interface Product {
   id: string
   emoji: string
@@ -29,6 +31,20 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
+  // Parse quantity to show as "6x" format
+  const parseQuantity = (quantity: string): string | null => {
+    if (!quantity || quantity === '1') return null
+    // Try to extract first number from string
+    const match = quantity.match(/^(\d+)/)
+    if (match) {
+      const num = parseInt(match[1])
+      return num > 1 ? `${num}x` : null
+    }
+    return null
+  }
+
+  const quantityDisplay = parseQuantity(product.default_quantity)
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between">
@@ -36,7 +52,12 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
           <div className="flex items-center gap-3">
             <span className="text-2xl">{product.emoji}</span>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
+                {quantityDisplay && (
+                  <span className="text-lg font-normal text-gray-500">{quantityDisplay}</span>
+                )}
+              </div>
               {product.description && (
                 <p className="mt-1 text-sm text-gray-600">{product.description}</p>
               )}
@@ -57,11 +78,6 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
                   </span>
                 )}
               </div>
-              {product.default_quantity && product.default_quantity !== '1' && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Standaard: {product.default_quantity}
-                </p>
-              )}
               {product.purchase_pattern && (
                 <p className="mt-1 text-xs text-gray-500">
                   Aankoop patroon: elke {product.purchase_pattern.frequency} {product.purchase_pattern.unit === 'days' ? 'dagen' : 'weken'}
@@ -73,17 +89,17 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
         <div className="ml-4 flex gap-2">
           <button
             onClick={() => onEdit(product)}
-            className="rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
+            className="rounded-md bg-blue-50 p-2 text-blue-700 hover:bg-blue-100"
             aria-label="Bewerk product"
           >
-            Bewerk
+            <Pencil size={18} />
           </button>
           <button
             onClick={() => onDelete(product.id)}
-            className="rounded-md bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+            className="rounded-md bg-red-50 p-2 text-red-700 hover:bg-red-100"
             aria-label="Verwijder product"
           >
-            Verwijder
+            <Trash2 size={18} />
           </button>
         </div>
       </div>

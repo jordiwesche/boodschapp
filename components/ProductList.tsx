@@ -163,9 +163,9 @@ export default function ProductList({ products, categories, onRefresh }: Product
             id="categoryFilter"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:w-64"
+            className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:w-64"
           >
-            <option value="">Alle categorieën</option>
+            <option value="" className="text-gray-500">Alle categorieën</option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
