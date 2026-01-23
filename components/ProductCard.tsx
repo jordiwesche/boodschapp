@@ -46,8 +46,14 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
                   <span className="text-yellow-500">★</span>
                 )}
               </div>
-              {product.description && (
-                <p className="mt-1 text-sm text-gray-600">{product.description}</p>
+              {(product.description || product.purchase_pattern) && (
+                <p className="mt-1 text-sm text-gray-600">
+                  {product.description && product.description}
+                  {product.description && product.purchase_pattern && ' • '}
+                  {product.purchase_pattern && (
+                    <>Elke {product.purchase_pattern.frequency} {product.purchase_pattern.unit === 'days' ? 'dagen' : 'weken'}</>
+                  )}
+                </p>
               )}
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 {product.category && (
@@ -61,11 +67,6 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
                   </span>
                 )}
               </div>
-              {product.purchase_pattern && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Elke {product.purchase_pattern.frequency} {product.purchase_pattern.unit === 'days' ? 'dagen' : 'weken'}
-                </p>
-              )}
             </div>
           </div>
         </div>

@@ -185,7 +185,7 @@ export default function ProductForm({
       )
     : uniqueFoodEmojis
 
-  // Auto-select emoji based on product name
+  // Auto-select emoji based on product name (requires minimum 3 character match)
   const findEmojiByName = (productName: string): string | null => {
     if (!productName || productName.trim().length === 0) return null
     
@@ -197,21 +197,28 @@ export default function ProductForm({
     )
     if (exactMatch) return exactMatch.emoji
     
-    // Try partial match (name contains emoji name or vice versa)
+    // Try partial match (name contains emoji name or vice versa) - minimum 3 characters
     const partialMatch = uniqueFoodEmojis.find(
-      (item) =>
-        normalizedName.includes(item.name.toLowerCase()) ||
-        item.name.toLowerCase().includes(normalizedName)
+      (item) => {
+        const emojiName = item.name.toLowerCase()
+        // Check if product name contains emoji name (min 3 chars) or vice versa
+        if (normalizedName.includes(emojiName) && emojiName.length >= 3) {
+          return true
+        }
+        if (emojiName.includes(normalizedName) && normalizedName.length >= 3) {
+          return true
+        }
+        return false
+      }
     )
     if (partialMatch) return partialMatch.emoji
     
-    // Try keyword matching for common products
+    // Try keyword matching for common products (keywords are already 3+ chars)
     const keywordMap: Record<string, string> = {
       melk: '🥛',
       koffie: '☕',
       thee: '🍵',
       brood: '🍞',
-      ei: '🥚',
       kaas: '🧀',
       vlees: '🥩',
       kip: '🍗',
@@ -232,7 +239,7 @@ export default function ProductForm({
     }
     
     for (const [keyword, emoji] of Object.entries(keywordMap)) {
-      if (normalizedName.includes(keyword)) {
+      if (normalizedName.includes(keyword) && keyword.length >= 3) {
         return emoji
       }
     }
