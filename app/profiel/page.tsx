@@ -80,6 +80,32 @@ export default async function ProfielPage() {
             </div>
           </Link>
 
+          {/* Producten & Categorieën sectie */}
+          <Link
+            href="/profiel/producten"
+            className="block rounded-lg bg-white p-6 shadow transition-colors hover:bg-gray-50"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Producten & Categorieën</h2>
+                <p className="mt-1 text-sm text-gray-600">Beheer je producten en categorieën</p>
+              </div>
+              <svg
+                className="h-5 w-5 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          </Link>
+
           {/* Uitloggen */}
           <div className="pt-4">
             <LogoutButton />
