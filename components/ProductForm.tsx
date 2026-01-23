@@ -117,7 +117,7 @@ export default function ProductForm({
           id="emoji"
           value={emoji}
           onChange={(e) => setEmoji(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
           placeholder="📦"
           maxLength={2}
         />
@@ -133,7 +133,7 @@ export default function ProductForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
           placeholder="Bijv. Melk"
         />
       </div>
@@ -147,7 +147,7 @@ export default function ProductForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
           placeholder="Optionele beschrijving"
         />
       </div>
@@ -161,9 +161,9 @@ export default function ProductForm({
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
           required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
         >
-          <option value="">Selecteer categorie</option>
+          <option value="" className="text-gray-500">Selecteer categorie</option>
           {categories.map((category) => (
             <option key={category.id} value={category.id}>
               {category.name}
@@ -181,7 +181,7 @@ export default function ProductForm({
           id="defaultQuantity"
           value={defaultQuantity}
           onChange={(e) => setDefaultQuantity(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
           placeholder="Bijv. 1 liter, 500g"
         />
       </div>
@@ -218,7 +218,7 @@ export default function ProductForm({
             value={purchaseFrequency}
             onChange={(e) => setPurchaseFrequency(e.target.value)}
             min="1"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
             placeholder="Bijv. 7"
           />
         </div>
@@ -230,9 +230,9 @@ export default function ProductForm({
             id="purchaseUnit"
             value={purchaseUnit}
             onChange={(e) => setPurchaseUnit(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           >
-            <option value="">Geen</option>
+            <option value="" className="text-gray-500">Geen</option>
             <option value="days">Dagen</option>
             <option value="weeks">Weken</option>
           </select>

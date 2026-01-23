@@ -67,7 +67,7 @@ export default function CategoryForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
           placeholder="Bijv. Groente & Fruit"
         />
       </div>
@@ -82,7 +82,7 @@ export default function CategoryForm({
           value={displayOrder}
           onChange={(e) => setDisplayOrder(e.target.value)}
           min="0"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
           placeholder="0"
         />
         <p className="mt-1 text-xs text-gray-500">

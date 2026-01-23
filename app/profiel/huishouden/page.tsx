@@ -216,8 +216,11 @@ export default function ProfielHuishoudenPage() {
 
   if (initialLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p>Laden...</p>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
+          <p className="text-sm text-gray-500">Laden...</p>
+        </div>
       </div>
     )
   }
@@ -267,7 +270,7 @@ export default function ProfielHuishoudenPage() {
                 required
                 value={householdName}
                 onChange={(e) => setHouseholdName(e.target.value)}
-                className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 placeholder="Janssen"
               />
               <button
@@ -345,7 +348,7 @@ export default function ProfielHuishoudenPage() {
                     type="email"
                     value={email}
                     onChange={(e) => updateEmail(index, e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                     placeholder="email@voorbeeld.nl"
                   />
                   {invitedEmails.length > 1 && (
