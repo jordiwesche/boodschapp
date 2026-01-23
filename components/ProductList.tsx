@@ -61,7 +61,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
     setShowForm(true)
   }
 
-  const handleDelete = async (productId: string) => {
+  const handleDeleteFromList = async (productId: string) => {
     if (!confirm('Weet je zeker dat je dit product wilt verwijderen?')) {
       return
     }
@@ -81,6 +81,39 @@ export default function ProductList({ products, categories, onRefresh }: Product
       }
 
       setSuccess('Product verwijderd')
+      onRefresh()
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Er is een fout opgetreden')
+    } finally {
+      setDeletingProductId(null)
+    }
+  }
+
+  const handleDeleteFromForm = async () => {
+    if (!editingProduct) return
+    
+    if (!confirm('Weet je zeker dat je dit product wilt verwijderen?')) {
+      return
+    }
+
+    setDeletingProductId(editingProduct.id)
+    setError('')
+    setSuccess('')
+
+    try {
+      const response = await fetch(`/api/products/${editingProduct.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Kon product niet verwijderen')
+      }
+
+      setSuccess('Product verwijderd')
+      setShowForm(false)
+      setEditingProduct(null)
       onRefresh()
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
@@ -131,14 +164,12 @@ export default function ProductList({ products, categories, onRefresh }: Product
   if (showForm) {
     return (
       <div className="rounded-lg bg-white p-6 shadow">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">
-          {editingProduct ? 'Product bewerken' : 'Nieuw product toevoegen'}
-        </h2>
         <ProductForm
           product={editingProduct || undefined}
           categories={categories}
           onSave={handleSave}
           onCancel={handleCancel}
+          onDelete={editingProduct ? handleDeleteFromForm : undefined}
           loading={loading}
         />
       </div>
@@ -196,7 +227,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
               key={product.id}
               product={product}
               onEdit={handleEdit}
-              onDelete={handleDelete}
+              onDelete={handleDeleteFromList}
             />
           ))}
         </div>
