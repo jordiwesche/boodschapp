@@ -273,6 +273,12 @@ export default function ProductForm({
       }
     }
     
+    // If no match found, try to find "Overig" category
+    const overigCategory = categories.find(cat => cat.name === 'Overig')
+    if (overigCategory) {
+      return overigCategory.id
+    }
+    
     return null
   }
 

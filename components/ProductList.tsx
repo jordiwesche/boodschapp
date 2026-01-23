@@ -51,6 +51,33 @@ export default function ProductList({ products, categories, onRefresh }: Product
     ? products.filter((p) => p.category_id === selectedCategory)
     : products
 
+  // Group products by category and sort by category display_order
+  const productsByCategory = filteredProducts.reduce((acc, product) => {
+    const categoryId = product.category_id
+    const category = categories.find(cat => cat.id === categoryId)
+    const categoryName = category?.name || 'Onbekend'
+    const categoryOrder = category?.display_order ?? 9999
+    
+    if (!acc[categoryId]) {
+      acc[categoryId] = {
+        categoryId,
+        categoryName,
+        categoryOrder,
+        products: []
+      }
+    }
+    acc[categoryId].products.push(product)
+    return acc
+  }, {} as Record<string, { categoryId: string; categoryName: string; categoryOrder: number; products: Product[] }>)
+
+  // Sort categories by display_order, then sort products within each category by name
+  const sortedCategories = Object.values(productsByCategory)
+    .sort((a, b) => a.categoryOrder - b.categoryOrder)
+    .map(cat => ({
+      ...cat,
+      products: cat.products.sort((a, b) => a.name.localeCompare(b.name))
+    }))
+
   const handleAdd = () => {
     setEditingProduct(null)
     setShowForm(true)
@@ -221,14 +248,23 @@ export default function ProductList({ products, categories, onRefresh }: Product
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onEdit={handleEdit}
-              onDelete={handleDeleteFromList}
-            />
+        <div className="space-y-6">
+          {sortedCategories.map((categoryGroup) => (
+            <div key={categoryGroup.categoryId}>
+              <h3 className="mb-3 text-sm font-medium text-gray-500">
+                {categoryGroup.categoryName}
+              </h3>
+              <div className="space-y-3">
+                {categoryGroup.products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteFromList}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}

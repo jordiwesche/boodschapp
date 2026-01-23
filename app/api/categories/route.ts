@@ -61,7 +61,8 @@ export async function GET(request: NextRequest) {
           'Diepvries',
           'Houdbare Producten',
           'Persoonlijke Verzorging',
-          'Huishoudelijke Artikelen'
+          'Huishoudelijke Artikelen',
+          'Overig'
         ]
 
         const categoriesToInsert = defaultCategories.map((name, index) => ({
@@ -158,9 +159,13 @@ export async function POST(request: NextRequest) {
       .order('display_order', { ascending: false })
       .limit(1)
 
+    // Always set new categories at the end (maxOrder + 1), unless explicitly provided
     const maxOrder = existingCategories && existingCategories.length > 0
       ? existingCategories[0].display_order + 1
-      : (display_order !== undefined ? display_order : 0)
+      : 0
+    
+    // Only use provided display_order if explicitly set, otherwise use maxOrder
+    const finalDisplayOrder = display_order !== undefined ? display_order : maxOrder
 
     // Create category
     const { data: category, error: categoryError } = await supabase
@@ -168,7 +173,7 @@ export async function POST(request: NextRequest) {
       .insert({
         household_id: user.household_id,
         name: name.trim(),
-        display_order: display_order !== undefined ? display_order : maxOrder,
+        display_order: finalDisplayOrder,
       })
       .select('id, name, display_order, created_at, updated_at')
       .single()

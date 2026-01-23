@@ -150,7 +150,8 @@ DECLARE
     'Diepvries',
     'Houdbare Producten',
     'Persoonlijke Verzorging',
-    'Huishoudelijke Artikelen'
+    'Huishoudelijke Artikelen',
+    'Overig'
   ];
   cat_name TEXT;
   cat_order INTEGER := 0;
