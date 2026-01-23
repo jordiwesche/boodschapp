@@ -27,24 +27,27 @@ function PinVerification() {
 
   useEffect(() => {
     if (!checkingAuth && pinInputRef.current) {
-      // Use requestAnimationFrame for better timing, then focus with multiple attempts
-      const focusInput = () => {
-        if (pinInputRef.current) {
-          pinInputRef.current.focus()
-          // Try again after a short delay for mobile devices
-          setTimeout(() => {
-            pinInputRef.current?.focus()
-          }, 200)
-          // One more attempt for stubborn mobile browsers
-          setTimeout(() => {
-            pinInputRef.current?.focus()
-          }, 500)
-        }
+      // Multiple focus attempts with increasing delays for mobile compatibility
+      const attemptFocus = (delay: number) => {
+        setTimeout(() => {
+          if (pinInputRef.current) {
+            pinInputRef.current.focus()
+            // Also try click() which sometimes works better on mobile
+            pinInputRef.current.click()
+          }
+        }, delay)
       }
-      
+
+      // Immediate attempt
       requestAnimationFrame(() => {
-        setTimeout(focusInput, 50)
+        attemptFocus(0)
       })
+      
+      // Additional attempts for mobile browsers
+      attemptFocus(100)
+      attemptFocus(300)
+      attemptFocus(600)
+      attemptFocus(1000)
     }
   }, [checkingAuth])
 
@@ -122,6 +125,7 @@ function PinVerification() {
               pattern="[0-9]{6}"
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onFocus={(e) => e.target.select()}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-center text-2xl tracking-widest text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
               placeholder="000000"
               autoFocus
