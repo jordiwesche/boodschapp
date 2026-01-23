@@ -185,15 +185,41 @@ export default function ProductForm({
       )
     : uniqueFoodEmojis
 
+  // Convert plural to singular (Dutch)
+  const toSingular = (word: string): string => {
+    const lower = word.toLowerCase()
+    // Common Dutch plural patterns
+    if (lower.endsWith('en') && lower.length > 4) {
+      // peren -> peer, appels -> appel
+      const withoutEn = lower.slice(0, -2)
+      // Check if it ends with double consonant (e.g., "peren" -> "peer" not "per")
+      if (withoutEn.length >= 3) {
+        return withoutEn
+      }
+    }
+    if (lower.endsWith('s') && lower.length > 3) {
+      // appels -> appel, bananen -> banaan (but keep if it's part of the word)
+      const withoutS = lower.slice(0, -1)
+      if (withoutS.length >= 3) {
+        return withoutS
+      }
+    }
+    return lower
+  }
+
   // Auto-select emoji based on product name (requires minimum 3 character match)
   const findEmojiByName = (productName: string): string | null => {
     if (!productName || productName.trim().length === 0) return null
     
     const normalizedName = productName.toLowerCase().trim()
+    const singularName = toSingular(normalizedName)
     
-    // Try exact match first
+    // Try exact match first (both plural and singular)
     const exactMatch = uniqueFoodEmojis.find(
-      (item) => item.name.toLowerCase() === normalizedName
+      (item) => {
+        const emojiName = item.name.toLowerCase()
+        return emojiName === normalizedName || emojiName === singularName
+      }
     )
     if (exactMatch) return exactMatch.emoji
     
@@ -201,12 +227,13 @@ export default function ProductForm({
     const partialMatch = uniqueFoodEmojis.find(
       (item) => {
         const emojiName = item.name.toLowerCase()
+        const emojiSingular = toSingular(emojiName)
         // Check if product name contains emoji name - the overlap must be at least 3 chars
-        if (normalizedName.includes(emojiName) && emojiName.length >= 3) {
+        if ((normalizedName.includes(emojiName) || normalizedName.includes(emojiSingular)) && emojiName.length >= 3) {
           return true
         }
         // Check if emoji name contains product name - the overlap must be at least 3 chars
-        if (emojiName.includes(normalizedName) && normalizedName.length >= 3) {
+        if ((emojiName.includes(normalizedName) || emojiName.includes(singularName)) && normalizedName.length >= 3) {
           return true
         }
         return false
@@ -225,6 +252,7 @@ export default function ProductForm({
       kip: '🍗',
       vis: '🐟',
       appel: '🍎',
+      peer: '🍐',
       banaan: '🍌',
       sinaasappel: '🍊',
       tomaat: '🍅',
@@ -239,8 +267,9 @@ export default function ProductForm({
       soep: '🍲',
     }
     
+    // Try with both original and singular form
     for (const [keyword, emoji] of Object.entries(keywordMap)) {
-      if (normalizedName.includes(keyword)) {
+      if (normalizedName.includes(keyword) || singularName.includes(keyword)) {
         return emoji
       }
     }
@@ -254,24 +283,25 @@ export default function ProductForm({
     if (categories.length === 0) return null // Categories not loaded yet
     
     const normalizedName = productName.toLowerCase().trim()
+    const singularName = toSingular(normalizedName)
     
     // FIRST: Try direct matching with category names (e.g., "brood" matches "Brood & Bakkerij")
     for (const category of categories) {
       const normalizedCategoryName = category.name.toLowerCase()
       // Check if product name is part of category name (min 3 chars for meaningful match)
-      if (normalizedCategoryName.includes(normalizedName) && normalizedName.length >= 3) {
+      if ((normalizedCategoryName.includes(normalizedName) || normalizedCategoryName.includes(singularName)) && normalizedName.length >= 3) {
         return category.id
       }
       // Check if category name starts with product name (min 3 chars)
       const categoryFirstWord = normalizedCategoryName.split(' ')[0]
-      if (normalizedName === categoryFirstWord && normalizedName.length >= 3) {
+      if ((normalizedName === categoryFirstWord || singularName === categoryFirstWord) && normalizedName.length >= 3) {
         return category.id
       }
     }
     
-    // SECOND: Try keyword matching
+    // SECOND: Try keyword matching (with both plural and singular)
     const categoryKeywords: Record<string, string[]> = {
-      'Groente & Fruit': ['appel', 'banaan', 'sinaasappel', 'citroen', 'druiven', 'aardbei', 'perzik', 'kersen', 'kiwi', 'watermeloen', 'tomaat', 'avocado', 'komkommer', 'wortel', 'maïs', 'peper', 'paprika', 'bladgroente', 'broccoli', 'knoflook', 'ui', 'aardappel', 'zoete aardappel', 'groente', 'fruit', 'sla', 'spinazie', 'wortelen', 'tomaat', 'komkommer'],
+      'Groente & Fruit': ['appel', 'peer', 'banaan', 'sinaasappel', 'citroen', 'druiven', 'aardbei', 'perzik', 'kersen', 'kiwi', 'watermeloen', 'tomaat', 'avocado', 'komkommer', 'wortel', 'maïs', 'peper', 'paprika', 'bladgroente', 'broccoli', 'knoflook', 'ui', 'aardappel', 'zoete aardappel', 'groente', 'fruit', 'sla', 'spinazie', 'wortelen', 'tomaat', 'komkommer'],
       'Vlees & Vis': ['vlees', 'kip', 'vis', 'zalm', 'tonijn', 'kabeljauw', 'haring', 'makreel', 'rundvlees', 'varkensvlees', 'lam', 'kalkoen', 'worst', 'ham', 'spek', 'gehakt', 'biefstuk', 'karbonade', 'rib', 'filet'],
       'Zuivel': ['melk', 'kaas', 'yoghurt', 'kwark', 'boter', 'room', 'slagroom', 'crème', 'zuivel', 'eieren', 'ei', 'eier', 'mozzarella', 'cheddar', 'gouda', 'brie', 'feta'],
       'Brood & Bakkerij': ['brood', 'croissant', 'stokbrood', 'pretzel', 'bagel', 'muffin', 'pancake', 'wafel', 'koek', 'koekje', 'cake', 'taart', 'gebak', 'donut', 'broodje'],
@@ -283,11 +313,20 @@ export default function ProductForm({
       'Huishoudelijke Artikelen': ['afwasmiddel', 'wasmiddel', 'schoonmaak', 'doekjes', 'vuilniszakken', 'keukenrol', 'wc-papier', 'papier', 'folie', 'plastic', 'zakken']
     }
     
-    // Try to find matching category using keywords
+    // Try to find matching category using keywords (check both plural and singular)
     for (const [categoryName, keywords] of Object.entries(categoryKeywords)) {
       for (const keyword of keywords) {
-        if (normalizedName.includes(keyword)) {
+        // Check if product name contains keyword (both original and singular)
+        if (normalizedName.includes(keyword) || singularName.includes(keyword)) {
           // Find category ID
+          const category = categories.find(cat => cat.name === categoryName)
+          if (category) {
+            return category.id
+          }
+        }
+        // Also check if keyword is in product name (for partial matches)
+        const keywordSingular = toSingular(keyword)
+        if (normalizedName.includes(keywordSingular) || singularName.includes(keywordSingular)) {
           const category = categories.find(cat => cat.name === categoryName)
           if (category) {
             return category.id
@@ -296,7 +335,8 @@ export default function ProductForm({
       }
     }
     
-    // THIRD: If no match found, try to find "Overig" category
+    // THIRD: Only use "Overig" if we've tried everything and nothing matches
+    // Don't use Overig too quickly - only as last resort
     const overigCategory = categories.find(cat => cat.name === 'Overig')
     if (overigCategory) {
       return overigCategory.id
@@ -358,8 +398,8 @@ export default function ProductForm({
     // 1. There's a name entered
     // 2. Categories are loaded
     // 3. It's a new product (no product prop) OR the current values are defaults
-    // 4. The name has at least 2 characters (to avoid matching on single letters)
-    if (name && name.trim().length >= 2 && categories.length > 0) {
+    // 4. The name has at least 3 characters (to avoid matching on short words and jumping to Overig too quickly)
+    if (name && name.trim().length >= 3 && categories.length > 0) {
       // Auto-select emoji (only for new products or when emoji is default)
       if (!product || emoji === '📦') {
         const suggestedEmoji = findEmojiByName(name)
@@ -369,9 +409,17 @@ export default function ProductForm({
       }
       
       // Auto-select category (only for new products or when category is not set)
+      // Only set category if we have a meaningful match (not Overig unless really no match)
       if (!product || !categoryId || categoryId === '') {
         const suggestedCategoryId = findCategoryByName(name)
+        // Only set if we have a match and it's not already set to Overig (avoid jumping to Overig too quickly)
         if (suggestedCategoryId && suggestedCategoryId !== categoryId) {
+          // Check if the suggested category is Overig - only use it if name is long enough (5+ chars)
+          const suggestedCategory = categories.find(cat => cat.id === suggestedCategoryId)
+          if (suggestedCategory?.name === 'Overig' && name.trim().length < 5) {
+            // Don't jump to Overig too quickly for short names
+            return
+          }
           setCategoryId(suggestedCategoryId)
         }
       }
