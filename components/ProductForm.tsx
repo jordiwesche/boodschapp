@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Info, Trash2 } from 'lucide-react'
+import { Info, Trash2, Search } from 'lucide-react'
 
 interface Category {
   id: string
@@ -58,11 +58,125 @@ export default function ProductForm({
   )
   const [purchaseUnit, setPurchaseUnit] = useState(product?.purchase_pattern_unit || '')
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [emojiSearchQuery, setEmojiSearchQuery] = useState('')
   const [error, setError] = useState('')
   const emojiPickerRef = useRef<HTMLDivElement>(null)
 
-  // Common emojis for quick selection
-  const commonEmojis = ['📦', '🥛', '🍞', '🥚', '🍌', '🥕', '🧀', '🍎', '🥖', '🥩', '🐟', '🥔', '🧅', '🍅', '🥬', '🥒', '🌶️', '🧄', '🥑', '🍊', '🍋', '🍇', '🍓', '🍑', '🥝', '🍉', '🥭', '🍍', '🥥', '🥨', '🍪', '🍰', '🧁', '🍫', '🍬', '🍭', '🍯', '🥜', '🌰', '🥤', '☕', '🍵', '🍶', '🍺', '🍷', '🧃', '🧊', '🥤']
+  // Food & drink emojis with names for search
+  const foodEmojis: Array<{ emoji: string; name: string }> = [
+    { emoji: '🍎', name: 'appel' },
+    { emoji: '🍊', name: 'sinaasappel' },
+    { emoji: '🍋', name: 'citroen' },
+    { emoji: '🍌', name: 'banaan' },
+    { emoji: '🍉', name: 'watermeloen' },
+    { emoji: '🍇', name: 'druiven' },
+    { emoji: '🍓', name: 'aardbei' },
+    { emoji: '🍑', name: 'perzik' },
+    { emoji: '🍒', name: 'kersen' },
+    { emoji: '🥝', name: 'kiwi' },
+    { emoji: '🍅', name: 'tomaat' },
+    { emoji: '🥑', name: 'avocado' },
+    { emoji: '🥒', name: 'komkommer' },
+    { emoji: '🥕', name: 'wortel' },
+    { emoji: '🌽', name: 'maïs' },
+    { emoji: '🌶️', name: 'peper' },
+    { emoji: '🫑', name: 'paprika' },
+    { emoji: '🥬', name: 'bladgroente' },
+    { emoji: '🥦', name: 'broccoli' },
+    { emoji: '🧄', name: 'knoflook' },
+    { emoji: '🧅', name: 'ui' },
+    { emoji: '🥔', name: 'aardappel' },
+    { emoji: '🍠', name: 'zoete aardappel' },
+    { emoji: '🥜', name: 'pinda' },
+    { emoji: '🌰', name: 'kastanje' },
+    { emoji: '🍞', name: 'brood' },
+    { emoji: '🥐', name: 'croissant' },
+    { emoji: '🥖', name: 'stokbrood' },
+    { emoji: '🥨', name: 'pretzel' },
+    { emoji: '🧀', name: 'kaas' },
+    { emoji: '🥚', name: 'ei' },
+    { emoji: '🍳', name: 'gebakken ei' },
+    { emoji: '🥓', name: 'spek' },
+    { emoji: '🥩', name: 'vlees' },
+    { emoji: '🍗', name: 'kip' },
+    { emoji: '🍖', name: 'vlees aan bot' },
+    { emoji: '🦴', name: 'bot' },
+    { emoji: '🌭', name: 'hotdog' },
+    { emoji: '🍔', name: 'hamburger' },
+    { emoji: '🍟', name: 'friet' },
+    { emoji: '🍕', name: 'pizza' },
+    { emoji: '🥪', name: 'sandwich' },
+    { emoji: '🌮', name: 'taco' },
+    { emoji: '🌯', name: 'burrito' },
+    { emoji: '🫔', name: 'tamale' },
+    { emoji: '🥙', name: 'gevulde pita' },
+    { emoji: '🧆', name: 'falafel' },
+    { emoji: '🥘', name: 'stoofpot' },
+    { emoji: '🥗', name: 'salade' },
+    { emoji: '🍲', name: 'pot eten' },
+    { emoji: '🫕', name: 'fondue' },
+    { emoji: '🥣', name: 'kom' },
+    { emoji: '🥫', name: 'ingeblikt voedsel' },
+    { emoji: '🍝', name: 'spaghetti' },
+    { emoji: '🍜', name: 'noedels' },
+    { emoji: '🍛', name: 'curry rijst' },
+    { emoji: '🍣', name: 'sushi' },
+    { emoji: '🍱', name: 'bento box' },
+    { emoji: '🍚', name: 'rijst' },
+    { emoji: '🍙', name: 'rijstbal' },
+    { emoji: '🍘', name: 'rijstcracker' },
+    { emoji: '🍥', name: 'viskoek' },
+    { emoji: '🥮', name: 'maancake' },
+    { emoji: '🍢', name: 'oden' },
+    { emoji: '🍡', name: 'dango' },
+    { emoji: '🍧', name: 'shaved ice' },
+    { emoji: '🍨', name: 'ijsje' },
+    { emoji: '🍦', name: 'softijs' },
+    { emoji: '🥧', name: 'taart' },
+    { emoji: '🍰', name: 'gebak' },
+    { emoji: '🎂', name: 'verjaardagstaart' },
+    { emoji: '🧁', name: 'cupcake' },
+    { emoji: '🍮', name: 'flan' },
+    { emoji: '🍭', name: 'lolly' },
+    { emoji: '🍬', name: 'snoep' },
+    { emoji: '🍫', name: 'chocolade' },
+    { emoji: '🍿', name: 'popcorn' },
+    { emoji: '🍩', name: 'donut' },
+    { emoji: '🍪', name: 'koekje' },
+    { emoji: '🌰', name: 'kastanje' },
+    { emoji: '🥜', name: 'pinda' },
+    { emoji: '🍯', name: 'honing' },
+    { emoji: '🥛', name: 'glas melk' },
+    { emoji: '☕', name: 'koffie' },
+    { emoji: '🫖', name: 'theepot' },
+    { emoji: '🍵', name: 'thee' },
+    { emoji: '🍶', name: 'sake' },
+    { emoji: '🍺', name: 'bier' },
+    { emoji: '🍻', name: 'bierglazen' },
+    { emoji: '🥂', name: 'champagne' },
+    { emoji: '🍷', name: 'wijn' },
+    { emoji: '🥃', name: 'whisky' },
+    { emoji: '🍸', name: 'cocktail' },
+    { emoji: '🍹', name: 'tropische cocktail' },
+    { emoji: '🧉', name: 'mate' },
+    { emoji: '🧃', name: 'drinkbox' },
+    { emoji: '🥤', name: 'beker met rietje' },
+    { emoji: '🧊', name: 'ijsklontje' },
+    { emoji: '🥢', name: 'eetstokjes' },
+    { emoji: '🍽️', name: 'mes en vork' },
+    { emoji: '🍴', name: 'bestek' },
+    { emoji: '🥄', name: 'lepel' },
+    { emoji: '🔪', name: 'mes' },
+    { emoji: '🏺', name: 'amfora' },
+    { emoji: '📦', name: 'pakket' },
+  ]
+
+  // Filter emojis based on search query
+  const filteredEmojis = emojiSearchQuery
+    ? foodEmojis.filter((item) =>
+        item.name.toLowerCase().includes(emojiSearchQuery.toLowerCase())
+      )
+    : foodEmojis
 
   // Close emoji picker when clicking outside
   useEffect(() => {
@@ -150,6 +264,7 @@ export default function ProductForm({
   const handleEmojiSelect = (selectedEmoji: string) => {
     setEmoji(selectedEmoji)
     setShowEmojiPicker(false)
+    setEmojiSearchQuery('')
   }
 
   return (
@@ -193,18 +308,40 @@ export default function ProductForm({
             {emoji || '📦'}
           </button>
           {showEmojiPicker && (
-            <div className="absolute z-10 mt-2 max-h-64 w-full overflow-y-auto rounded-md border border-gray-200 bg-white p-3 shadow-lg">
-              <div className="grid grid-cols-8 gap-2">
-                {commonEmojis.map((emojiOption) => (
-                  <button
-                    key={emojiOption}
-                    type="button"
-                    onClick={() => handleEmojiSelect(emojiOption)}
-                    className="flex h-10 w-10 items-center justify-center rounded-md text-xl hover:bg-gray-100"
-                  >
-                    {emojiOption}
-                  </button>
-                ))}
+            <div className="absolute z-10 mt-2 w-full rounded-md border border-gray-200 bg-white shadow-lg">
+              <div className="border-b border-gray-200 p-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={emojiSearchQuery}
+                    onChange={(e) => setEmojiSearchQuery(e.target.value)}
+                    placeholder="Zoek emoji..."
+                    className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="max-h-64 overflow-y-auto p-3">
+                {filteredEmojis.length > 0 ? (
+                  <div className="grid grid-cols-8 gap-2">
+                    {filteredEmojis.map((item) => (
+                      <button
+                        key={item.emoji}
+                        type="button"
+                        onClick={() => handleEmojiSelect(item.emoji)}
+                        className="flex h-10 w-10 items-center justify-center rounded-md text-xl hover:bg-gray-100"
+                        title={item.name}
+                      >
+                        {item.emoji}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-sm text-gray-500">
+                    Geen emoji's gevonden
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -343,30 +480,30 @@ export default function ProductForm({
           >
             <span className="text-lg font-medium">+</span>
           </button>
-          <div className="ml-4 flex rounded-md border border-gray-300 bg-white shadow-sm">
-            <button
-              type="button"
-              onClick={() => setPurchaseUnit('days')}
-              className={`rounded-l-md px-4 py-2 text-sm font-medium transition-colors ${
-                purchaseUnit === 'days'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              Dagen
-            </button>
-            <button
-              type="button"
-              onClick={() => setPurchaseUnit('weeks')}
-              className={`rounded-r-md border-l border-gray-300 px-4 py-2 text-sm font-medium transition-colors ${
-                purchaseUnit === 'weeks'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              Weken
-            </button>
-          </div>
+        </div>
+        <div className="mt-2 flex rounded-md border border-gray-300 bg-white shadow-sm">
+          <button
+            type="button"
+            onClick={() => setPurchaseUnit('days')}
+            className={`flex-1 rounded-l-md px-4 py-2 text-sm font-medium transition-colors ${
+              purchaseUnit === 'days'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            Dagen
+          </button>
+          <button
+            type="button"
+            onClick={() => setPurchaseUnit('weeks')}
+            className={`flex-1 rounded-r-md border-l border-gray-300 px-4 py-2 text-sm font-medium transition-colors ${
+              purchaseUnit === 'weeks'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            Weken
+          </button>
         </div>
       </div>
 
@@ -376,10 +513,10 @@ export default function ProductForm({
             type="button"
             onClick={onDelete}
             disabled={loading}
-            className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
+            className="rounded-md border border-red-300 bg-red-50 p-2 text-red-700 hover:bg-red-100 disabled:opacity-50"
+            aria-label="Verwijder product"
           >
             <Trash2 size={18} />
-            Verwijderen
           </button>
         ) : (
           <div></div>
