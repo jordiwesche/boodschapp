@@ -4,9 +4,10 @@ import { createClient } from '@/lib/supabase/server'
 // GET /api/products/[id] - Get single product
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const userId = request.cookies.get('user_id')?.value
 
     if (!userId) {
@@ -54,7 +55,7 @@ export async function GET(
           display_order
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('household_id', user.household_id)
       .single()
 
@@ -103,9 +104,10 @@ export async function GET(
 // PUT /api/products/[id] - Update product
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const userId = request.cookies.get('user_id')?.value
 
     if (!userId) {
@@ -155,7 +157,7 @@ export async function PUT(
     const { data: existingProduct, error: existingError } = await supabase
       .from('products')
       .select('id')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('household_id', user.household_id)
       .single()
 
@@ -203,7 +205,7 @@ export async function PUT(
     const { data: product, error: productError } = await supabase
       .from('products')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('household_id', user.household_id)
       .select(`
         id,
@@ -272,9 +274,10 @@ export async function PUT(
 // DELETE /api/products/[id] - Delete product
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const userId = request.cookies.get('user_id')?.value
 
     if (!userId) {
@@ -304,7 +307,7 @@ export async function DELETE(
     const { data: existingProduct, error: existingError } = await supabase
       .from('products')
       .select('id')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('household_id', user.household_id)
       .single()
 
@@ -319,7 +322,7 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from('products')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('household_id', user.household_id)
 
     if (deleteError) {
