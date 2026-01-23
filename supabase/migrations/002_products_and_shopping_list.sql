@@ -2,11 +2,12 @@
 -- This migration adds product management and shopping list functionality
 
 -- Ensure UUID extension is enabled (idempotent)
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Note: Extension should already exist from migration 001, but ensure it's in public schema
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
 -- Create product_categories table (per household, with order)
 CREATE TABLE IF NOT EXISTS product_categories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
   household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   display_order INTEGER NOT NULL DEFAULT 0,
@@ -17,7 +18,7 @@ CREATE TABLE IF NOT EXISTS product_categories (
 
 -- Create products table (per household)
 CREATE TABLE IF NOT EXISTS products (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
   household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
   emoji TEXT NOT NULL DEFAULT '📦',
   name TEXT NOT NULL,
@@ -34,7 +35,7 @@ CREATE TABLE IF NOT EXISTS products (
 
 -- Create shopping_list_items table (active shopping list)
 CREATE TABLE IF NOT EXISTS shopping_list_items (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
   household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
   product_id UUID REFERENCES products(id) ON DELETE SET NULL,
   product_name TEXT,
@@ -49,7 +50,7 @@ CREATE TABLE IF NOT EXISTS shopping_list_items (
 
 -- Create purchase_history table (purchase pattern tracking)
 CREATE TABLE IF NOT EXISTS purchase_history (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT public.uuid_generate_v4(),
   household_id UUID NOT NULL REFERENCES households(id) ON DELETE CASCADE,
   product_id UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   shopping_list_item_id UUID REFERENCES shopping_list_items(id) ON DELETE SET NULL,
