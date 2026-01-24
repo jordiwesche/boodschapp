@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Info, Trash2, Search, Star } from 'lucide-react'
+import { CATEGORY_CONCEPT_PRODUCTS } from '@/data/category-concept-products'
 
 interface Category {
   id: string
@@ -29,6 +30,8 @@ interface Product {
 interface ProductFormProps {
   product?: Product | null
   categories: Category[]
+  /** Products from API: used to build concept terms from *your* DB per category (seed + product names). */
+  products?: { name: string; category_id: string }[]
   onSave: (product: Omit<Product, 'id'>) => Promise<void>
   onCancel: () => void
   onDelete?: () => void
@@ -38,6 +41,7 @@ interface ProductFormProps {
 export default function ProductForm({
   product,
   categories,
+  products = [],
   onSave,
   onCancel,
   onDelete,
@@ -294,22 +298,28 @@ export default function ProductForm({
   const tokensEqual = (a: string[], b: string[]): boolean =>
     a.length === b.length && a.every((t, i) => t === b[i])
 
-  // Concept-based config: match on logical relationship (keywords) + token-equivalent category names
-  const CATEGORY_CONCEPTS: { canonicalTokens: string[]; keywords: string[] }[] = [
-    {
-      canonicalTokens: ['fruit', 'groente'],
-      keywords: ['appel', 'peer', 'banaan', 'sinaasappel', 'citroen', 'druiven', 'aardbei', 'perzik', 'kersen', 'kiwi', 'watermeloen', 'tomaat', 'avocado', 'komkommer', 'wortel', 'maïs', 'peper', 'paprika', 'bladgroente', 'broccoli', 'knoflook', 'ui', 'aardappel', 'zoete aardappel', 'groente', 'fruit', 'sla', 'spinazie', 'wortelen', 'courgette', 'prei', 'bleekselderij'],
-    },
-    { canonicalTokens: ['vlees', 'vis'], keywords: ['vlees', 'kip', 'vis', 'zalm', 'tonijn', 'kabeljauw', 'haring', 'makreel', 'rundvlees', 'varkensvlees', 'lam', 'kalkoen', 'worst', 'ham', 'spek', 'gehakt', 'biefstuk', 'karbonade', 'rib', 'filet'] },
-    { canonicalTokens: ['zuivel'], keywords: ['melk', 'kaas', 'yoghurt', 'kwark', 'boter', 'room', 'slagroom', 'crème', 'zuivel', 'eieren', 'ei', 'eier', 'mozzarella', 'cheddar', 'gouda', 'brie', 'feta'] },
-    { canonicalTokens: ['bakkerij', 'brood'], keywords: ['brood', 'croissant', 'stokbrood', 'pretzel', 'bagel', 'muffin', 'pancake', 'wafel', 'koek', 'koekje', 'cake', 'taart', 'gebak', 'donut', 'broodje'] },
-    { canonicalTokens: ['dranken'], keywords: ['koffie', 'thee', 'water', 'sap', 'frisdrank', 'cola', 'bier', 'wijn', 'champagne', 'whisky', 'cocktail', 'smoothie', 'limonade', 'drank', 'drink', 'beverage'] },
-    { canonicalTokens: ['droge', 'kruidenierswaren'], keywords: ['pasta', 'rijst', 'noedels', 'spaghetti', 'macaroni', 'couscous', 'quinoa', 'bulgur', 'meel', 'bloem', 'suiker', 'zout', 'peper', 'kruiden', 'specerijen', 'olie', 'azijn', 'saus', 'ketchup', 'mayonaise', 'mosterd'] },
-    { canonicalTokens: ['diepvries'], keywords: ['diepvries', 'ijs', 'frozen', 'ijsje', 'softijs', 'pizza', 'friet', 'nuggets', 'groente', 'fruit'] },
-    { canonicalTokens: ['houdbare', 'producten'], keywords: ['blik', 'pot', 'conserven', 'ingeblikt', 'jam', 'honing', 'pindakaas', 'chocolade', 'snoep', 'chips', 'crackers', 'biscuits', 'ontbijtgranen', 'muesli'] },
-    { canonicalTokens: ['persoonlijke', 'verzorging'], keywords: ['shampoo', 'zeep', 'tandpasta', 'deodorant', 'douchegel', 'handzeep', 'tissues', 'wattenschijfjes', 'maandverband', 'tampons'] },
-    { canonicalTokens: ['artikelen', 'huishoudelijke'], keywords: ['afwasmiddel', 'wasmiddel', 'schoonmaak', 'doekjes', 'vuilniszakken', 'keukenrol', 'wc-papier', 'papier', 'folie', 'plastic', 'zakken'] },
-  ]
+  // Build active concepts purely from current API categories (your DB).
+  // Terms = seed (when token pattern matches) + product names in that category from API.
+  // Custom/renamed categories: seed only if tokens match; always add product names from DB.
+  const getActiveConcepts = (): { categoryId: string; productTerms: string[] }[] => {
+    const active: { categoryId: string; productTerms: string[] }[] = []
+    for (const category of categories) {
+      const tokens = toCategoryTokens(category.name)
+      const terms = new Set<string>()
+      const seed = CATEGORY_CONCEPT_PRODUCTS.find((c) => tokensEqual(c.canonicalTokens, tokens))
+      if (seed) seed.productTerms.forEach((t) => terms.add(t))
+      for (const p of products) {
+        if (p.category_id !== category.id) continue
+        const n = p.name.toLowerCase().trim()
+        if (n.length >= 3) terms.add(n)
+        const s = toSingular(n)
+        if (s !== n && s.length >= 3) terms.add(s)
+      }
+      const list = [...terms]
+      if (list.length) active.push({ categoryId: category.id, productTerms: list })
+    }
+    return active
+  }
 
   // Auto-select category based on product name
   const findCategoryByName = (productName: string): string | null => {
@@ -327,25 +337,20 @@ export default function ProductForm({
       if ((normalizedName === categoryFirstWord || singularName === categoryFirstWord) && normalizedName.length >= 3) return category.id
     }
 
-    // SECOND: Keyword → concept → match category by tokens (e.g. broccoli → Groente & Fruit / Fruit & Groente)
+    // SECOND: Concept list – match product terms against active concepts (from current DB categories)
+    const activeConcepts = getActiveConcepts()
     const wordBoundaryRegex = (word: string) =>
       new RegExp(`(^|\\W)${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\W|$)`, 'i')
 
-    for (const { canonicalTokens, keywords } of CATEGORY_CONCEPTS) {
-      for (const keyword of keywords) {
-        if (keyword.length < 3) continue
-        const keywordRegex = wordBoundaryRegex(keyword)
-        if (keywordRegex.test(normalizedName) || keywordRegex.test(singularName)) {
-          const category = categories.find((cat) => tokensEqual(toCategoryTokens(cat.name), canonicalTokens))
-          if (category) return category.id
-        }
-        const keywordSingular = toSingular(keyword)
-        if (keywordSingular !== keyword && keywordSingular.length >= 3) {
-          const keywordSingularRegex = wordBoundaryRegex(keywordSingular)
-          if (keywordSingularRegex.test(normalizedName) || keywordSingularRegex.test(singularName)) {
-            const category = categories.find((cat) => tokensEqual(toCategoryTokens(cat.name), canonicalTokens))
-            if (category) return category.id
-          }
+    for (const { categoryId, productTerms } of activeConcepts) {
+      for (const term of productTerms) {
+        if (term.length < 3) continue
+        const termRegex = wordBoundaryRegex(term)
+        if (termRegex.test(normalizedName) || termRegex.test(singularName)) return categoryId
+        const termSingular = toSingular(term)
+        if (termSingular !== term && termSingular.length >= 3) {
+          const termSingularRegex = wordBoundaryRegex(termSingular)
+          if (termSingularRegex.test(normalizedName) || termSingularRegex.test(singularName)) return categoryId
         }
       }
     }
@@ -437,7 +442,7 @@ export default function ProductForm({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, categories])
+  }, [name, categories, products])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

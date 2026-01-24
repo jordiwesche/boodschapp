@@ -194,6 +194,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
         <ProductForm
           product={editingProduct || undefined}
           categories={categories}
+          products={products}
           onSave={handleSave}
           onCancel={handleCancel}
           onDelete={editingProduct ? handleDeleteFromForm : undefined}
