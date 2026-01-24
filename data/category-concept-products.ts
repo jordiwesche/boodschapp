@@ -28,7 +28,7 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
     ],
   },
   {
-    canonicalTokens: ['vlees', 'vis'],
+    canonicalTokens: ['vlees', 'vis', 'vega'],
     productTerms: [
       'vlees', 'kip', 'kalkoen', 'vis', 'zalm', 'forel', 'kabeljauw', 'tilapia', 'pangasius', 'tonijn',
       'haring', 'makreel', 'sardines', 'ansjovis', 'garnalen', 'mosselen', 'krab', 'rundvlees', 'varkensvlees',
@@ -74,7 +74,7 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
     ],
   },
   {
-    canonicalTokens: ['droge', 'kruidenierswaren'],
+    canonicalTokens: ['droog', 'kruiden', 'pasta', 'beleg', 'sauzen', 'oosters'],
     productTerms: [
       'pasta', 'spaghetti', 'penne', 'macaroni', 'lasagne', 'fusilli', 'tagliatelle', 'noedels', 'rijst',
       'zilvervliesrijst', 'basmati', 'jasmijnrijst', 'couscous', 'bulgur', 'quinoa', 'gierst', 'havermout',
@@ -99,7 +99,7 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
     ],
   },
   {
-    canonicalTokens: ['houdbare', 'producten'],
+    canonicalTokens: ['houdbaar'],
     productTerms: [
       'blik', 'conserven', 'kidneybonen', 'kikkererwten', 'zwarte bonen', 'maïs', 'tomaat', 'tomatensaus',
       'ansjovis', 'tonijn', 'zalm', 'soep', 'groenten', 'fruit op siroop', 'kokosmelk', 'gecondenseerde melk',
@@ -124,7 +124,7 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
     ],
   },
   {
-    canonicalTokens: ['artikelen', 'huishoudelijke'],
+    canonicalTokens: ['huishouden', 'huishoudelijke'],
     productTerms: [
       'afwasmiddel', 'vaatwastabletten', 'glansspoeler', 'wasmiddel', 'wasverzachter', 'bleekmiddel',
       'allesreiniger', 'schoonmaakazijn', 'doekjes', 'keukenrol', 'wc-papier', 'vuilniszakken', 'aluminiumfolie',
