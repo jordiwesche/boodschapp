@@ -64,7 +64,7 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
   {
     canonicalTokens: ['dranken'],
     productTerms: [
-      'koffie', 'thee', 'water', 'mineraalwater', 'spa', 'bronwater', 'sap', 'appelsap', 'sinaasappelsap',
+      'water', 'mineraalwater', 'spa', 'bronwater', 'sap', 'appelsap', 'sinaasappelsap',
       'multivitamine', 'frisdrank', 'cola', 'fanta', 'sprite', 'ice tea', 'limonade', 'smoothie', 'fruitsap',
       'groentesap', 'bier', 'wijn', 'champagne', 'prosecco', 'likeur', 'whisky', 'rum', 'gin', 'wodka',
       'cocktail', 'tonic', 'energydrank', 'sportdrank', 'chocomel', 'vruchtensap', 'tomaten sap', 'grapefruitsap',
@@ -95,7 +95,7 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'abrikozen', 'vijgen', 'dadels', 'pruimen', 'noten', 'amandelen', 'cashew', 'walnoten', 'hazelnoten',
       'pistachenoten', 'zonnebloempitten', 'pompoenpitten', 'sesamzaad', 'lijnzaad', 'chiazaden', 'chips',
       'nootjes', 'crackers', 'biscuits', 'snoep', 'winegums', 'drop', 'ontbijtkoek', 'eierkoeken', 'beschuit',
-      'knäckebröd', 'rice cakes',
+      'knäckebröd', 'rice cakes','koffie', 'thee', 'koffiebonen',
     ],
   },
   {
