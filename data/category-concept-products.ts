@@ -28,7 +28,7 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
     ],
   },
   {
-    canonicalTokens: ['vlees', 'vis', 'vega'],
+    canonicalTokens: ['vlees', 'vis', 'vega', 'vers'],
     productTerms: [
       'vlees', 'kip', 'kalkoen', 'vis', 'zalm', 'forel', 'kabeljauw', 'tilapia', 'pangasius', 'tonijn',
       'haring', 'makreel', 'sardines', 'ansjovis', 'garnalen', 'mosselen', 'krab', 'rundvlees', 'varkensvlees',
@@ -74,7 +74,7 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
     ],
   },
   {
-    canonicalTokens: ['droog', 'kruiden', 'pasta', 'beleg', 'sauzen', 'oosters'],
+    canonicalTokens: ['droog', 'houdbaar', 'pasta', 'beleg', 'sauzen', 'oosters'],
     productTerms: [
       'pasta', 'spaghetti', 'penne', 'macaroni', 'lasagne', 'fusilli', 'tagliatelle', 'noedels', 'rijst',
       'zilvervliesrijst', 'basmati', 'jasmijnrijst', 'couscous', 'bulgur', 'quinoa', 'gierst', 'havermout',
@@ -83,7 +83,14 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'zonnebloemolie', 'azijn', 'balsamico', 'mosterd', 'ketchup', 'mayonaise', 'sauzen', 'bouillon', 'soep',
       'kruiden', 'specerijen', 'zout', 'peper', 'paprikapoeder', 'kerrie', 'oregano', 'basilicum', 'peterselie',
       'dille', 'bessen', 'nootmuskaat', 'kaneel', 'gember', 'knoflookpoeder', 'ui poeder', 'taco mix',
-      'nasi mix', 'sate', 'ketjap', 'sojasaus', 'worcestersaus', 'tabasco',
+      'nasi mix', 'sate', 'ketjap', 'sojasaus', 'worcestersaus', 'tabasco', 'blik', 'conserven', 'kidneybonen', 'kikkererwten', 'zwarte bonen', 'maïs', 'tomaat', 'tomatensaus',
+      'ansjovis', 'tonijn', 'zalm', 'soep', 'groenten', 'fruit op siroop', 'kokosmelk', 'gecondenseerde melk',
+      'jam', 'confituur', 'honing', 'pindakaas', 'chocolade', 'chocoladepasta', 'nutella', 'snoep', 'winegums',
+      'drop', 'chips', 'nootjes', 'crackers', 'biscuits', 'ontbijtkoek', 'mueslireep', 'cruesli', 'cornflakes',
+      'muesli', 'ontbijtgranen', 'havermout', 'gedroogd fruit', 'rozijnen', 'abrikozen', 'vijgen', 'dadels',
+      'pruimen', 'noten', 'amandelen', 'cashew', 'walnoten', 'hazelnoten', 'pistachenoten', 'zonnebloempitten',
+      'pompoenpitten', 'sesamzaad', 'lijnzaad', 'chiazaden', 'eierkoeken', 'beschuit',
+      'knäckebröd', 'rice cakes',
     ],
   },
   {
@@ -98,21 +105,9 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'pizzadeeg', 'bladerdeeg', 'croissantdeeg', 'cake', 'brownie', 'wafels', 'pannenkoeken',
     ],
   },
+
   {
-    canonicalTokens: ['houdbaar'],
-    productTerms: [
-      'blik', 'conserven', 'kidneybonen', 'kikkererwten', 'zwarte bonen', 'maïs', 'tomaat', 'tomatensaus',
-      'ansjovis', 'tonijn', 'zalm', 'soep', 'groenten', 'fruit op siroop', 'kokosmelk', 'gecondenseerde melk',
-      'jam', 'confituur', 'honing', 'pindakaas', 'chocolade', 'chocoladepasta', 'nutella', 'snoep', 'winegums',
-      'drop', 'chips', 'nootjes', 'crackers', 'biscuits', 'ontbijtkoek', 'mueslireep', 'cruesli', 'cornflakes',
-      'muesli', 'ontbijtgranen', 'havermout', 'gedroogd fruit', 'rozijnen', 'abrikozen', 'vijgen', 'dadels',
-      'pruimen', 'noten', 'amandelen', 'cashew', 'walnoten', 'hazelnoten', 'pistachenoten', 'zonnebloempitten',
-      'pompoenpitten', 'sesamzaad', 'lijnzaad', 'chiazaden', 'eierkoeken', 'beschuit',
-      'knäckebröd', 'rice cakes',
-    ],
-  },
-  {
-    canonicalTokens: ['persoonlijke', 'verzorging'],
+    canonicalTokens: ['huishouden', 'verzorging'],
     productTerms: [
       'shampoo', 'conditioner', 'zeep', 'douchegel', 'handzeep', 'bodylotion', 'bodycrème', 'deodorant',
       'tandpasta', 'mondwater', 'tandenstokers', 'flosdraad', 'scheerschuim', 'after shave', 'gezichtscreme',
@@ -120,13 +115,7 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'zakdoekjes', 'maandverband', 'tampons', 'inlegkruisjes', 'billendoekjes', 'luiers', 'babydoekjes',
       'babyolie', 'baby shampoo', 'gezichtsmasker', 'scrub', 'toner', 'serum', 'oogcreme', 'handcreme',
       'voetcreme', 'nagellak', 'nagellakremover', 'parfum', 'eau de toilette', 'haargel', 'haarspray',
-      'ontsmettingsmiddel', 'pleisters', 'verband', 'thermometer', 'neusspray', 'hoestdrank', 'vitamines',
-    ],
-  },
-  {
-    canonicalTokens: ['huishouden', 'huishoudelijke'],
-    productTerms: [
-      'afwasmiddel', 'vaatwastabletten', 'glansspoeler', 'wasmiddel', 'wasverzachter', 'bleekmiddel',
+      'ontsmettingsmiddel', 'pleisters', 'verband', 'thermometer', 'neusspray', 'hoestdrank', 'vitamines', 'afwasmiddel', 'vaatwastabletten', 'glansspoeler', 'wasmiddel', 'wasverzachter', 'bleekmiddel',
       'allesreiniger', 'schoonmaakazijn', 'doekjes', 'keukenrol', 'wc-papier', 'vuilniszakken', 'aluminiumfolie',
       'vershoudfolie', 'bakpapier', 'schoonmaakdoekjes', 'sponsjes', 'bezem', 'dweil', 'stofzuigerzakken',
       'luchtverfrisser', 'afwasborstel', 'wasteil', 'emmer', 'handschoenen', 'microvezeldoek', 'strijkijzer',
@@ -135,4 +124,5 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'lucifers', 'batterijen', 'ledlamp', 'glazenreiniger', 'bloemenvoeding', 'potgrond',
     ],
   },
+
 ]
