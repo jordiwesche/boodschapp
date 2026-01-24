@@ -295,18 +295,19 @@ export default function ProductForm({
       .sort()
   }
 
-  const tokensEqual = (a: string[], b: string[]): boolean =>
-    a.length === b.length && a.every((t, i) => t === b[i])
+  // Match if there is any overlap between category tokens and concept tokens
+  const tokensMatch = (categoryTokens: string[], conceptTokens: string[]): boolean =>
+    categoryTokens.some((t) => conceptTokens.includes(t))
 
   // Build active concepts purely from current API categories (your DB).
-  // Terms = seed (when token pattern matches) + product names in that category from API.
+  // Terms = seed (when tokens overlap) + product names in that category from API.
   // Custom/renamed categories: seed only if tokens match; always add product names from DB.
   const getActiveConcepts = (): { categoryId: string; productTerms: string[] }[] => {
     const active: { categoryId: string; productTerms: string[] }[] = []
     for (const category of categories) {
       const tokens = toCategoryTokens(category.name)
       const terms = new Set<string>()
-      const seed = CATEGORY_CONCEPT_PRODUCTS.find((c) => tokensEqual(c.canonicalTokens, tokens))
+      const seed = CATEGORY_CONCEPT_PRODUCTS.find((c) => tokensMatch(tokens, c.canonicalTokens))
       if (seed) seed.productTerms.forEach((t) => terms.add(t))
       for (const p of products) {
         if (p.category_id !== category.id) continue
