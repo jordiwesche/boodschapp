@@ -24,7 +24,7 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'bloemkool', 'spruiten', 'spruitjes', 'boerenkool', 'spinazie', 'sla', 'rucola', 'andijvie', 'witlof',
       'wortel', 'pastinaak', 'bleekselderij', 'prei', 'ui', 'knoflook', 'radijs', 'rode biet', 'pompoen',
       'sperziebonen', 'prinsessenbonen', 'slabonen', 'snijbonen', 'doperwten', 'sugarsnaps', 'maïs', 'mais',
-      'champignons', 'oesterzwam', 'groente', 'fruit',
+      'champignons', 'oesterzwam', 'groente', 'fruit', 'bessen', 'aardbei', 'framboos', 'braam', 'blauwe bes',
     ],
   },
   {
@@ -80,7 +80,7 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'zilvervliesrijst', 'basmati', 'jasmijnrijst', 'couscous', 'bulgur', 'quinoa', 'olie', 'olijfolie',
       'zonnebloemolie', 'azijn', 'balsamico', 'mosterd', 'ketchup', 'mayonaise', 'sauzen', 'bouillon', 'soep',
       'kruiden', 'specerijen', 'zout', 'peper', 'paprikapoeder', 'kerrie', 'oregano', 'basilicum', 'peterselie',
-      'dille', 'bessen', 'nootmuskaat', 'kaneel', 'gember', 'knoflookpoeder', 'ui poeder', 'taco mix',
+      'dille', 'nootmuskaat', 'kaneel', 'gember', 'knoflookpoeder', 'ui poeder', 'taco mix',
       'nasi mix', 'sate', 'ketjap', 'sojasaus', 'worcestersaus', 'tabasco', 'kokosmelk', 'hummus', 'tahin',
       'pindakaas', 'jam', 'marmelade', 'chocoladepasta', 'nutella', 'appelstroop', 'honing', 'stroop',
     ],
