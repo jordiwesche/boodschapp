@@ -188,11 +188,6 @@ export default function ProductForm({
   // Convert plural to singular (Dutch)
   const toSingular = (word: string): string => {
     const lower = word.toLowerCase()
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:189',message:'toSingular called',data:{input:word,lower},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
-    
-    // Special cases for irregular plurals
     const irregularPlurals: Record<string, string> = {
       'peren': 'peer',
       'appels': 'appel',
@@ -204,38 +199,15 @@ export default function ProductForm({
       'wortelen': 'wortel',
       'komkommers': 'komkommer',
     }
-    if (irregularPlurals[lower]) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:200',message:'toSingular: irregular plural',data:{input:word,result:irregularPlurals[lower]},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      return irregularPlurals[lower]
-    }
-    
-    // Common Dutch plural patterns
+    if (irregularPlurals[lower]) return irregularPlurals[lower]
     if (lower.endsWith('en') && lower.length > 4) {
-      // peren -> peer, appels -> appel
       const withoutEn = lower.slice(0, -2)
-      // Check if it ends with double consonant (e.g., "peren" -> "peer" not "per")
-      if (withoutEn.length >= 3) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:210',message:'toSingular: endsWith en',data:{input:word,result:withoutEn},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-        return withoutEn
-      }
+      if (withoutEn.length >= 3) return withoutEn
     }
     if (lower.endsWith('s') && lower.length > 3) {
-      // appels -> appel, bananen -> banaan (but keep if it's part of the word)
       const withoutS = lower.slice(0, -1)
-      if (withoutS.length >= 3) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:218',message:'toSingular: endsWith s',data:{input:word,result:withoutS},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-        return withoutS
-      }
+      if (withoutS.length >= 3) return withoutS
     }
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:223',message:'toSingular: no change',data:{input:word,result:lower},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
     return lower
   }
 
@@ -309,120 +281,79 @@ export default function ProductForm({
     return null
   }
 
+  // Normalize category name to tokens for concept-based matching (e.g. "Fruit & Groente" → ['fruit','groente'])
+  const toCategoryTokens = (name: string): string[] => {
+    const stopwords = new Set(['en', 'de', 'het', '&'])
+    return name
+      .toLowerCase()
+      .split(/[\s&]+/)
+      .filter((t) => t.length > 0 && !stopwords.has(t))
+      .sort()
+  }
+
+  const tokensEqual = (a: string[], b: string[]): boolean =>
+    a.length === b.length && a.every((t, i) => t === b[i])
+
+  // Concept-based config: match on logical relationship (keywords) + token-equivalent category names
+  const CATEGORY_CONCEPTS: { canonicalTokens: string[]; keywords: string[] }[] = [
+    {
+      canonicalTokens: ['fruit', 'groente'],
+      keywords: ['appel', 'peer', 'banaan', 'sinaasappel', 'citroen', 'druiven', 'aardbei', 'perzik', 'kersen', 'kiwi', 'watermeloen', 'tomaat', 'avocado', 'komkommer', 'wortel', 'maïs', 'peper', 'paprika', 'bladgroente', 'broccoli', 'knoflook', 'ui', 'aardappel', 'zoete aardappel', 'groente', 'fruit', 'sla', 'spinazie', 'wortelen', 'courgette', 'prei', 'bleekselderij'],
+    },
+    { canonicalTokens: ['vlees', 'vis'], keywords: ['vlees', 'kip', 'vis', 'zalm', 'tonijn', 'kabeljauw', 'haring', 'makreel', 'rundvlees', 'varkensvlees', 'lam', 'kalkoen', 'worst', 'ham', 'spek', 'gehakt', 'biefstuk', 'karbonade', 'rib', 'filet'] },
+    { canonicalTokens: ['zuivel'], keywords: ['melk', 'kaas', 'yoghurt', 'kwark', 'boter', 'room', 'slagroom', 'crème', 'zuivel', 'eieren', 'ei', 'eier', 'mozzarella', 'cheddar', 'gouda', 'brie', 'feta'] },
+    { canonicalTokens: ['bakkerij', 'brood'], keywords: ['brood', 'croissant', 'stokbrood', 'pretzel', 'bagel', 'muffin', 'pancake', 'wafel', 'koek', 'koekje', 'cake', 'taart', 'gebak', 'donut', 'broodje'] },
+    { canonicalTokens: ['dranken'], keywords: ['koffie', 'thee', 'water', 'sap', 'frisdrank', 'cola', 'bier', 'wijn', 'champagne', 'whisky', 'cocktail', 'smoothie', 'limonade', 'drank', 'drink', 'beverage'] },
+    { canonicalTokens: ['droge', 'kruidenierswaren'], keywords: ['pasta', 'rijst', 'noedels', 'spaghetti', 'macaroni', 'couscous', 'quinoa', 'bulgur', 'meel', 'bloem', 'suiker', 'zout', 'peper', 'kruiden', 'specerijen', 'olie', 'azijn', 'saus', 'ketchup', 'mayonaise', 'mosterd'] },
+    { canonicalTokens: ['diepvries'], keywords: ['diepvries', 'ijs', 'frozen', 'ijsje', 'softijs', 'pizza', 'friet', 'nuggets', 'groente', 'fruit'] },
+    { canonicalTokens: ['houdbare', 'producten'], keywords: ['blik', 'pot', 'conserven', 'ingeblikt', 'jam', 'honing', 'pindakaas', 'chocolade', 'snoep', 'chips', 'crackers', 'biscuits', 'ontbijtgranen', 'muesli'] },
+    { canonicalTokens: ['persoonlijke', 'verzorging'], keywords: ['shampoo', 'zeep', 'tandpasta', 'deodorant', 'douchegel', 'handzeep', 'tissues', 'wattenschijfjes', 'maandverband', 'tampons'] },
+    { canonicalTokens: ['artikelen', 'huishoudelijke'], keywords: ['afwasmiddel', 'wasmiddel', 'schoonmaak', 'doekjes', 'vuilniszakken', 'keukenrol', 'wc-papier', 'papier', 'folie', 'plastic', 'zakken'] },
+  ]
+
   // Auto-select category based on product name
   const findCategoryByName = (productName: string): string | null => {
     if (!productName || productName.trim().length === 0) return null
-    if (categories.length === 0) return null // Categories not loaded yet
-    
+    if (categories.length === 0) return null
+
     const normalizedName = productName.toLowerCase().trim()
     const singularName = toSingular(normalizedName)
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:281',message:'findCategoryByName called',data:{productName,normalizedName,singularName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-    // #endregion
-    
-    // FIRST: Try direct matching with category names (e.g., "brood" matches "Brood & Bakkerij")
+
+    // FIRST: Direct match – product name in category name or first word (e.g. "brood" → "Brood & Bakkerij")
     for (const category of categories) {
       const normalizedCategoryName = category.name.toLowerCase()
-      // Check if product name is part of category name (min 3 chars for meaningful match)
-      if ((normalizedCategoryName.includes(normalizedName) || normalizedCategoryName.includes(singularName)) && normalizedName.length >= 3) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:293',message:'Direct category match found',data:{productName,categoryName:category.name,categoryId:category.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
-        return category.id
-      }
-      // Check if category name starts with product name (min 3 chars)
+      if ((normalizedCategoryName.includes(normalizedName) || normalizedCategoryName.includes(singularName)) && normalizedName.length >= 3) return category.id
       const categoryFirstWord = normalizedCategoryName.split(' ')[0]
-      if ((normalizedName === categoryFirstWord || singularName === categoryFirstWord) && normalizedName.length >= 3) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:297',message:'Category first word match',data:{productName,categoryName:category.name,categoryId:category.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
-        return category.id
-      }
+      if ((normalizedName === categoryFirstWord || singularName === categoryFirstWord) && normalizedName.length >= 3) return category.id
     }
-    
-    // SECOND: Try keyword matching (with both plural and singular)
-    const categoryKeywords: Record<string, string[]> = {
-      'Groente & Fruit': ['appel', 'peer', 'banaan', 'sinaasappel', 'citroen', 'druiven', 'aardbei', 'perzik', 'kersen', 'kiwi', 'watermeloen', 'tomaat', 'avocado', 'komkommer', 'wortel', 'maïs', 'peper', 'paprika', 'bladgroente', 'broccoli', 'knoflook', 'ui', 'aardappel', 'zoete aardappel', 'groente', 'fruit', 'sla', 'spinazie', 'wortelen', 'tomaat', 'komkommer'],
-      'Vlees & Vis': ['vlees', 'kip', 'vis', 'zalm', 'tonijn', 'kabeljauw', 'haring', 'makreel', 'rundvlees', 'varkensvlees', 'lam', 'kalkoen', 'worst', 'ham', 'spek', 'gehakt', 'biefstuk', 'karbonade', 'rib', 'filet'],
-      'Zuivel': ['melk', 'kaas', 'yoghurt', 'kwark', 'boter', 'room', 'slagroom', 'crème', 'zuivel', 'eieren', 'ei', 'eier', 'mozzarella', 'cheddar', 'gouda', 'brie', 'feta'],
-      'Brood & Bakkerij': ['brood', 'croissant', 'stokbrood', 'pretzel', 'bagel', 'muffin', 'pancake', 'wafel', 'koek', 'koekje', 'cake', 'taart', 'gebak', 'donut', 'broodje'],
-      'Dranken': ['koffie', 'thee', 'water', 'sap', 'frisdrank', 'cola', 'bier', 'wijn', 'champagne', 'whisky', 'cocktail', 'smoothie', 'limonade', 'drank', 'drink', 'beverage'],
-      'Droge Kruidenierswaren': ['pasta', 'rijst', 'noedels', 'spaghetti', 'macaroni', 'couscous', 'quinoa', 'bulgur', 'meel', 'bloem', 'suiker', 'zout', 'peper', 'kruiden', 'specerijen', 'olie', 'azijn', 'saus', 'ketchup', 'mayonaise', 'mosterd'],
-      'Diepvries': ['diepvries', 'ijs', 'frozen', 'ijsje', 'softijs', 'pizza', 'friet', 'nuggets', 'groente', 'fruit'],
-      'Houdbare Producten': ['blik', 'pot', 'conserven', 'ingeblikt', 'jam', 'honing', 'pindakaas', 'chocolade', 'snoep', 'chips', 'crackers', 'biscuits', 'ontbijtgranen', 'muesli'],
-      'Persoonlijke Verzorging': ['shampoo', 'zeep', 'tandpasta', 'deodorant', 'douchegel', 'handzeep', 'tissues', 'wattenschijfjes', 'maandverband', 'tampons'],
-      'Huishoudelijke Artikelen': ['afwasmiddel', 'wasmiddel', 'schoonmaak', 'doekjes', 'vuilniszakken', 'keukenrol', 'wc-papier', 'papier', 'folie', 'plastic', 'zakken']
-    }
-    
-    // Try to find matching category using keywords (check both plural and singular)
-    // Use word boundary matching to avoid substring matches (e.g., "ei" in "aardbei")
-    const wordBoundaryRegex = (word: string) => {
-      // Match whole word or at word boundaries (start/end of string, or non-word characters)
-      return new RegExp(`(^|\\W)${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\W|$)`, 'i')
-    }
-    
-    for (const [categoryName, keywords] of Object.entries(categoryKeywords)) {
+
+    // SECOND: Keyword → concept → match category by tokens (e.g. broccoli → Groente & Fruit / Fruit & Groente)
+    const wordBoundaryRegex = (word: string) =>
+      new RegExp(`(^|\\W)${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\W|$)`, 'i')
+
+    for (const { canonicalTokens, keywords } of CATEGORY_CONCEPTS) {
       for (const keyword of keywords) {
-        // Skip very short keywords (less than 3 chars) to avoid false matches
         if (keyword.length < 3) continue
-        
-        // Check if product name contains keyword as whole word (both original and singular)
         const keywordRegex = wordBoundaryRegex(keyword)
         if (keywordRegex.test(normalizedName) || keywordRegex.test(singularName)) {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:333',message:'Keyword match found (normalized)',data:{productName,normalizedName,singularName,keyword,categoryName},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
-          // Find category ID
-          const category = categories.find(cat => cat.name === categoryName)
-          if (category) {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:337',message:'Category found and returning',data:{productName,keyword,categoryName,categoryId:category.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
-            // #endregion
-            return category.id
-          } else {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:340',message:'Category not found in categories array',data:{productName,keyword,categoryName,categoriesCount:categories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'C'})}).catch(()=>{});
-            // #endregion
-          }
+          const category = categories.find((cat) => tokensEqual(toCategoryTokens(cat.name), canonicalTokens))
+          if (category) return category.id
         }
-        // Also check if keyword singular is in product name (for partial matches)
         const keywordSingular = toSingular(keyword)
         if (keywordSingular !== keyword && keywordSingular.length >= 3) {
           const keywordSingularRegex = wordBoundaryRegex(keywordSingular)
           if (keywordSingularRegex.test(normalizedName) || keywordSingularRegex.test(singularName)) {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:348',message:'Keyword match found (singular)',data:{productName,normalizedName,singularName,keyword,keywordSingular,categoryName},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
-            // #endregion
-            const category = categories.find(cat => cat.name === categoryName)
-            if (category) {
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:352',message:'Category found and returning (singular)',data:{productName,keywordSingular,categoryName,categoryId:category.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'})}).catch(()=>{});
-              // #endregion
-              return category.id
-            } else {
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:356',message:'Category not found in categories array (singular)',data:{productName,keywordSingular,categoryName,categoriesCount:categories.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'C'})}).catch(()=>{});
-              // #endregion
-            }
+            const category = categories.find((cat) => tokensEqual(toCategoryTokens(cat.name), canonicalTokens))
+            if (category) return category.id
           }
         }
       }
     }
-    
-    // THIRD: Only use "Overig" if we've tried everything and nothing matches
-    // Don't use Overig too quickly - only as last resort
-    const overigCategory = categories.find(cat => cat.name === 'Overig')
-    if (overigCategory) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:365',message:'No match found, using Overig',data:{productName,normalizedName,singularName},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
-      return overigCategory.id
-    }
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ProductForm.tsx:369',message:'No category found, returning null',data:{productName,normalizedName,singularName},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
+
+    // THIRD: Overig only as last resort
+    const overigCategory = categories.find((cat) => cat.name === 'Overig')
+    if (overigCategory) return overigCategory.id
+
     return null
   }
 
