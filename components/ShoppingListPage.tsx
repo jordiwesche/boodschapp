@@ -51,6 +51,7 @@ export default function ShoppingListPage() {
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [keepSuggestionsOpen, setKeepSuggestionsOpen] = useState(false)
 
   // Fetch shopping list items
   const fetchItems = async () => {
@@ -94,6 +95,11 @@ export default function ShoppingListPage() {
     // Don't update searchQuery here - it's already updated by onChange
     // This prevents clearing results while user is typing
 
+    // If user starts typing, close suggestions
+    if (query && query.trim().length > 0) {
+      setKeepSuggestionsOpen(false)
+    }
+
     if (!query || query.trim().length < 2) {
       setSearchResults([])
       return
@@ -122,6 +128,12 @@ export default function ShoppingListPage() {
       console.error('Error searching products:', error)
       // Don't clear results on error - keep previous results visible
     }
+  }
+
+  const handleCloseSuggestions = () => {
+    setKeepSuggestionsOpen(false)
+    setIsSearchActive(false)
+    setSearchQuery('')
   }
 
   // Set up realtime subscription for shopping list items
@@ -258,6 +270,39 @@ export default function ShoppingListPage() {
     }
   }
 
+  const handleClearChecked = async () => {
+    const checkedCount = items.filter((item) => item.is_checked).length
+    
+    if (checkedCount === 0) {
+      return
+    }
+
+    const confirmed = confirm(
+      `Weet je zeker dat je alle ${checkedCount} afgevinkte item${checkedCount > 1 ? 's' : ''} wilt verwijderen?`
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      const response = await fetch('/api/shopping-list/clear-checked', {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        await fetchItems()
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Error clearing checked items:', errorData)
+        alert('Er is een fout opgetreden bij het verwijderen van de items.')
+      }
+    } catch (error) {
+      console.error('Error clearing checked items:', error)
+      alert('Er is een fout opgetreden bij het verwijderen van de items.')
+    }
+  }
+
   const handleSuggestionSelect = async (suggestion: Suggestion) => {
     // #region agent log
     fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:186',message:'handleSuggestionSelect entry',data:{suggestionId:suggestion.id,suggestionName:suggestion.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
@@ -316,8 +361,11 @@ export default function ShoppingListPage() {
         fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:225',message:'Item created successfully',data:{itemId:responseData.item?.id,productId:responseData.item?.product_id,productName:responseData.item?.product_name,emoji:responseData.item?.emoji},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
         // #endregion
         await fetchItems()
-        setSearchQuery('')
-        setIsSearchActive(false)
+        await fetchSuggestions() // Refresh suggestions to remove the added product
+        // Keep suggestions open after adding
+        setKeepSuggestionsOpen(true)
+        setIsSearchActive(true) // Keep search active to show suggestions
+        setSearchQuery('') // Clear search query
       } else {
         const errorData = await response.json()
         // #region agent log
@@ -494,8 +542,10 @@ export default function ShoppingListPage() {
   // Show suggestions if:
   // 1. List is empty (always show suggestions when not searching)
   // 2. OR search is active AND (no query OR query too short) - but NOT if there's a search query >= 2 chars
+  // 3. OR keepSuggestionsOpen is true (after adding from suggestions)
   const showSearchResults = isSearchActive && searchQuery && searchQuery.trim().length >= 2
   const showSuggestions = 
+    keepSuggestionsOpen ||
     (!showSearchResults && items.length === 0) || 
     (!showSearchResults && isSearchActive && (!searchQuery || searchQuery.trim().length < 2))
   
@@ -528,6 +578,7 @@ export default function ShoppingListPage() {
           onUncheck={handleUncheck}
           onDelete={handleDelete}
           onUpdateDescription={handleUpdateDescription}
+          onClearChecked={handleClearChecked}
         />
       </main>
 
@@ -544,7 +595,8 @@ export default function ShoppingListPage() {
         <SuggestionBlock
           suggestions={suggestions}
           onSelect={handleSuggestionSelect}
-          isVisible={true}
+          onClose={handleCloseSuggestions}
+          isVisible={showSuggestions}
         />
       )}
 

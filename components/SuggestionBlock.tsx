@@ -1,5 +1,7 @@
 'use client'
 
+import { X } from 'lucide-react'
+
 interface Suggestion {
   id: string
   emoji: string
@@ -10,12 +12,14 @@ interface Suggestion {
 interface SuggestionBlockProps {
   suggestions: Suggestion[]
   onSelect: (suggestion: Suggestion) => void
+  onClose: () => void
   isVisible: boolean
 }
 
 export default function SuggestionBlock({
   suggestions,
   onSelect,
+  onClose,
   isVisible,
 }: SuggestionBlockProps) {
   if (!isVisible || suggestions.length === 0) {
@@ -25,8 +29,17 @@ export default function SuggestionBlock({
   return (
     <div className="fixed bottom-32 left-0 right-0 z-30 px-4 transition-opacity duration-200">
       <div className="mx-auto max-w-md">
-        <div className="rounded-lg bg-white p-3 shadow-lg">
-          <div className="flex flex-wrap gap-2">
+        <div className="rounded-lg bg-white p-3 shadow-lg relative">
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Sluiten"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          
+          <div className="flex flex-wrap gap-2 pr-6">
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion.id}

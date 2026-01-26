@@ -1,5 +1,6 @@
 'use client'
 
+import { CheckSquare } from 'lucide-react'
 import ShoppingListItem from './ShoppingListItem'
 
 interface ShoppingListItemData {
@@ -26,6 +27,7 @@ interface ShoppingListProps {
   onUncheck?: (id: string) => void
   onDelete: (id: string) => void
   onUpdateDescription: (id: string, description: string) => void
+  onClearChecked?: () => void
 }
 
 export default function ShoppingList({
@@ -34,7 +36,9 @@ export default function ShoppingList({
   onUncheck,
   onDelete,
   onUpdateDescription,
+  onClearChecked,
 }: ShoppingListProps) {
+  const checkedItemsCount = items.filter((item) => item.is_checked).length
   // Separate checked and unchecked items
   const uncheckedItems = items.filter((item) => !item.is_checked)
   const checkedItems = items.filter((item) => item.is_checked)
@@ -110,6 +114,20 @@ export default function ShoppingList({
 
   return (
     <div className="pb-32">
+      {/* Clear checked items button */}
+      {checkedItemsCount > 0 && onClearChecked && (
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={onClearChecked}
+            className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
+            aria-label="Wis alle afgevinkte items"
+          >
+            <CheckSquare className="h-4 w-4" />
+            <span>Wis afgevinkte items ({checkedItemsCount})</span>
+          </button>
+        </div>
+      )}
+      
       {allSortedCategories.map((group) => (
         <div key={group.category?.id || 'overig'} className="mb-6">
           {/* Category header */}
