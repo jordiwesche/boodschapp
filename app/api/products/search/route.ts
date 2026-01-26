@@ -90,7 +90,20 @@ export async function GET(request: NextRequest) {
     })
 
     // Perform fuzzy search
-    const searchResults = searchProducts(transformedProducts, query)
+    // Extract just the product name part (before any quantity/annotation)
+    // This allows searching "Bananen 12x" and still finding "Bananen"
+    const queryTrimmed = query.trim()
+    // Try to extract product name by removing common quantity patterns
+    let searchQuery = queryTrimmed
+    const quantityPattern = /\s+\d+[xX]?\s*$/
+    if (quantityPattern.test(searchQuery)) {
+      // Remove quantity suffix for search
+      searchQuery = searchQuery.replace(quantityPattern, '').trim()
+    }
+    // Also try removing parentheses content
+    searchQuery = searchQuery.replace(/\s*\([^)]*\)\s*$/, '').trim()
+    
+    const searchResults = searchProducts(transformedProducts, searchQuery || queryTrimmed)
 
     // Transform response with category info
     const resultsWithCategory = searchResults.map((product) => {

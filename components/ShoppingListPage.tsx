@@ -90,7 +90,8 @@ export default function ShoppingListPage() {
 
   // Search products
   const handleSearch = async (query: string) => {
-    setSearchQuery(query)
+    // Don't update searchQuery here - it's already updated by onChange
+    // This prevents clearing results while user is typing
 
     if (!query || query.trim().length < 2) {
       setSearchResults([])
@@ -101,6 +102,9 @@ export default function ShoppingListPage() {
       const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`)
       if (response.ok) {
         const data = await response.json()
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:104',message:'Search results received',data:{query,resultsCount:data.products?.length,results:data.products?.map((p:any)=>({id:p.id,name:p.name}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+        // #endregion
         setSearchResults(data.products || [])
       }
     } catch (error) {
@@ -296,7 +300,70 @@ export default function ShoppingListPage() {
       // Use the selected product's category
       const categoryId = result.category?.id
 
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:297',message:'Category check',data:{resultId:result.id,hasCategory:!!result.category,categoryId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
+
       if (!categoryId) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:300',message:'Search result has no category - fetching product',data:{resultId:result.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
+        // Fetch product to get category_id
+        try {
+          const productResponse = await fetch(`/api/products/${result.id}`)
+          if (productResponse.ok) {
+            const productData = await productResponse.json()
+            const fetchedCategoryId = productData.product?.category_id
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:307',message:'Fetched category from product',data:{fetchedCategoryId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+            // #endregion
+            if (fetchedCategoryId) {
+              const requestBody = {
+                product_id: result.id,
+                category_id: fetchedCategoryId,
+                quantity: '1',
+                description: annotationText || null,
+              }
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:260',message:'Creating shopping list item from search',data:{requestBody},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+              // #endregion
+              const response = await fetch('/api/shopping-list', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+              })
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:273',message:'Search result POST response',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+              // #endregion
+              if (response.ok) {
+                const responseData = await response.json()
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:275',message:'Search result item created',data:{itemId:responseData.item?.id,description:responseData.item?.description},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+                // #endregion
+                await fetchItems()
+                setTimeout(() => {
+                  setSearchQuery('')
+                  setIsSearchActive(false)
+                  setSearchResults([])
+                }, 500)
+                return
+              } else {
+                const errorData = await response.json().catch(() => ({}))
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:283',message:'Error adding search result',data:{error:errorData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+                // #endregion
+                console.error('Error adding search result:', errorData)
+                return
+              }
+            }
+          }
+        } catch (error) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:342',message:'Error fetching product for category',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+          // #endregion
+        }
         console.error('Search result has no category')
         return
       }
