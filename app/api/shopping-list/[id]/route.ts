@@ -4,9 +4,10 @@ import { createClient } from '@/lib/supabase/server'
 // PATCH /api/shopping-list/[id] - Update shopping list item
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const userId = request.cookies.get('user_id')?.value
 
     if (!userId) {
@@ -39,7 +40,7 @@ export async function PATCH(
     const { data: existingItem, error: existingError } = await supabase
       .from('shopping_list_items')
       .select('id, household_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('household_id', user.household_id)
       .single()
 
@@ -71,7 +72,7 @@ export async function PATCH(
     const { data: item, error: itemError } = await supabase
       .from('shopping_list_items')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select(`
         id,
         product_id,
@@ -152,9 +153,10 @@ export async function PATCH(
 // DELETE /api/shopping-list/[id] - Delete shopping list item
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const userId = request.cookies.get('user_id')?.value
 
     if (!userId) {
@@ -184,7 +186,7 @@ export async function DELETE(
     const { data: existingItem, error: existingError } = await supabase
       .from('shopping_list_items')
       .select('id, household_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('household_id', user.household_id)
       .single()
 
@@ -199,7 +201,7 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from('shopping_list_items')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (deleteError) {
       console.error('Delete shopping list item error:', deleteError)

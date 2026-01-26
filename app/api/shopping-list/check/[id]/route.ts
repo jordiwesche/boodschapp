@@ -5,9 +5,10 @@ import { hasRecentPurchase } from '@/lib/prediction'
 // POST /api/shopping-list/check/[id] - Check item and log to purchase history
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const userId = request.cookies.get('user_id')?.value
 
     if (!userId) {
@@ -37,7 +38,7 @@ export async function POST(
     const { data: item, error: itemError } = await supabase
       .from('shopping_list_items')
       .select('id, product_id, household_id, is_checked')
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('household_id', user.household_id)
       .single()
 
@@ -80,7 +81,7 @@ export async function POST(
         is_checked: true,
         checked_at: now,
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -99,7 +100,7 @@ export async function POST(
         .from('purchase_history')
         .update({
           purchased_at: now,
-          shopping_list_item_id: params.id,
+          shopping_list_item_id: id,
           added_by: userId,
         })
         .eq('id', recentPurchases[0].id)
@@ -115,7 +116,7 @@ export async function POST(
         .insert({
           household_id: user.household_id,
           product_id: item.product_id,
-          shopping_list_item_id: params.id,
+          shopping_list_item_id: id,
           purchased_at: now,
           added_by: userId,
         })
