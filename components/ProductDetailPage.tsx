@@ -220,11 +220,11 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
         <div className="mb-6 rounded-lg bg-white p-6 shadow">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-gray-500">Totaal aantal afvinks</p>
+              <p className="text-sm text-gray-500">Gekocht</p>
               <p className="text-2xl font-bold text-gray-900">{totalPurchases}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Gemiddelde frequentie</p>
+              <p className="text-sm text-gray-500">Gem. frequentie</p>
               <p className="text-2xl font-bold text-gray-900">
                 {frequency ? formatFrequency(frequency) : 'Nog niet berekend'}
               </p>

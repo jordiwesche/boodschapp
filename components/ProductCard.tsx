@@ -28,32 +28,32 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
   return (
     <div 
       onClick={() => onEdit(product)}
-      className="cursor-pointer rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+      className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm transition-shadow hover:shadow-md"
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{product.emoji}</span>
-            <div className="flex-1">
+      <div className="flex items-center justify-between">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-lg shrink-0">{product.emoji}</span>
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
+                <h3 className="text-sm font-normal text-gray-900 truncate">{product.name}</h3>
                 {product.is_basic && (
-                  <span className="text-yellow-500">★</span>
+                  <span className="text-yellow-500 shrink-0">★</span>
                 )}
               </div>
               {product.description && (
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="mt-0.5 text-xs text-gray-600 truncate">
                   {product.description}
                 </p>
               )}
-              <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
                 {product.category && (
-                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
                     {product.category.name}
                   </span>
                 )}
                 {product.is_popular && (
-                  <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                  <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
                     Populair
                   </span>
                 )}
