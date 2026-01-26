@@ -48,7 +48,11 @@ export default function ShoppingList({
     (acc, item) => {
       const categoryName = item.category?.name || 'Overig'
       const categoryId = item.category?.id || 'overig'
-      const displayOrder = item.category?.display_order ?? 999
+      // Use display_order from category, default to 999 for 'Overig'
+      // Make sure we always use the category's display_order, not a fallback
+      const displayOrder = item.category?.display_order !== undefined 
+        ? item.category.display_order 
+        : (categoryName === 'Overig' ? 999 : 999)
 
       if (!acc[categoryId]) {
         acc[categoryId] = {
@@ -57,6 +61,16 @@ export default function ShoppingList({
           displayOrder,
           uncheckedItems: [],
           checkedItems: [],
+        }
+      } else {
+        // If category already exists but display_order is missing or wrong, update it
+        // This handles the case where the first item didn't have display_order
+        if (item.category?.display_order !== undefined) {
+          acc[categoryId].displayOrder = item.category.display_order
+          // Also update the category object if it's more complete
+          if (item.category) {
+            acc[categoryId].category = item.category
+          }
         }
       }
 
