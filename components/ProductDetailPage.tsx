@@ -125,17 +125,38 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
   }
 
   const formatFrequency = (frequencyDays: number): string => {
-    if (frequencyDays < 1) {
-      return 'Minder dan 1 dag'
-    } else if (frequencyDays < 7) {
+    const totalHours = frequencyDays * 24
+    const totalMinutes = totalHours * 60
+
+    // Less than 1 hour: show in minutes
+    if (totalHours < 1) {
+      const minutes = Math.round(totalMinutes)
+      return `Elke ${minutes} ${minutes === 1 ? 'minuut' : 'minuten'}`
+    }
+    // Less than 24 hours: show in hours
+    else if (frequencyDays < 1) {
+      const hours = Math.round(totalHours)
+      return `Elke ${hours} ${hours === 1 ? 'uur' : 'uur'}`
+    }
+    // 1-6 days: show in days
+    else if (frequencyDays < 7) {
       const days = Math.round(frequencyDays)
       return `Elke ${days} ${days === 1 ? 'dag' : 'dagen'}`
-    } else if (frequencyDays < 30) {
+    }
+    // 1-4 weeks: show in weeks
+    else if (frequencyDays < 30) {
       const weeks = Math.round(frequencyDays / 7)
       return `Elke ${weeks} ${weeks === 1 ? 'week' : 'weken'}`
-    } else {
+    }
+    // 1-11 months: show in months
+    else if (frequencyDays < 365) {
       const months = Math.round(frequencyDays / 30)
       return `Elke ${months} ${months === 1 ? 'maand' : 'maanden'}`
+    }
+    // 1+ years: show in years
+    else {
+      const years = Math.round(frequencyDays / 365)
+      return `Elke ${years} ${years === 1 ? 'jaar' : 'jaren'}`
     }
   }
 
