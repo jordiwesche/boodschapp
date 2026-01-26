@@ -33,32 +33,32 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-lg shrink-0">{product.emoji}</span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-normal text-gray-900 truncate">{product.name}</h3>
+            <span className="text-lg shrink-0 flex items-center">{product.emoji}</span>
+            <div className="flex-1 min-w-0 flex items-center">
+              <div className="flex items-center gap-2 w-full">
+                <h3 className="text-sm font-semibold text-gray-900 truncate">{product.name}</h3>
                 {product.is_basic && (
                   <span className="text-yellow-500 shrink-0">★</span>
                 )}
               </div>
-              {product.description && (
-                <p className="mt-0.5 text-xs text-gray-600 truncate">
-                  {product.description}
-                </p>
-              )}
-              <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                {product.category && (
-                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-                    {product.category.name}
-                  </span>
-                )}
-                {product.is_popular && (
-                  <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
-                    Populair
-                  </span>
-                )}
-              </div>
             </div>
+          </div>
+          {product.description && (
+            <p className="ml-7 mt-0.5 text-xs text-gray-600 truncate">
+              {product.description}
+            </p>
+          )}
+          <div className="ml-7 mt-1 flex flex-wrap items-center gap-1.5">
+            {product.category && (
+              <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                {product.category.name}
+              </span>
+            )}
+            {product.is_popular && (
+              <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+                Populair
+              </span>
+            )}
           </div>
         </div>
       </div>
