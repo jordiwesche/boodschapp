@@ -370,6 +370,7 @@ export default function ShoppingListPage() {
         product_id: suggestion.id, // Use product_id so it links to the product
         category_id: categoryId,
         quantity: '1',
+        description: product.description || null, // Auto-populate from product description
       }
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:210',message:'Creating shopping list item',data:{requestBody},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
@@ -458,12 +459,20 @@ export default function ShoppingListPage() {
             fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:307',message:'Fetched category from product',data:{fetchedCategoryId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
             // #endregion
             if (fetchedCategoryId) {
-              const requestBody = {
-                product_id: result.id,
-                category_id: fetchedCategoryId,
-                quantity: '1',
-                description: annotationText || null,
-              }
+            // Fetch full product to get description
+            const fullProductResponse = await fetch(`/api/products/${result.id}`)
+            const fullProductData = fullProductResponse.ok ? await fullProductResponse.json() : null
+            const productDescription = fullProductData?.product?.description || null
+            
+            // Use product description as initial description, or annotation if provided
+            const initialDescription = annotationText || productDescription || null
+            
+            const requestBody = {
+              product_id: result.id,
+              category_id: fetchedCategoryId,
+              quantity: '1',
+              description: initialDescription,
+            }
               // #region agent log
               fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:260',message:'Creating shopping list item from search',data:{requestBody},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
               // #endregion
@@ -508,11 +517,19 @@ export default function ShoppingListPage() {
         return
       }
 
+      // Fetch full product to get description
+      const fullProductResponse = await fetch(`/api/products/${result.id}`)
+      const fullProductData = fullProductResponse.ok ? await fullProductResponse.json() : null
+      const productDescription = fullProductData?.product?.description || null
+      
+      // Use product description as initial description, or annotation if provided
+      const initialDescription = annotationText || productDescription || null
+      
       const requestBody = {
         product_id: result.id,
         category_id: categoryId,
         quantity: '1',
-        description: annotationText || null,
+        description: initialDescription,
       }
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:260',message:'Creating shopping list item from search',data:{requestBody},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});

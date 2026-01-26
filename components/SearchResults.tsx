@@ -4,6 +4,7 @@ interface SearchResult {
   id: string
   emoji: string
   name: string
+  description?: string | null
   category: {
     id: string
     name: string
@@ -89,6 +90,11 @@ export default function SearchResults({
                         <p className="font-medium text-gray-900 truncate">
                           {result.name}
                         </p>
+                        {result.description && (
+                          <span className="text-sm text-gray-500 whitespace-nowrap">
+                            {result.description}
+                          </span>
+                        )}
                         {annotationText && (
                           <span className="text-sm text-gray-500 whitespace-nowrap">
                             {annotationText}

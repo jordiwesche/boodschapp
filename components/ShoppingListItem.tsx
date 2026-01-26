@@ -115,8 +115,8 @@ export default function ShoppingListItem({
         </div>
       </div>
 
-      {/* Edit description button */}
-      {!isEditingDescription && (
+      {/* Edit description button - hide when checked */}
+      {!isEditingDescription && !item.is_checked && (
         <button
           onClick={handleEditClick}
           className="shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"

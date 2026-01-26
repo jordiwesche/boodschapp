@@ -566,18 +566,14 @@ export default function ProductForm({
         <h2 className="text-lg font-semibold text-gray-900">
           {product ? 'Product bewerken' : 'Nieuw product toevoegen'}
         </h2>
-        {product && (
-          <button
-            type="button"
-            onClick={() => {
-              // TODO: Navigate to purchase pattern page
-              console.log('Purchase pattern page - coming soon')
-            }}
+        {product && product.id && (
+          <a
+            href={`/product/${product.id}`}
             className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
             aria-label="Kooppatroon informatie"
           >
             <Info size={20} />
-          </button>
+          </a>
         )}
       </div>
 
