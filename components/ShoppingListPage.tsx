@@ -185,14 +185,22 @@ export default function ShoppingListPage() {
 
   const handleSuggestionSelect = async (suggestion: Suggestion) => {
     try {
-      // Fetch the product to get its category_id
+      // Fetch the product to get its category_id and full product info
       const productResponse = await fetch(`/api/products/${suggestion.id}`)
       if (!productResponse.ok) {
+        console.error('Failed to fetch product:', productResponse.status)
         return
       }
 
       const productData = await productResponse.json()
-      const categoryId = productData.product?.category_id
+      const product = productData.product
+
+      if (!product) {
+        console.error('Product not found in response')
+        return
+      }
+
+      const categoryId = product.category_id
 
       if (!categoryId) {
         console.error('Product has no category_id')
@@ -205,7 +213,7 @@ export default function ShoppingListPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          product_id: suggestion.id,
+          product_id: suggestion.id, // Use product_id so it links to the product
           category_id: categoryId,
           quantity: '1',
         }),
@@ -215,6 +223,9 @@ export default function ShoppingListPage() {
         await fetchItems()
         setSearchQuery('')
         setIsSearchActive(false)
+      } else {
+        const errorData = await response.json()
+        console.error('Error adding suggestion:', errorData)
       }
     } catch (error) {
       console.error('Error adding suggestion to list:', error)
@@ -331,7 +342,7 @@ export default function ShoppingListPage() {
       {showSearchResults && (
         <SearchResults
           results={searchResults}
-          onSelect={(result) => handleSearchResultSelect(result, searchQuery)}
+          onSelect={handleSearchResultSelect}
           isVisible={true}
           query={searchQuery}
         />

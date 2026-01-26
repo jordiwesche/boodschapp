@@ -13,7 +13,7 @@ interface SearchResult {
 
 interface SearchResultsProps {
   results: SearchResult[]
-  onSelect: (result: SearchResult) => void
+  onSelect: (result: SearchResult, query: string) => void
   isVisible: boolean
   query: string
 }
@@ -45,27 +45,49 @@ export default function SearchResults({
       <div className="mx-auto max-w-md">
         <div className="rounded-lg bg-white shadow-lg">
           <div className="divide-y divide-gray-200">
-            {results.map((result) => (
-              <button
-                key={result.id}
-                onClick={() => onSelect(result)}
-                className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">{result.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">
-                      {result.name}
-                    </p>
-                    {result.category && (
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {result.category.name}
-                      </p>
-                    )}
+            {results.map((result) => {
+              // Extract annotation from query (everything after product name)
+              const productNameLower = result.name.toLowerCase()
+              const queryLower = query.toLowerCase()
+              let annotationText = ''
+              
+              if (queryLower.startsWith(productNameLower)) {
+                annotationText = query.substring(result.name.length).trim()
+              }
+
+              return (
+                <button
+                  key={result.id}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    onSelect(result, query)
+                  }}
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{result.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900 truncate">
+                          {result.name}
+                        </p>
+                        {annotationText && (
+                          <span className="text-sm text-gray-500 whitespace-nowrap">
+                            {annotationText}
+                          </span>
+                        )}
+                      </div>
+                      {result.category && (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {result.category.name}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
