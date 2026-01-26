@@ -107,13 +107,25 @@ export async function PATCH(
     }
 
     // Transform response
+    // If product join didn't work, fetch product separately
+    let product = null
+    if (item.product_id && (!item.products || (Array.isArray(item.products) && item.products.length === 0))) {
+      const { data: productData } = await supabase
+        .from('products')
+        .select('id, emoji, name')
+        .eq('id', item.product_id)
+        .single()
+      
+      if (productData) {
+        product = productData
+      }
+    } else if (Array.isArray(item.products) && item.products.length > 0) {
+      product = item.products[0]
+    }
+
     const category = Array.isArray(item.product_categories) &&
       item.product_categories.length > 0
       ? item.product_categories[0]
-      : null
-
-    const product = Array.isArray(item.products) && item.products.length > 0
-      ? item.products[0]
       : null
 
     const transformedItem = {

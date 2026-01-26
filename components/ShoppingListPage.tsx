@@ -272,9 +272,16 @@ export default function ShoppingListPage() {
 
       if (response.ok) {
         await fetchItems()
-        setSearchQuery('')
-        setIsSearchActive(false)
-        setSearchResults([])
+        // Don't clear search query immediately - let user see it was added
+        // Clear after a short delay or when they interact again
+        setTimeout(() => {
+          setSearchQuery('')
+          setIsSearchActive(false)
+          setSearchResults([])
+        }, 500)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Error adding search result:', errorData)
       }
     } catch (error) {
       console.error('Error adding search result to list:', error)
@@ -288,12 +295,19 @@ export default function ShoppingListPage() {
 
   const handleSearchBlur = () => {
     // Don't hide immediately to allow clicks on results
+    // Increase timeout to ensure clicks are processed
     setTimeout(() => {
       setIsSearchActive(false)
-    }, 200)
+    }, 300)
   }
 
-  const showSuggestions = isSearchActive && (!searchQuery || searchQuery.trim().length < 2)
+  // Show suggestions if:
+  // 1. Search is active AND (no query OR query too short) AND (list is empty OR normal behavior)
+  // 2. OR if list is completely empty (always show suggestions)
+  const showSuggestions = 
+    (items.length === 0) || 
+    (isSearchActive && (!searchQuery || searchQuery.trim().length < 2))
+  
   const showSearchResults = isSearchActive && searchQuery && searchQuery.trim().length >= 2
 
   if (isLoading) {

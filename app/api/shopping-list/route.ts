@@ -67,38 +67,60 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform response
-    const transformedItems = (items || []).map((item) => {
-      const category = Array.isArray(item.product_categories) &&
-        item.product_categories.length > 0
-        ? item.product_categories[0]
-        : null
+    // If products join didn't work, fetch products separately for items with product_id
+    const itemsWithProducts = await Promise.all(
+      (items || []).map(async (item) => {
+        let product = null
+        
+        // If product join didn't work and we have a product_id, fetch it separately
+        if (item.product_id && (!item.products || (Array.isArray(item.products) && item.products.length === 0))) {
+          const { data: productData } = await supabase
+            .from('products')
+            .select('id, emoji, name')
+            .eq('id', item.product_id)
+            .single()
+          
+          if (productData) {
+            product = productData
+          }
+        } else if (Array.isArray(item.products) && item.products.length > 0) {
+          product = item.products[0]
+        }
 
-      const product = Array.isArray(item.products) && item.products.length > 0
-        ? item.products[0]
-        : null
+        const category = Array.isArray(item.product_categories) &&
+          item.product_categories.length > 0
+          ? item.product_categories[0]
+          : null
 
-      return {
-        id: item.id,
-        product_id: item.product_id,
-        product_name: item.product_name || (product ? product.name : null),
-        emoji: product ? product.emoji : '📦',
-        quantity: item.quantity,
-        description: item.description,
-        category_id: item.category_id,
-        category: category
-          ? {
-              id: category.id,
-              name: category.name,
-              display_order: category.display_order,
-            }
-          : null,
-        is_checked: item.is_checked,
-        checked_at: item.checked_at,
-        added_by: item.added_by,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-      }
-    })
+        return {
+          ...item,
+          product,
+          category,
+        }
+      })
+    )
+
+    const transformedItems = itemsWithProducts.map((item) => ({
+      id: item.id,
+      product_id: item.product_id,
+      product_name: item.product_name || (item.product ? item.product.name : null),
+      emoji: item.product ? item.product.emoji : '📦',
+      quantity: item.quantity,
+      description: item.description,
+      category_id: item.category_id,
+      category: item.category
+        ? {
+            id: item.category.id,
+            name: item.category.name,
+            display_order: item.category.display_order,
+          }
+        : null,
+      is_checked: item.is_checked,
+      checked_at: item.checked_at,
+      added_by: item.added_by,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+    }))
 
     return NextResponse.json({
       items: transformedItems || [],
@@ -237,13 +259,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Transform response
+    // If product join didn't work, fetch product separately
+    let product = null
+    if (item.product_id && (!item.products || (Array.isArray(item.products) && item.products.length === 0))) {
+      const { data: productData } = await supabase
+        .from('products')
+        .select('id, emoji, name')
+        .eq('id', item.product_id)
+        .single()
+      
+      if (productData) {
+        product = productData
+      }
+    } else if (Array.isArray(item.products) && item.products.length > 0) {
+      product = item.products[0]
+    }
+
     const categoryData = Array.isArray(item.product_categories) &&
       item.product_categories.length > 0
       ? item.product_categories[0]
-      : null
-
-    const product = Array.isArray(item.products) && item.products.length > 0
-      ? item.products[0]
       : null
 
     const transformedItem = {

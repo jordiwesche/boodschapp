@@ -58,7 +58,8 @@ export default function SearchResults({
               return (
                 <button
                   key={result.id}
-                  onClick={(e) => {
+                  onMouseDown={(e) => {
+                    // Use onMouseDown instead of onClick to fire before blur
                     e.preventDefault()
                     e.stopPropagation()
                     onSelect(result, query)
