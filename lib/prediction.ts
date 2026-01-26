@@ -103,12 +103,25 @@ export function predictNextPurchaseDate(
  * Adaptieve formule: vaker gekocht = kortere lead time
  */
 function getLeadTimeDays(frequencyDays: number): number {
-  if (frequencyDays < 7) {
-    return 1 // Dagelijks/wekelijks: 1 dag van tevoren
-  } else if (frequencyDays < 14) {
-    return 2 // Twee-wekelijks: 2 dagen van tevoren
-  } else {
-    return 3 // Maandelijks of langer: 3 dagen van tevoren
+  // Very frequent (< 1 hour): show immediately (0 lead time)
+  if (frequencyDays < 1/24) {
+    return 0
+  }
+  // Frequent (< 1 day): show 0.1 days (about 2.4 hours) before
+  else if (frequencyDays < 1) {
+    return 0.1
+  }
+  // Daily/weekly (< 7 days): 1 day before
+  else if (frequencyDays < 7) {
+    return 1
+  }
+  // Bi-weekly (< 14 days): 2 days before
+  else if (frequencyDays < 14) {
+    return 2
+  }
+  // Monthly or longer: 3 days before
+  else {
+    return 3
   }
 }
 
@@ -121,15 +134,27 @@ export function shouldShowInSuggestions(
   frequencyDays: number
 ): boolean {
   const leadTimeDays = getLeadTimeDays(frequencyDays)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0) // Reset naar middernacht voor vergelijking
+  const now = new Date()
 
+  // Calculate suggestion date by subtracting lead time
   const suggestionDate = new Date(nextPurchaseDate)
-  suggestionDate.setDate(suggestionDate.getDate() - leadTimeDays)
-  suggestionDate.setHours(0, 0, 0, 0)
+  suggestionDate.setTime(suggestionDate.getTime() - leadTimeDays * 24 * 60 * 60 * 1000)
+
+  // For very frequent items (< 1 hour), show immediately if next purchase is within the frequency window
+  if (frequencyDays < 1/24) {
+    // Show if next purchase is within the next purchase window
+    return now >= suggestionDate
+  }
+
+  // For other frequencies, compare dates (reset to midnight for day-level comparison)
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+
+  const suggestionDateMidnight = new Date(suggestionDate)
+  suggestionDateMidnight.setHours(0, 0, 0, 0)
 
   // Toon als vandaag >= suggestiedatum
-  return today >= suggestionDate
+  return today >= suggestionDateMidnight
 }
 
 /**
