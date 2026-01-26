@@ -105,11 +105,21 @@ export default function ShoppingListPage() {
         // #region agent log
         fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:104',message:'Search results received',data:{query,resultsCount:data.products?.length,results:data.products?.map((p:any)=>({id:p.id,name:p.name}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
         // #endregion
-        setSearchResults(data.products || [])
+        // Only update results if we got results, don't clear if search failed
+        if (data.products && data.products.length > 0) {
+          setSearchResults(data.products)
+        } else {
+          // Only clear if query is definitely not matching (not just typing)
+          // Keep previous results while user is still typing
+          const trimmedQuery = query.trim()
+          if (trimmedQuery.length >= 3) {
+            setSearchResults([])
+          }
+        }
       }
     } catch (error) {
       console.error('Error searching products:', error)
-      setSearchResults([])
+      // Don't clear results on error - keep previous results visible
     }
   }
 
