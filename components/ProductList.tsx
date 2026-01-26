@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import ProductCard from './ProductCard'
 import ProductForm from './ProductForm'
+import FixedActionBar from './FixedActionBar'
 
 interface Category {
   id: string
@@ -15,7 +16,6 @@ interface Product {
   emoji: string
   name: string
   description?: string | null
-  default_quantity: string
   category_id: string
   category?: {
     id: string
@@ -24,10 +24,6 @@ interface Product {
   } | null
   is_basic: boolean
   is_popular: boolean
-  purchase_pattern?: {
-    frequency: number
-    unit: string
-  } | null
   created_at: string
   updated_at: string
 }
@@ -205,7 +201,8 @@ export default function ProductList({ products, categories, onRefresh }: Product
   }
 
   return (
-    <div className="space-y-4">
+    <>
+    <div className="space-y-4 pb-20">
       {error && (
         <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>
       )}
@@ -213,7 +210,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
         <div className="rounded-md bg-green-50 p-3 text-sm text-green-800">{success}</div>
       )}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4">
         <div className="flex-1">
           <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700">
             Filter op categorie
@@ -222,7 +219,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
             id="categoryFilter"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:w-64"
+            className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           >
             <option value="" className="text-gray-500">Alle categorieën</option>
             {categories.map((category) => (
@@ -232,12 +229,6 @@ export default function ProductList({ products, categories, onRefresh }: Product
             ))}
           </select>
         </div>
-        <button
-          onClick={handleAdd}
-          className="mt-6 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 sm:mt-0"
-        >
-          + Product toevoegen
-        </button>
       </div>
 
       {filteredProducts.length === 0 ? (
@@ -278,5 +269,16 @@ export default function ProductList({ products, categories, onRefresh }: Product
         </div>
       )}
     </div>
+    <FixedActionBar
+      right={
+        <button
+          onClick={handleAdd}
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          + Product toevoegen
+        </button>
+      }
+    />
+    </>
   )
 }

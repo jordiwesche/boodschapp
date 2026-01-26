@@ -41,12 +41,9 @@ export async function GET(
         emoji,
         name,
         description,
-        default_quantity,
         category_id,
         is_basic,
         is_popular,
-        purchase_pattern_frequency,
-        purchase_pattern_unit,
         created_at,
         updated_at,
         product_categories (
@@ -76,7 +73,6 @@ export async function GET(
       emoji: product.emoji,
       name: product.name,
       description: product.description,
-      default_quantity: product.default_quantity,
       category_id: product.category_id,
       category: productCategory ? {
         id: productCategory.id,
@@ -85,10 +81,6 @@ export async function GET(
       } : null,
       is_basic: product.is_basic,
       is_popular: product.is_popular,
-      purchase_pattern: product.purchase_pattern_frequency && product.purchase_pattern_unit ? {
-        frequency: product.purchase_pattern_frequency,
-        unit: product.purchase_pattern_unit,
-      } : null,
       created_at: product.created_at,
       updated_at: product.updated_at,
     }
@@ -126,20 +118,10 @@ export async function PUT(
       emoji,
       name,
       description,
-      default_quantity,
       category_id,
       is_basic,
       is_popular,
-      purchase_pattern_frequency,
-      purchase_pattern_unit,
     } = body
-
-    if (purchase_pattern_unit && !['days', 'weeks'].includes(purchase_pattern_unit)) {
-      return NextResponse.json(
-        { error: 'Purchase pattern unit moet "days" of "weeks" zijn' },
-        { status: 400 }
-      )
-    }
 
     const supabase = await createClient()
 
@@ -194,16 +176,9 @@ export async function PUT(
     if (emoji !== undefined) updateData.emoji = emoji
     if (name !== undefined) updateData.name = name.trim()
     if (description !== undefined) updateData.description = description?.trim() || null
-    if (default_quantity !== undefined) updateData.default_quantity = default_quantity
     if (category_id !== undefined) updateData.category_id = category_id
     if (is_basic !== undefined) updateData.is_basic = is_basic
     if (is_popular !== undefined) updateData.is_popular = is_popular
-    if (purchase_pattern_frequency !== undefined) {
-      updateData.purchase_pattern_frequency = purchase_pattern_frequency || null
-    }
-    if (purchase_pattern_unit !== undefined) {
-      updateData.purchase_pattern_unit = purchase_pattern_unit || null
-    }
 
     // Update product
     const { data: product, error: productError } = await supabase
@@ -216,12 +191,9 @@ export async function PUT(
         emoji,
         name,
         description,
-        default_quantity,
         category_id,
         is_basic,
         is_popular,
-        purchase_pattern_frequency,
-        purchase_pattern_unit,
         created_at,
         updated_at,
         product_categories (
@@ -250,7 +222,6 @@ export async function PUT(
       emoji: product.emoji,
       name: product.name,
       description: product.description,
-      default_quantity: product.default_quantity,
       category_id: product.category_id,
       category: productCategory ? {
         id: productCategory.id,
@@ -259,10 +230,6 @@ export async function PUT(
       } : null,
       is_basic: product.is_basic,
       is_popular: product.is_popular,
-      purchase_pattern: product.purchase_pattern_frequency && product.purchase_pattern_unit ? {
-        frequency: product.purchase_pattern_frequency,
-        unit: product.purchase_pattern_unit,
-      } : null,
       created_at: product.created_at,
       updated_at: product.updated_at,
     }

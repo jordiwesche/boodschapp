@@ -5,7 +5,6 @@ interface Product {
   emoji: string
   name: string
   description?: string | null
-  default_quantity: string
   category_id: string
   category?: {
     id: string
@@ -14,10 +13,6 @@ interface Product {
   } | null
   is_basic: boolean
   is_popular: boolean
-  purchase_pattern?: {
-    frequency: number
-    unit: string
-  } | null
   created_at: string
   updated_at: string
 }
@@ -46,13 +41,9 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
                   <span className="text-yellow-500">★</span>
                 )}
               </div>
-              {(product.description || product.purchase_pattern) && (
+              {product.description && (
                 <p className="mt-1 text-sm text-gray-600">
-                  {product.description && product.description}
-                  {product.description && product.purchase_pattern && ' • '}
-                  {product.purchase_pattern && (
-                    <>Elke {product.purchase_pattern.frequency} {product.purchase_pattern.unit === 'days' ? 'dagen' : 'weken'}</>
-                  )}
+                  {product.description}
                 </p>
               )}
               <div className="mt-2 flex flex-wrap items-center gap-2">

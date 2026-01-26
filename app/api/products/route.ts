@@ -42,12 +42,9 @@ export async function GET(request: NextRequest) {
         emoji,
         name,
         description,
-        default_quantity,
         category_id,
         is_basic,
         is_popular,
-        purchase_pattern_frequency,
-        purchase_pattern_unit,
         created_at,
         updated_at,
         product_categories (
@@ -92,7 +89,6 @@ export async function GET(request: NextRequest) {
         emoji: product.emoji,
         name: product.name,
         description: product.description,
-        default_quantity: product.default_quantity,
         category_id: product.category_id,
         category: category ? {
           id: category.id,
@@ -101,10 +97,6 @@ export async function GET(request: NextRequest) {
         } : null,
       is_basic: product.is_basic,
       is_popular: product.is_popular,
-      purchase_pattern: product.purchase_pattern_frequency && product.purchase_pattern_unit ? {
-        frequency: product.purchase_pattern_frequency,
-        unit: product.purchase_pattern_unit,
-      } : null,
       created_at: product.created_at,
       updated_at: product.updated_at,
       }
@@ -139,25 +131,15 @@ export async function POST(request: NextRequest) {
       emoji,
       name,
       description,
-      default_quantity,
       category_id,
       is_basic,
       is_popular,
-      purchase_pattern_frequency,
-      purchase_pattern_unit,
     } = body
 
     // Validation
     if (!name || !category_id) {
       return NextResponse.json(
         { error: 'Naam en categorie zijn verplicht' },
-        { status: 400 }
-      )
-    }
-
-    if (purchase_pattern_unit && !['days', 'weeks'].includes(purchase_pattern_unit)) {
-      return NextResponse.json(
-        { error: 'Purchase pattern unit moet "days" of "weeks" zijn' },
         { status: 400 }
       )
     }
@@ -201,24 +183,18 @@ export async function POST(request: NextRequest) {
         emoji: emoji || '📦',
         name: name.trim(),
         description: description?.trim() || null,
-        default_quantity: default_quantity || '1',
         category_id: category_id,
         is_basic: is_basic || false,
         is_popular: is_popular || false,
-        purchase_pattern_frequency: purchase_pattern_frequency || null,
-        purchase_pattern_unit: purchase_pattern_unit || null,
       })
       .select(`
         id,
         emoji,
         name,
         description,
-        default_quantity,
         category_id,
         is_basic,
         is_popular,
-        purchase_pattern_frequency,
-        purchase_pattern_unit,
         created_at,
         updated_at,
         product_categories (
@@ -247,7 +223,6 @@ export async function POST(request: NextRequest) {
       emoji: product.emoji,
       name: product.name,
       description: product.description,
-      default_quantity: product.default_quantity,
       category_id: product.category_id,
       category: productCategory ? {
         id: productCategory.id,
@@ -256,10 +231,6 @@ export async function POST(request: NextRequest) {
       } : null,
       is_basic: product.is_basic,
       is_popular: product.is_popular,
-      purchase_pattern: product.purchase_pattern_frequency && product.purchase_pattern_unit ? {
-        frequency: product.purchase_pattern_frequency,
-        unit: product.purchase_pattern_unit,
-      } : null,
       created_at: product.created_at,
       updated_at: product.updated_at,
     }

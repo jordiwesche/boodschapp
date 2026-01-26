@@ -30,12 +30,9 @@ export type Product = {
   emoji: string
   name: string
   description: string | null
-  default_quantity: string
   category_id: string
   is_basic: boolean
   is_popular: boolean
-  purchase_pattern_frequency: number | null
-  purchase_pattern_unit: 'days' | 'weeks' | null
   created_at: string
   updated_at: string
 }

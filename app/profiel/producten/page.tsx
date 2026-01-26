@@ -18,7 +18,6 @@ interface Product {
   emoji: string
   name: string
   description?: string | null
-  default_quantity: string
   category_id: string
   category?: {
     id: string
@@ -27,10 +26,6 @@ interface Product {
   } | null
   is_basic: boolean
   is_popular: boolean
-  purchase_pattern?: {
-    frequency: number
-    unit: string
-  } | null
   created_at: string
   updated_at: string
 }
