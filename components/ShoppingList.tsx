@@ -128,12 +128,12 @@ export default function ShoppingList({
 
   return (
     <div className="pb-32">
-      {/* Clear checked items button */}
+      {/* Clear checked items button - fixed at top right */}
       {checkedItemsCount > 0 && onClearChecked && (
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex justify-end sticky top-0 z-10 bg-gray-50 -mx-4 px-4 py-2">
           <button
             onClick={onClearChecked}
-            className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
+            className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors shadow-sm"
             aria-label="Wis alle afgevinkte items"
           >
             <CheckSquare className="h-4 w-4" />

@@ -66,7 +66,7 @@ export default function SearchBar({
   }, [])
 
   return (
-    <div className="fixed bottom-[76px] left-0 right-0 z-40 px-4">
+    <div className="fixed bottom-[92px] left-0 right-0 z-40 px-4">
       <div className="mx-auto max-w-md">
         <div
           className={`relative rounded-lg bg-white shadow-lg transition-all ${
