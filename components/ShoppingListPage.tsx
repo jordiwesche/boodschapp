@@ -6,6 +6,7 @@ import SuggestionBlock from './SuggestionBlock'
 import SearchResults from './SearchResults'
 import ShoppingList from './ShoppingList'
 import { parseProductInput } from '@/lib/annotation-parser'
+import { createClient } from '@/lib/supabase/client'
 
 interface ShoppingListItemData {
   id: string
@@ -123,9 +124,60 @@ export default function ShoppingListPage() {
     }
   }
 
+  // Set up realtime subscription for shopping list items
   useEffect(() => {
     fetchItems()
     fetchSuggestions()
+
+    // Get household_id from user API
+    const setupRealtime = async () => {
+      try {
+        const userResponse = await fetch('/api/user/current')
+        if (!userResponse.ok) return
+        
+        const userData = await userResponse.json()
+        if (!userData.household_id) return
+
+        const supabase = createClient()
+        
+        // Subscribe to changes in shopping_list_items for this household
+        const channel = supabase
+          .channel('shopping_list_items_changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // Listen to INSERT, UPDATE, DELETE
+              schema: 'public',
+              table: 'shopping_list_items',
+              filter: `household_id=eq.${userData.household_id}`,
+            },
+            (payload) => {
+              // Refresh items when any change occurs
+              fetchItems()
+              // Also refresh suggestions since items changed
+              fetchSuggestions()
+            }
+          )
+          .subscribe()
+
+        // Cleanup subscription on unmount
+        return () => {
+          supabase.removeChannel(channel)
+        }
+      } catch (error) {
+        console.error('Error setting up realtime subscription:', error)
+      }
+    }
+
+    const cleanup = setupRealtime()
+    
+    return () => {
+      if (cleanup) {
+        cleanup.then((cleanupFn) => {
+          if (cleanupFn) cleanupFn()
+        })
+      }
+    }
   }, [])
 
   const handleCheck = async (id: string) => {

@@ -35,6 +35,20 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // First, get all products that are already in the shopping list (not checked)
+    const { data: existingItems, error: itemsError } = await supabase
+      .from('shopping_list_items')
+      .select('product_id')
+      .eq('household_id', user.household_id)
+      .eq('is_checked', false)
+
+    // Create a set of product IDs that are already in the list
+    const existingProductIds = new Set(
+      (existingItems || [])
+        .map((item) => item.product_id)
+        .filter((id): id is string => id !== null)
+    )
+
     const suggestions: Array<{
       id: string
       emoji: string
@@ -42,22 +56,30 @@ export async function GET(request: NextRequest) {
       suggestion_type: 'basic' | 'predicted'
     }> = []
 
-    // 1. Get basic products (fallback, max 8)
+    // 1. Get basic products (fallback, max 8) - exclude those already in list
     const { data: basicProducts, error: basicError } = await supabase
       .from('products')
       .select('id, emoji, name')
       .eq('household_id', user.household_id)
       .eq('is_basic', true)
-      .limit(8)
+      .limit(20) // Get more to filter out existing ones
 
     if (!basicError && basicProducts) {
       for (const product of basicProducts) {
+        // Skip if already in shopping list
+        if (existingProductIds.has(product.id)) {
+          continue
+        }
         suggestions.push({
           id: product.id,
           emoji: product.emoji,
           name: product.name,
           suggestion_type: 'basic',
         })
+        // Stop at 8 basic suggestions
+        if (suggestions.length >= 8) {
+          break
+        }
       }
     }
 
@@ -76,6 +98,11 @@ export async function GET(request: NextRequest) {
 
     // 3. For each product, check if it should appear in suggestions based on prediction
     for (const product of allProducts) {
+      // Skip if already in shopping list
+      if (existingProductIds.has(product.id)) {
+        continue
+      }
+      
       // Skip if already in suggestions as basic
       if (suggestions.some((s) => s.id === product.id && s.suggestion_type === 'basic')) {
         continue
