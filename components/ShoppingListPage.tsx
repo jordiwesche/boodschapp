@@ -153,24 +153,54 @@ export default function ShoppingListPage() {
         const supabase = createClient()
         
         // Subscribe to changes in shopping_list_items for this household
+        // Use separate subscriptions for better reliability with DELETE events
         const channel = supabase
           .channel('shopping_list_items_changes')
           .on(
             'postgres_changes',
             {
-              event: '*', // Listen to INSERT, UPDATE, DELETE
+              event: 'INSERT',
               schema: 'public',
               table: 'shopping_list_items',
               filter: `household_id=eq.${userData.household_id}`,
             },
             (payload) => {
-              // Refresh items when any change occurs
+              console.log('Realtime INSERT:', payload)
               fetchItems()
-              // Also refresh suggestions since items changed
               fetchSuggestions()
             }
           )
-          .subscribe()
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'shopping_list_items',
+              filter: `household_id=eq.${userData.household_id}`,
+            },
+            (payload) => {
+              console.log('Realtime UPDATE:', payload)
+              fetchItems()
+              fetchSuggestions()
+            }
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'DELETE',
+              schema: 'public',
+              table: 'shopping_list_items',
+              filter: `household_id=eq.${userData.household_id}`,
+            },
+            (payload) => {
+              console.log('Realtime DELETE:', payload)
+              fetchItems()
+              fetchSuggestions()
+            }
+          )
+          .subscribe((status) => {
+            console.log('Realtime subscription status:', status)
+          })
 
         // Cleanup subscription on unmount
         return () => {
