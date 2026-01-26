@@ -47,18 +47,34 @@ export default function SearchResults({
           <div className="divide-y divide-gray-200">
             {results.map((result) => {
               // Extract annotation from query (everything after product name)
-              const productNameLower = result.name.toLowerCase()
-              const queryLower = query.toLowerCase()
+              const productNameLower = result.name.toLowerCase().trim()
+              const queryLower = query.toLowerCase().trim()
               let annotationText = ''
               
+              // #region agent log
+              const logData = {resultName:result.name,query,productNameLower,queryLower,startsWith:queryLower.startsWith(productNameLower)};
+              // #endregion
+              
               if (queryLower.startsWith(productNameLower)) {
+                // Extract everything after the product name (use original case for exact length)
+                const productNameInQuery = query.substring(0, result.name.length)
                 annotationText = query.substring(result.name.length).trim()
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SearchResults.tsx:54',message:'Annotation extraction',data:{...logData,productNameInQuery,annotationText,substringStart:result.name.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+                // #endregion
+              } else {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SearchResults.tsx:60',message:'Annotation extraction failed - no match',data:logData,timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+                // #endregion
               }
 
               return (
                 <button
                   key={result.id}
                   onMouseDown={(e) => {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'SearchResults.tsx:61',message:'onMouseDown fired',data:{resultId:result.id,resultName:result.name,query},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+                    // #endregion
                     // Use onMouseDown instead of onClick to fire before blur
                     e.preventDefault()
                     e.stopPropagation()

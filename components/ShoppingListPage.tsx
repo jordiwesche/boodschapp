@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import SearchBar from './SearchBar'
 import SuggestionBlock from './SuggestionBlock'
 import SearchResults from './SearchResults'
@@ -53,13 +53,22 @@ export default function ShoppingListPage() {
 
   // Fetch shopping list items
   const fetchItems = async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:55',message:'fetchItems entry',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
     try {
       const response = await fetch('/api/shopping-list')
       if (response.ok) {
         const data = await response.json()
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:60',message:'Items fetched',data:{itemsCount:data.items?.length,items:data.items?.map((i:any)=>({id:i.id,productId:i.product_id,productName:i.product_name,emoji:i.emoji}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+        // #endregion
         setItems(data.items || [])
       }
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:64',message:'Error fetching items',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+      // #endregion
       console.error('Error fetching shopping list:', error)
     } finally {
       setIsLoading(false)
@@ -184,15 +193,24 @@ export default function ShoppingListPage() {
   }
 
   const handleSuggestionSelect = async (suggestion: Suggestion) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:186',message:'handleSuggestionSelect entry',data:{suggestionId:suggestion.id,suggestionName:suggestion.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     try {
       // Fetch the product to get its category_id and full product info
       const productResponse = await fetch(`/api/products/${suggestion.id}`)
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:190',message:'Product fetch response',data:{ok:productResponse.ok,status:productResponse.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       if (!productResponse.ok) {
         console.error('Failed to fetch product:', productResponse.status)
         return
       }
 
       const productData = await productResponse.json()
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:196',message:'Product data received',data:{hasProduct:!!productData.product,productId:productData.product?.id,productName:productData.product?.name,categoryId:productData.product?.category_id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       const product = productData.product
 
       if (!product) {
@@ -207,32 +225,52 @@ export default function ShoppingListPage() {
         return
       }
 
+      const requestBody = {
+        product_id: suggestion.id, // Use product_id so it links to the product
+        category_id: categoryId,
+        quantity: '1',
+      }
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:210',message:'Creating shopping list item',data:{requestBody},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
       const response = await fetch('/api/shopping-list', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          product_id: suggestion.id, // Use product_id so it links to the product
-          category_id: categoryId,
-          quantity: '1',
-        }),
+        body: JSON.stringify(requestBody),
       })
 
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:222',message:'Shopping list POST response',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
       if (response.ok) {
+        const responseData = await response.json()
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:225',message:'Item created successfully',data:{itemId:responseData.item?.id,productId:responseData.item?.product_id,productName:responseData.item?.product_name,emoji:responseData.item?.emoji},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+        // #endregion
         await fetchItems()
         setSearchQuery('')
         setIsSearchActive(false)
       } else {
         const errorData = await response.json()
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:228',message:'Error adding suggestion',data:{error:errorData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+        // #endregion
         console.error('Error adding suggestion:', errorData)
       }
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:231',message:'Exception in handleSuggestionSelect',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       console.error('Error adding suggestion to list:', error)
     }
   }
 
   const handleSearchResultSelect = async (result: SearchResult, query: string) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:235',message:'handleSearchResultSelect entry',data:{resultId:result.id,resultName:result.name,query},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
     try {
       // Extract annotation from query (everything after the product name)
       // The product name should match the search result name
@@ -243,10 +281,16 @@ export default function ShoppingListPage() {
       if (queryLower.startsWith(productNameLower)) {
         // Extract everything after the product name
         annotationText = query.substring(result.name.length).trim()
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:245',message:'Annotation extracted',data:{productName:result.name,query,annotationText,substringStart:result.name.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+        // #endregion
       } else {
         // If product name doesn't match start of query, try parsing the whole query
         const parsed = parseProductInput(query)
         annotationText = parsed.annotation?.fullText || ''
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:249',message:'Annotation parsed via parser',data:{query,parsedAnnotation:parsed.annotation,annotationText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
+        // #endregion
       }
 
       // Use the selected product's category
@@ -257,20 +301,31 @@ export default function ShoppingListPage() {
         return
       }
 
+      const requestBody = {
+        product_id: result.id,
+        category_id: categoryId,
+        quantity: '1',
+        description: annotationText || null,
+      }
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:260',message:'Creating shopping list item from search',data:{requestBody},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
       const response = await fetch('/api/shopping-list', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          product_id: result.id,
-          category_id: categoryId,
-          quantity: '1',
-          description: annotationText || null,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:273',message:'Search result POST response',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
       if (response.ok) {
+        const responseData = await response.json()
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:275',message:'Search result item created',data:{itemId:responseData.item?.id,description:responseData.item?.description},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
         await fetchItems()
         // Don't clear search query immediately - let user see it was added
         // Clear after a short delay or when they interact again
@@ -281,9 +336,15 @@ export default function ShoppingListPage() {
         }, 500)
       } else {
         const errorData = await response.json().catch(() => ({}))
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:283',message:'Error adding search result',data:{error:errorData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
         console.error('Error adding search result:', errorData)
       }
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:285',message:'Exception in handleSearchResultSelect',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+      // #endregion
       console.error('Error adding search result to list:', error)
     }
   }
@@ -302,13 +363,18 @@ export default function ShoppingListPage() {
   }
 
   // Show suggestions if:
-  // 1. Search is active AND (no query OR query too short) AND (list is empty OR normal behavior)
-  // 2. OR if list is completely empty (always show suggestions)
-  const showSuggestions = 
-    (items.length === 0) || 
-    (isSearchActive && (!searchQuery || searchQuery.trim().length < 2))
-  
+  // 1. List is empty (always show suggestions when not searching)
+  // 2. OR search is active AND (no query OR query too short) - but NOT if there's a search query >= 2 chars
   const showSearchResults = isSearchActive && searchQuery && searchQuery.trim().length >= 2
+  const showSuggestions = 
+    (!showSearchResults && items.length === 0) || 
+    (!showSearchResults && isSearchActive && (!searchQuery || searchQuery.trim().length < 2))
+  
+  // #region agent log
+  useEffect(() => {
+    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:297',message:'Visibility state',data:{itemsLength:items.length,isSearchActive,searchQuery,searchQueryLength:searchQuery?.trim().length,showSuggestions,showSearchResults},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'})}).catch(()=>{});
+  }, [items.length, isSearchActive, searchQuery, showSuggestions, showSearchResults]);
+  // #endregion
 
   if (isLoading) {
     return (
