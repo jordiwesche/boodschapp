@@ -149,35 +149,47 @@ export default function ShoppingList({
             {group.categoryName}
           </h2>
 
-          {/* Unchecked items */}
+          {/* Unchecked items - sorted alphabetically */}
           {group.uncheckedItems.length > 0 && (
             <div>
-              {group.uncheckedItems.map((item) => (
-                <ShoppingListItem
-                  key={item.id}
-                  item={item}
-                  onCheck={onCheck}
-                  onUncheck={onUncheck}
-                  onDelete={onDelete}
-                  onUpdateDescription={onUpdateDescription}
-                />
-              ))}
+              {[...group.uncheckedItems]
+                .sort((a, b) => {
+                  const nameA = (a.product_name || '').toLowerCase()
+                  const nameB = (b.product_name || '').toLowerCase()
+                  return nameA.localeCompare(nameB, 'nl')
+                })
+                .map((item) => (
+                  <ShoppingListItem
+                    key={item.id}
+                    item={item}
+                    onCheck={onCheck}
+                    onUncheck={onUncheck}
+                    onDelete={onDelete}
+                    onUpdateDescription={onUpdateDescription}
+                  />
+                ))}
             </div>
           )}
 
-          {/* Checked items (within same category) */}
+          {/* Checked items (within same category) - sorted alphabetically */}
           {group.checkedItems.length > 0 && (
             <div>
-              {group.checkedItems.map((item) => (
-                <ShoppingListItem
-                  key={item.id}
-                  item={item}
-                  onCheck={onCheck}
-                  onUncheck={onUncheck}
-                  onDelete={onDelete}
-                  onUpdateDescription={onUpdateDescription}
-                />
-              ))}
+              {[...group.checkedItems]
+                .sort((a, b) => {
+                  const nameA = (a.product_name || '').toLowerCase()
+                  const nameB = (b.product_name || '').toLowerCase()
+                  return nameA.localeCompare(nameB, 'nl')
+                })
+                .map((item) => (
+                  <ShoppingListItem
+                    key={item.id}
+                    item={item}
+                    onCheck={onCheck}
+                    onUncheck={onUncheck}
+                    onDelete={onDelete}
+                    onUpdateDescription={onUpdateDescription}
+                  />
+                ))}
             </div>
           )}
         </div>
