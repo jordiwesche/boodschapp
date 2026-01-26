@@ -102,10 +102,28 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        const category = Array.isArray(item.product_categories) &&
-          item.product_categories.length > 0
-          ? item.product_categories[0]
-          : null
+        // Get category from join or fetch separately
+        let category = null
+        
+        const hasJoinedCategory = item.product_categories && 
+          Array.isArray(item.product_categories) && 
+          item.product_categories.length > 0 &&
+          item.product_categories[0]?.id
+        
+        if (hasJoinedCategory) {
+          category = item.product_categories[0]
+        } else if (item.category_id) {
+          // Category join didn't work, fetch separately
+          const { data: categoryData, error: categoryError } = await supabase
+            .from('product_categories')
+            .select('id, name, display_order')
+            .eq('id', item.category_id)
+            .single()
+          
+          if (categoryData) {
+            category = categoryData
+          }
+        }
 
         return {
           ...item,
@@ -310,10 +328,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const categoryData = Array.isArray(item.product_categories) &&
-      item.product_categories.length > 0
-      ? item.product_categories[0]
-      : null
+    // Get category from join or fetch separately
+    let categoryData = null
+    
+    const hasJoinedCategory = item.product_categories && 
+      Array.isArray(item.product_categories) && 
+      item.product_categories.length > 0 &&
+      item.product_categories[0]?.id
+    
+    if (hasJoinedCategory) {
+      categoryData = item.product_categories[0]
+    } else if (item.category_id) {
+      // Category join didn't work, fetch separately
+      const { data: category, error: categoryError } = await supabase
+        .from('product_categories')
+        .select('id, name, display_order')
+        .eq('id', item.category_id)
+        .single()
+      
+      if (category) {
+        categoryData = category
+      }
+    }
 
     const transformedItem = {
       id: item.id,

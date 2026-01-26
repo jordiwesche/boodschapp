@@ -109,7 +109,14 @@ export async function PATCH(
     // Transform response
     // If product join didn't work, fetch product separately
     let product = null
-    if (item.product_id && (!item.products || (Array.isArray(item.products) && item.products.length === 0))) {
+    const hasJoinedProduct = item.products && 
+      Array.isArray(item.products) && 
+      item.products.length > 0 &&
+      item.products[0]?.id
+    
+    if (hasJoinedProduct) {
+      product = item.products[0]
+    } else if (item.product_id) {
       const { data: productData } = await supabase
         .from('products')
         .select('id, emoji, name')
@@ -119,14 +126,30 @@ export async function PATCH(
       if (productData) {
         product = productData
       }
-    } else if (Array.isArray(item.products) && item.products.length > 0) {
-      product = item.products[0]
     }
 
-    const category = Array.isArray(item.product_categories) &&
-      item.product_categories.length > 0
-      ? item.product_categories[0]
-      : null
+    // Get category from join or fetch separately
+    let category = null
+    
+    const hasJoinedCategory = item.product_categories && 
+      Array.isArray(item.product_categories) && 
+      item.product_categories.length > 0 &&
+      item.product_categories[0]?.id
+    
+    if (hasJoinedCategory) {
+      category = item.product_categories[0]
+    } else if (item.category_id) {
+      // Category join didn't work, fetch separately
+      const { data: categoryData } = await supabase
+        .from('product_categories')
+        .select('id, name, display_order')
+        .eq('id', item.category_id)
+        .single()
+      
+      if (categoryData) {
+        category = categoryData
+      }
+    }
 
     const transformedItem = {
       id: item.id,

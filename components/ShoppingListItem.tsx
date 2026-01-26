@@ -110,7 +110,7 @@ export default function ShoppingListItem({
             {item.product_name || 'Onbekend product'}
           </span>
           {item.description && !isEditingDescription && (
-            <span className="text-sm text-gray-500">{item.description}</span>
+            <span className="text-sm text-gray-900">{item.description}</span>
           )}
         </div>
       </div>
