@@ -208,6 +208,7 @@ export async function POST(request: NextRequest) {
         product_id,
         product_name,
         quantity,
+        description,
         category_id,
         is_checked,
         checked_at,
