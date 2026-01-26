@@ -43,6 +43,7 @@ export type ShoppingListItem = {
   product_id: string | null
   product_name: string | null
   quantity: string
+  description: string | null
   category_id: string
   is_checked: boolean
   checked_at: string | null
