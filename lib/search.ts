@@ -1,8 +1,9 @@
 import Fuse from 'fuse.js'
+import type { IFuseOptions } from 'fuse.js'
 import { Product } from '@/types/database'
 
 // Fuse.js configuration for fuzzy search
-export const fuseOptions: Fuse.IFuseOptions<Product> = {
+export const fuseOptions: IFuseOptions<Product> = {
   keys: ['name'],
   threshold: 0.3, // 0 = exact match, 1 = match anything (lower = more strict)
   ignoreLocation: true,
