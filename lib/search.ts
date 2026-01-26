@@ -2,17 +2,12 @@ import Fuse from 'fuse.js'
 import { Product } from '@/types/database'
 
 // Fuse.js configuration for fuzzy search
-export const fuseOptions = {
+export const fuseOptions: Fuse.IFuseOptions<Product> = {
   keys: ['name'],
   threshold: 0.3, // 0 = exact match, 1 = match anything (lower = more strict)
   ignoreLocation: true,
   minMatchCharLength: 2,
   includeScore: true,
-  // Normalize to handle singular/plural and case insensitivity
-  getFn: (obj: Product, path: string) => {
-    const value = obj.name
-    return value ? value.toLowerCase() : ''
-  },
 }
 
 /**
