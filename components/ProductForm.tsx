@@ -706,36 +706,37 @@ export default function ProductForm({
     </form>
     <FixedActionBar
       left={
-        onDelete && product ? (
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={loading}
-            className="rounded-md border border-red-300 bg-red-50 p-2 text-red-700 hover:bg-red-100 disabled:opacity-50"
-            aria-label="Verwijder product"
-          >
-            <Trash2 size={18} />
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          >
-            Annuleren
-          </button>
-        )
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={loading}
+          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+        >
+          Annuleren
+        </button>
       }
       right={
-        <button
-          type="submit"
-          form="product-form"
-          disabled={loading}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {loading ? 'Opslaan...' : product ? 'Bijwerken' : 'Toevoegen'}
-        </button>
+        <div className="flex items-center gap-3">
+          {onDelete && product && (
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={loading}
+              className="rounded-md border border-red-300 bg-red-50 p-2 text-red-700 hover:bg-red-100 disabled:opacity-50"
+              aria-label="Verwijder product"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
+          <button
+            type="submit"
+            form="product-form"
+            disabled={loading}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? 'Opslaan...' : product ? 'Bijwerken' : 'Toevoegen'}
+          </button>
+        </div>
       }
     />
     </>
