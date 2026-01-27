@@ -28,18 +28,26 @@ export default function SuggestionBlock({
   // Stagger fade-in animation for suggestions
   useEffect(() => {
     if (isVisible && suggestions.length > 0) {
-      suggestions.forEach((suggestion, index) => {
+      // Reset all elements to initial state first
+      suggestions.forEach((suggestion) => {
         const element = suggestionRefs.current.get(suggestion.id)
         if (element) {
           element.style.opacity = '0'
           element.style.transform = 'translateY(10px)'
-          element.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out'
+          element.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out'
+        }
+      })
+      
+      // Then animate them in with stagger
+      suggestions.forEach((suggestion, index) => {
+        const element = suggestionRefs.current.get(suggestion.id)
+        if (element) {
           setTimeout(() => {
             if (element) {
               element.style.opacity = '1'
               element.style.transform = 'translateY(0)'
             }
-          }, 50 + index * 30) // 30ms stagger delay
+          }, 100 + index * 50) // 100ms initial delay + 50ms per item for better visibility
         }
       })
     }
@@ -74,6 +82,7 @@ export default function SuggestionBlock({
                   }
                 }}
                 onClick={() => onSelect(suggestion)}
+                style={{ opacity: 0, transform: 'translateY(10px)' }}
                 className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                   suggestion.suggestion_type === 'basic'
                     ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
