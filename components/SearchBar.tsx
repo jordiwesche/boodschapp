@@ -32,11 +32,8 @@ export default function SearchBar({
     setIsActive(true)
     // Subtle scale animation on focus
     if (containerRef.current) {
-      animate(
-        containerRef.current,
-        { transform: ['scale(1)', 'scale(1.02)'] },
-        { duration: 0.2, easing: 'ease-out' }
-      )
+      containerRef.current.style.transition = 'transform 0.2s ease-out'
+      containerRef.current.style.transform = 'scale(1.02)'
     }
     onFocus?.()
   }
@@ -47,11 +44,8 @@ export default function SearchBar({
       setIsActive(false)
       // Scale back on blur
       if (containerRef.current) {
-        animate(
-          containerRef.current,
-          { transform: ['scale(1.02)', 'scale(1)'] },
-          { duration: 0.2, easing: 'ease-in' }
-        )
+        containerRef.current.style.transition = 'transform 0.2s ease-in'
+        containerRef.current.style.transform = 'scale(1)'
       }
       onBlur?.()
     }, 200)

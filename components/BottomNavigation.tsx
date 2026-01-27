@@ -43,11 +43,12 @@ export default function BottomNavigation() {
         '[data-nav-active="true"]'
       ) as HTMLElement
       if (activeButton) {
-        animate(
-          activeButton,
-          { transform: ['scale(1)', 'scale(1.1)', 'scale(1)'] },
-          { duration: 0.2, easing: 'ease-out' }
-        )
+        // Use CSS transition for simple scale animation
+        activeButton.style.transition = 'transform 0.2s ease-out'
+        activeButton.style.transform = 'scale(1.1)'
+        setTimeout(() => {
+          activeButton.style.transform = 'scale(1)'
+        }, 200)
       }
       prevPathnameRef.current = pathname
     }

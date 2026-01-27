@@ -44,13 +44,17 @@ export default function ShoppingListItem({
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleCheck = async () => {
-    // Animate checkbox
+    // Animate checkbox with CSS transition
     if (checkboxRef.current) {
-      animate(
-        checkboxRef.current,
-        { transform: ['scale(1)', 'scale(1.2)', 'scale(1)'], opacity: [1, 0.8, 1] },
-        { duration: 0.15, easing: 'ease-out' }
-      )
+      checkboxRef.current.style.transition = 'transform 0.15s ease-out, opacity 0.15s ease-out'
+      checkboxRef.current.style.transform = 'scale(1.2)'
+      checkboxRef.current.style.opacity = '0.8'
+      setTimeout(() => {
+        if (checkboxRef.current) {
+          checkboxRef.current.style.transform = 'scale(1)'
+          checkboxRef.current.style.opacity = '1'
+        }
+      }, 150)
     }
 
     if (item.is_checked) {
@@ -67,7 +71,7 @@ export default function ShoppingListItem({
       if (itemRef.current) {
         await animate(
           itemRef.current,
-          { transform: ['translateX(0)', 'translateX(-100px)'], opacity: [1, 0] },
+          { x: -100, opacity: [1, 0] },
           { duration: 0.2, easing: 'ease-in' }
         )
       }
@@ -82,7 +86,7 @@ export default function ShoppingListItem({
       itemRef.current.style.transform = 'translateY(10px)'
       animate(
         itemRef.current,
-        { opacity: [0, 1], transform: ['translateY(10px)', 'translateY(0)'] },
+        { opacity: [0, 1], y: [10, 0] },
         { duration: 0.2, easing: 'ease-out' }
       )
     }
