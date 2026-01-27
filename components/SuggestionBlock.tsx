@@ -37,7 +37,7 @@ export default function SuggestionBlock({
           setTimeout(() => {
             animate(
               element,
-              { opacity: [0, 1], y: [10, 0] },
+              { opacity: [0, 1], transform: ['translateY(10px)', 'translateY(0)'] },
               { duration: 0.2, delay: index * 0.03, easing: 'ease-out' }
             )
           }, 50)

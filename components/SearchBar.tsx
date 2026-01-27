@@ -34,7 +34,7 @@ export default function SearchBar({
     if (containerRef.current) {
       animate(
         containerRef.current,
-        { scale: [1, 1.02] },
+        { transform: ['scale(1)', 'scale(1.02)'] },
         { duration: 0.2, easing: 'ease-out' }
       )
     }
@@ -49,7 +49,7 @@ export default function SearchBar({
       if (containerRef.current) {
         animate(
           containerRef.current,
-          { scale: [1.02, 1] },
+          { transform: ['scale(1.02)', 'scale(1)'] },
           { duration: 0.2, easing: 'ease-in' }
         )
       }

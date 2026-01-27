@@ -48,7 +48,7 @@ export default function ShoppingListItem({
     if (checkboxRef.current) {
       animate(
         checkboxRef.current,
-        { scale: [1, 1.2, 1], opacity: [1, 0.8, 1] },
+        { transform: ['scale(1)', 'scale(1.2)', 'scale(1)'], opacity: [1, 0.8, 1] },
         { duration: 0.15, easing: 'ease-out' }
       )
     }
@@ -67,7 +67,7 @@ export default function ShoppingListItem({
       if (itemRef.current) {
         await animate(
           itemRef.current,
-          { x: -100, opacity: [1, 0] },
+          { transform: ['translateX(0)', 'translateX(-100px)'], opacity: [1, 0] },
           { duration: 0.2, easing: 'ease-in' }
         )
       }
@@ -82,7 +82,7 @@ export default function ShoppingListItem({
       itemRef.current.style.transform = 'translateY(10px)'
       animate(
         itemRef.current,
-        { opacity: [0, 1], y: [10, 0] },
+        { opacity: [0, 1], transform: ['translateY(10px)', 'translateY(0)'] },
         { duration: 0.2, easing: 'ease-out' }
       )
     }

@@ -45,7 +45,7 @@ export default function BottomNavigation() {
       if (activeButton) {
         animate(
           activeButton,
-          { scale: [1, 1.1, 1] },
+          { transform: ['scale(1)', 'scale(1.1)', 'scale(1)'] },
           { duration: 0.2, easing: 'ease-out' }
         )
       }
