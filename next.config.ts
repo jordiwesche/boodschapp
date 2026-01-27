@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   // Compress output
   compress: true,
+  // Use webpack instead of Turbopack (required for next-pwa)
+  // Turbopack doesn't support webpack plugins yet
+  webpack: (config, { isServer }) => {
+    // Return config as-is, next-pwa will add its own webpack config
+    return config;
+  },
 };
 
 // PWA configuration - only in production
