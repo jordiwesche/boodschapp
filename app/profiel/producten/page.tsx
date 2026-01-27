@@ -2,8 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import ProductList from '@/components/ProductList'
-import CategoryList from '@/components/CategoryList'
+import dynamic from 'next/dynamic'
+
+// Dynamic imports for heavy components - only load when needed
+const ProductList = dynamic(() => import('@/components/ProductList'), {
+  loading: () => <div className="text-gray-500 p-4">Laden...</div>,
+})
+
+const CategoryList = dynamic(() => import('@/components/CategoryList'), {
+  loading: () => <div className="text-gray-500 p-4">Laden...</div>,
+})
 
 interface Category {
   id: string

@@ -4,20 +4,29 @@ import "./globals.css";
 import NavigationWrapper from "@/components/NavigationWrapper";
 import Providers from "@/components/Providers";
 import PageTransition from "@/components/PageTransition";
+import ResourceHints from "@/components/ResourceHints";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: 'swap', // Prevent FOIT (Flash of Invisible Text)
+  preload: true, // Preload critical font
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: 'swap',
+  preload: false, // Not critical, don't preload
 });
 
 export const metadata: Metadata = {
   title: "Boodschapp - Slimme Boodschappen App",
   description: "Samen boodschappen doen met je huishouden",
+  other: {
+    // Resource hints for performance
+    'preconnect-supabase': 'https://medmrhmuhghcozfydxov.supabase.co',
+  },
 };
 
 export const viewport: Viewport = {
@@ -34,9 +43,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="nl">
+      <head>
+        {/* Resource hints for performance - added via ResourceHints component */}
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <ResourceHints />
         <Providers>
           <PageTransition>
             {children}
