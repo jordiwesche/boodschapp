@@ -2,7 +2,6 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { ShoppingCart, Calendar, User } from 'lucide-react'
-import { animate } from 'motion'
 import { useEffect, useRef } from 'react'
 
 export default function BottomNavigation() {

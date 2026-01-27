@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Check, X, Pencil } from 'lucide-react'
-import { animate } from 'motion'
 
 interface ShoppingListItemData {
   id: string

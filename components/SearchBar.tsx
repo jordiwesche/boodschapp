@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Search } from 'lucide-react'
-import { animate } from 'motion'
 
 interface SearchBarProps {
   onSearch?: (query: string) => void
