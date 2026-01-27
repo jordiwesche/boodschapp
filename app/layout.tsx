@@ -23,6 +23,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Boodschapp - Slimme Boodschappen App",
   description: "Samen boodschappen doen met je huishouden",
+  manifest: "/manifest.json",
+  themeColor: "#3b82f6",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Boodschapp",
+  },
   other: {
     // Resource hints for performance
     'preconnect-supabase': 'https://medmrhmuhghcozfydxov.supabase.co',
