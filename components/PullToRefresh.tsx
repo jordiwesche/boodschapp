@@ -1,71 +1,88 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ArrowDown } from 'lucide-react'
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>
   children: React.ReactNode
   disabled?: boolean
+  scrollContainerRef?: React.RefObject<HTMLElement | null>
 }
 
 export default function PullToRefresh({
   onRefresh,
   children,
   disabled = false,
+  scrollContainerRef,
 }: PullToRefreshProps) {
   const [isPulling, setIsPulling] = useState(false)
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const startY = useRef<number>(0)
-  const currentY = useRef<number>(0)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const touchStartY = useRef<number>(0)
+  const isDraggingRef = useRef(false)
   const threshold = 80 // Distance in pixels to trigger refresh
 
   useEffect(() => {
-    if (disabled || !containerRef.current) return
+    if (disabled) return
 
-    const container = containerRef.current
-    let touchStartY = 0
-    let isDragging = false
+    const container = scrollContainerRef?.current || document.documentElement
 
     const handleTouchStart = (e: TouchEvent) => {
-      // Only trigger if at top of scroll
-      if (container.scrollTop !== 0) return
+      // Only trigger if at top of scroll (with small tolerance)
+      const scrollTop = container === document.documentElement 
+        ? window.scrollY 
+        : (container as HTMLElement).scrollTop
       
-      touchStartY = e.touches[0].clientY
-      startY.current = touchStartY
-      currentY.current = touchStartY
-      isDragging = true
+      if (scrollTop > 5) return // Allow small tolerance
+      
+      touchStartY.current = e.touches[0].clientY
+      isDraggingRef.current = true
     }
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!isDragging) return
+      if (!isDraggingRef.current) return
 
-      currentY.current = e.touches[0].clientY
-      const distance = currentY.current - touchStartY
+      const currentY = e.touches[0].clientY
+      const distance = currentY - touchStartY.current
 
-      // Only allow pull down (positive distance)
-      if (distance > 0 && container.scrollTop === 0) {
-        e.preventDefault() // Prevent default scroll
+      // Check if still at top
+      const scrollTop = container === document.documentElement 
+        ? window.scrollY 
+        : (container as HTMLElement).scrollTop
+
+      // Only allow pull down (positive distance) when at top
+      if (distance > 0 && scrollTop <= 5) {
+        // Only prevent default when pulling down significantly
+        if (distance > 10) {
+          e.preventDefault()
+        }
         setIsPulling(true)
         setPullDistance(Math.min(distance, threshold * 1.5)) // Cap at 1.5x threshold
+      } else if (distance <= 0) {
+        // Reset if pulling up
+        setIsPulling(false)
+        setPullDistance(0)
+        isDraggingRef.current = false
       }
     }
 
     const handleTouchEnd = async () => {
-      if (!isDragging) return
+      if (!isDraggingRef.current) return
 
-      isDragging = false
+      isDraggingRef.current = false
 
       if (pullDistance >= threshold && !isRefreshing) {
         setIsRefreshing(true)
         try {
           await onRefresh()
         } finally {
-          setIsRefreshing(false)
-          setIsPulling(false)
-          setPullDistance(0)
+          // Keep refreshing state for a moment for visual feedback
+          setTimeout(() => {
+            setIsRefreshing(false)
+            setIsPulling(false)
+            setPullDistance(0)
+          }, 300)
         }
       } else {
         // Reset if not enough pull
@@ -74,47 +91,52 @@ export default function PullToRefresh({
       }
     }
 
-    container.addEventListener('touchstart', handleTouchStart, { passive: false })
-    container.addEventListener('touchmove', handleTouchMove, { passive: false })
-    container.addEventListener('touchend', handleTouchEnd)
+    // Use capture phase to catch events early
+    document.addEventListener('touchstart', handleTouchStart, { passive: true })
+    document.addEventListener('touchmove', handleTouchMove, { passive: false })
+    document.addEventListener('touchend', handleTouchEnd, { passive: true })
 
     return () => {
-      container.removeEventListener('touchstart', handleTouchStart)
-      container.removeEventListener('touchmove', handleTouchMove)
-      container.removeEventListener('touchend', handleTouchEnd)
+      document.removeEventListener('touchstart', handleTouchStart)
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [disabled, onRefresh, pullDistance, isRefreshing])
+  }, [disabled, onRefresh, pullDistance, isRefreshing, scrollContainerRef])
 
   const pullProgress = Math.min(pullDistance / threshold, 1)
-  const shouldShowIndicator = isPulling || isRefreshing
+  const shouldShowIndicator = (isPulling && pullDistance > 20) || isRefreshing
 
   return (
-    <div ref={containerRef} className="relative h-full overflow-auto">
+    <>
       {/* Pull to refresh indicator */}
       {shouldShowIndicator && (
         <div
-          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-white transition-all duration-200"
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-white shadow-sm transition-all duration-200"
           style={{
             height: `${Math.min(pullDistance, threshold * 1.5)}px`,
-            transform: `translateY(${Math.max(0, pullDistance - threshold * 1.5)}px)`,
-            opacity: pullProgress,
+            transform: `translateY(${Math.max(0, pullDistance - 60)}px)`,
+            opacity: Math.min(pullProgress * 1.5, 1),
           }}
         >
           {isRefreshing ? (
-            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+              <span className="text-xs font-medium text-gray-600">Vernieuwen...</span>
+            </div>
           ) : (
             <div
               className="flex flex-col items-center gap-2"
-              style={{ opacity: pullProgress }}
+              style={{ opacity: Math.min(pullProgress * 1.5, 1) }}
             >
-              <div
-                className="h-6 w-6 rounded-full border-2 border-blue-500"
-                style={{
-                  transform: `rotate(${pullProgress * 180}deg)`,
-                  borderTopColor: 'transparent',
-                }}
-              />
-              <span className="text-xs text-gray-600">
+              <div className="relative">
+                <ArrowDown
+                  className="h-6 w-6 text-blue-500 transition-transform duration-200"
+                  style={{
+                    transform: `rotate(${pullProgress >= 1 ? 180 : 0}deg) translateY(${pullProgress * 5}px)`,
+                  }}
+                />
+              </div>
+              <span className="text-xs font-medium text-gray-600 whitespace-nowrap">
                 {pullDistance >= threshold ? 'Los om te vernieuwen' : 'Trek om te vernieuwen'}
               </span>
             </div>
@@ -122,6 +144,6 @@ export default function PullToRefresh({
         </div>
       )}
       {children}
-    </div>
+    </>
   )
 }

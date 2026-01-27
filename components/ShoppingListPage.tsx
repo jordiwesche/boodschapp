@@ -569,9 +569,9 @@ export default function ShoppingListPage() {
 
       <main 
         ref={scrollContainerRef}
-        className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8 overflow-auto"
+        className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8"
       >
-        <PullToRefresh onRefresh={handleRefresh}>
+        <PullToRefresh onRefresh={handleRefresh} scrollContainerRef={scrollContainerRef}>
           {isLoadingItems ? (
             <ShoppingListSkeleton />
           ) : (
