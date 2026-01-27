@@ -253,14 +253,10 @@ export default function ShoppingListPage() {
         purchaseHistoryTimersRef.current.delete(id)
       }
 
-      try {
-        await uncheckItemMutation.mutateAsync(id)
-      } catch (error) {
-        setErrorMessage('Kon item niet unchecken. Probeer het opnieuw.')
-        setTimeout(() => setErrorMessage(null), 5000)
-        throw error
-      }
+      await uncheckItemMutation.mutateAsync(id)
     } catch (error) {
+      setErrorMessage('Kon item niet unchecken. Probeer het opnieuw.')
+      setTimeout(() => setErrorMessage(null), 5000)
       console.error('Error unchecking item:', error)
     }
   }
