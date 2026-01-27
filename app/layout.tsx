@@ -43,9 +43,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="nl">
-      <head>
-        {/* Resource hints for performance - added via ResourceHints component */}
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
