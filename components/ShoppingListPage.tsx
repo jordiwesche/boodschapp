@@ -7,31 +7,20 @@ import SearchResults from './SearchResults'
 import ShoppingList from './ShoppingList'
 import { parseProductInput } from '@/lib/annotation-parser'
 import { createClient } from '@/lib/supabase/client'
-
-interface ShoppingListItemData {
-  id: string
-  product_id: string | null
-  product_name: string | null
-  emoji: string
-  quantity: string
-  description: string | null
-  category_id: string
-  category: {
-    id: string
-    name: string
-    display_order: number
-  } | null
-  is_checked: boolean
-  checked_at: string | null
-  created_at: string
-}
-
-interface Suggestion {
-  id: string
-  emoji: string
-  name: string
-  suggestion_type: 'basic' | 'predicted'
-}
+import {
+  useShoppingListItems,
+  useSuggestions,
+  useCheckItem,
+  useUncheckItem,
+  useDeleteItem,
+  useUpdateDescription,
+  useAddItem,
+  useClearChecked,
+  type ShoppingListItemData,
+  type Suggestion,
+  queryKeys,
+} from '@/lib/hooks/use-shopping-list'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface SearchResult {
   id: string
@@ -45,49 +34,28 @@ interface SearchResult {
 }
 
 export default function ShoppingListPage() {
-  const [items, setItems] = useState<ShoppingListItemData[]>([])
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  // Use TanStack Query hooks for data fetching
+  const { data: items = [], isLoading } = useShoppingListItems()
+  const { data: suggestions = [] } = useSuggestions()
+  const queryClient = useQueryClient()
+
+  // Mutations
+  const checkItemMutation = useCheckItem()
+  const uncheckItemMutation = useUncheckItem()
+  const deleteItemMutation = useDeleteItem()
+  const updateDescriptionMutation = useUpdateDescription()
+  const addItemMutation = useAddItem()
+  const clearCheckedMutation = useClearChecked()
+
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearchActive, setIsSearchActive] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [keepSuggestionsOpen, setKeepSuggestionsOpen] = useState(false)
 
-  // Fetch shopping list items
-  const fetchItems = async () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:55',message:'fetchItems entry',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
-    try {
-      const response = await fetch('/api/shopping-list')
-      if (response.ok) {
-        const data = await response.json()
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:60',message:'Items fetched',data:{itemsCount:data.items?.length,items:data.items?.map((i:any)=>({id:i.id,productId:i.product_id,productName:i.product_name,emoji:i.emoji}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
-        // #endregion
-        setItems(data.items || [])
-      }
-    } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:64',message:'Error fetching items',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
-      console.error('Error fetching shopping list:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Fetch suggestions
-  const fetchSuggestions = async () => {
-    try {
-      const response = await fetch('/api/suggestions')
-      if (response.ok) {
-        const data = await response.json()
-        setSuggestions(data.suggestions || [])
-      }
-    } catch (error) {
-      console.error('Error fetching suggestions:', error)
-    }
+  // Helper function to invalidate queries (used by realtime subscription)
+  const invalidateQueries = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.shoppingListItems })
+    queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
   }
 
   // Search products
@@ -148,9 +116,6 @@ export default function ShoppingListPage() {
 
   // Set up realtime subscription for shopping list items
   useEffect(() => {
-    fetchItems()
-    fetchSuggestions()
-
     // Get household_id from user API
     const setupRealtime = async () => {
       try {
@@ -176,8 +141,7 @@ export default function ShoppingListPage() {
             },
             (payload) => {
               console.log('Realtime INSERT:', payload)
-              fetchItems()
-              fetchSuggestions()
+              invalidateQueries()
             }
           )
           .on(
@@ -190,8 +154,7 @@ export default function ShoppingListPage() {
             },
             (payload) => {
               console.log('Realtime UPDATE:', payload)
-              fetchItems()
-              fetchSuggestions()
+              invalidateQueries()
             }
           )
           .on(
@@ -204,8 +167,7 @@ export default function ShoppingListPage() {
             },
             (payload) => {
               console.log('Realtime DELETE:', payload)
-              fetchItems()
-              fetchSuggestions()
+              invalidateQueries()
             }
           )
           .subscribe((status) => {
@@ -230,49 +192,39 @@ export default function ShoppingListPage() {
         })
       }
     }
-  }, [])
+  }, [queryClient])
 
   const purchaseHistoryTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
 
   const handleCheck = async (id: string) => {
     try {
-      const response = await fetch(`/api/shopping-list/check/${id}`, {
-        method: 'POST',
-      })
+      await checkItemMutation.mutateAsync(id)
 
-      if (response.ok) {
-        // Refresh items and suggestions
-        await fetchItems()
-        await fetchSuggestions()
-
-        // Schedule purchase history recording after 30 seconds
-        // Clear any existing timer for this item
-        const existingTimer = purchaseHistoryTimersRef.current.get(id)
-        if (existingTimer) {
-          clearTimeout(existingTimer)
-        }
-
-        const timer = setTimeout(async () => {
-          try {
-            // Verify item is still checked before recording
-            const checkResponse = await fetch(`/api/shopping-list/record-purchase/${id}`, {
-              method: 'POST',
-            })
-            if (checkResponse.ok) {
-              // Refresh suggestions as purchase history affects predictions
-              await fetchSuggestions()
-            }
-          } catch (error) {
-            console.error('Error recording purchase history:', error)
-          } finally {
-            purchaseHistoryTimersRef.current.delete(id)
-          }
-        }, 30000) // 30 seconds
-
-        purchaseHistoryTimersRef.current.set(id, timer)
-      } else {
-        console.error('Error checking item')
+      // Schedule purchase history recording after 30 seconds
+      // Clear any existing timer for this item
+      const existingTimer = purchaseHistoryTimersRef.current.get(id)
+      if (existingTimer) {
+        clearTimeout(existingTimer)
       }
+
+      const timer = setTimeout(async () => {
+        try {
+          // Verify item is still checked before recording
+          const checkResponse = await fetch(`/api/shopping-list/record-purchase/${id}`, {
+            method: 'POST',
+          })
+          if (checkResponse.ok) {
+            // Refresh suggestions as purchase history affects predictions
+            queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
+          }
+        } catch (error) {
+          console.error('Error recording purchase history:', error)
+        } finally {
+          purchaseHistoryTimersRef.current.delete(id)
+        }
+      }, 30000) // 30 seconds
+
+      purchaseHistoryTimersRef.current.set(id, timer)
     } catch (error) {
       console.error('Error checking item:', error)
     }
@@ -287,21 +239,7 @@ export default function ShoppingListPage() {
         purchaseHistoryTimersRef.current.delete(id)
       }
 
-      const response = await fetch(`/api/shopping-list/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          is_checked: false,
-        }),
-      })
-
-      if (response.ok) {
-        await fetchItems()
-      } else {
-        console.error('Error unchecking item')
-      }
+      await uncheckItemMutation.mutateAsync(id)
     } catch (error) {
       console.error('Error unchecking item:', error)
     }
@@ -309,15 +247,7 @@ export default function ShoppingListPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetch(`/api/shopping-list/${id}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        await fetchItems()
-      } else {
-        console.error('Error deleting item')
-      }
+      await deleteItemMutation.mutateAsync(id)
     } catch (error) {
       console.error('Error deleting item:', error)
     }
@@ -325,21 +255,7 @@ export default function ShoppingListPage() {
 
   const handleUpdateDescription = async (id: string, description: string) => {
     try {
-      const response = await fetch(`/api/shopping-list/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          description: description || null,
-        }),
-      })
-
-      if (response.ok) {
-        await fetchItems()
-      } else {
-        console.error('Error updating description')
-      }
+      await updateDescriptionMutation.mutateAsync({ id, description })
     } catch (error) {
       console.error('Error updating description:', error)
     }
@@ -361,17 +277,7 @@ export default function ShoppingListPage() {
     }
 
     try {
-      const response = await fetch('/api/shopping-list/clear-checked', {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        await fetchItems()
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('Error clearing checked items:', errorData)
-        alert('Er is een fout opgetreden bij het verwijderen van de items.')
-      }
+      await clearCheckedMutation.mutateAsync()
     } catch (error) {
       console.error('Error clearing checked items:', error)
       alert('Er is een fout opgetreden bij het verwijderen van de items.')
@@ -431,24 +337,11 @@ export default function ShoppingListPage() {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:222',message:'Shopping list POST response',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
       // #endregion
-      if (response.ok) {
-        const responseData = await response.json()
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:225',message:'Item created successfully',data:{itemId:responseData.item?.id,productId:responseData.item?.product_id,productName:responseData.item?.product_name,emoji:responseData.item?.emoji},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
-        // #endregion
-        await fetchItems()
-        await fetchSuggestions() // Refresh suggestions to remove the added product
-        // Keep suggestions open after adding
-        setKeepSuggestionsOpen(true)
-        setIsSearchActive(true) // Keep search active to show suggestions
-        setSearchQuery('') // Clear search query
-      } else {
-        const errorData = await response.json()
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:228',message:'Error adding suggestion',data:{error:errorData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
-        // #endregion
-        console.error('Error adding suggestion:', errorData)
-      }
+      await addItemMutation.mutateAsync(requestBody)
+      // Keep suggestions open after adding
+      setKeepSuggestionsOpen(true)
+      setIsSearchActive(true) // Keep search active to show suggestions
+      setSearchQuery('') // Clear search query
     } catch (error) {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:231',message:'Exception in handleSuggestionSelect',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
@@ -518,39 +411,13 @@ export default function ShoppingListPage() {
               quantity: '1',
               description: initialDescription,
             }
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:260',message:'Creating shopping list item from search',data:{requestBody},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-              // #endregion
-              const response = await fetch('/api/shopping-list', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
-              })
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:273',message:'Search result POST response',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-              // #endregion
-              if (response.ok) {
-                const responseData = await response.json()
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:275',message:'Search result item created',data:{itemId:responseData.item?.id,description:responseData.item?.description},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-                // #endregion
-                await fetchItems()
-                setTimeout(() => {
-                  setSearchQuery('')
-                  setIsSearchActive(false)
-                  setSearchResults([])
-                }, 500)
-                return
-              } else {
-                const errorData = await response.json().catch(() => ({}))
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:283',message:'Error adding search result',data:{error:errorData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-                // #endregion
-                console.error('Error adding search result:', errorData)
-                return
-              }
+              await addItemMutation.mutateAsync(requestBody)
+              setTimeout(() => {
+                setSearchQuery('')
+                setIsSearchActive(false)
+                setSearchResults([])
+              }, 500)
+              return
             }
           }
         } catch (error) {
@@ -576,40 +443,14 @@ export default function ShoppingListPage() {
         quantity: '1',
         description: initialDescription,
       }
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:260',message:'Creating shopping list item from search',data:{requestBody},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-      // #endregion
-      const response = await fetch('/api/shopping-list', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      })
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:273',message:'Search result POST response',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-      // #endregion
-      if (response.ok) {
-        const responseData = await response.json()
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:275',message:'Search result item created',data:{itemId:responseData.item?.id,description:responseData.item?.description},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-        // #endregion
-        await fetchItems()
-        // Don't clear search query immediately - let user see it was added
-        // Clear after a short delay or when they interact again
-        setTimeout(() => {
-          setSearchQuery('')
-          setIsSearchActive(false)
-          setSearchResults([])
-        }, 500)
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:283',message:'Error adding search result',data:{error:errorData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-        // #endregion
-        console.error('Error adding search result:', errorData)
-      }
+      await addItemMutation.mutateAsync(requestBody)
+      // Don't clear search query immediately - let user see it was added
+      // Clear after a short delay or when they interact again
+      setTimeout(() => {
+        setSearchQuery('')
+        setIsSearchActive(false)
+        setSearchResults([])
+      }, 500)
     } catch (error) {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:285',message:'Exception in handleSearchResultSelect',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
@@ -620,7 +461,8 @@ export default function ShoppingListPage() {
 
   const handleSearchFocus = () => {
     setIsSearchActive(true)
-    fetchSuggestions() // Refresh suggestions when search becomes active
+    // Refresh suggestions when search becomes active
+    queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
     
     // Prevent page scrolling when keyboard appears on mobile
     // Only apply on mobile devices
