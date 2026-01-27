@@ -15,7 +15,7 @@ export default function Skeleton({
   height,
   animation = 'wave',
 }: SkeletonProps) {
-  const baseClasses = 'bg-gray-200 dark:bg-gray-700'
+  const baseClasses = 'bg-gray-200'
   
   const variantClasses = {
     text: 'rounded',

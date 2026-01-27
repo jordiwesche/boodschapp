@@ -62,14 +62,15 @@ select {
   animation: shimmer 2s infinite;
 }
 
+/* Force light gray skeleton regardless of dark mode preference */
 @media (prefers-color-scheme: dark) {
   .animate-shimmer {
     background: linear-gradient(
       90deg,
-      #1f2937 0%,
-      #374151 50%,
-      #1f2937 100%
-    );
+      #f3f4f6 0%,
+      #e5e7eb 50%,
+      #f3f4f6 100%
+    ) !important;
     background-size: 1000px 100%;
   }
 }
