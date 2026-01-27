@@ -23,18 +23,22 @@ export default function PullToRefresh({
   const isDraggingRef = useRef(false)
   const threshold = 80 // Distance in pixels to trigger refresh
 
+  // Helper to check if at top of scroll
+  const isAtTop = (): boolean => {
+    if (scrollContainerRef?.current) {
+      return scrollContainerRef.current.scrollTop === 0
+    }
+    return window.scrollY === 0
+  }
+
   useEffect(() => {
     if (disabled) return
 
-    const container = scrollContainerRef?.current || document.documentElement
-
     const handleTouchStart = (e: TouchEvent) => {
-      // Only trigger if at top of scroll (with small tolerance)
-      const scrollTop = container === document.documentElement 
-        ? window.scrollY 
-        : (container as HTMLElement).scrollTop
-      
-      if (scrollTop > 5) return // Allow small tolerance
+      // Only trigger if EXACTLY at top of scroll (no tolerance)
+      if (!isAtTop()) {
+        return
+      }
       
       touchStartY.current = e.touches[0].clientY
       isDraggingRef.current = true
@@ -46,13 +50,17 @@ export default function PullToRefresh({
       const currentY = e.touches[0].clientY
       const distance = currentY - touchStartY.current
 
-      // Check if still at top
-      const scrollTop = container === document.documentElement 
-        ? window.scrollY 
-        : (container as HTMLElement).scrollTop
+      // Check if still at top - must be exactly 0
+      if (!isAtTop()) {
+        // Reset if scrolled away from top
+        setIsPulling(false)
+        setPullDistance(0)
+        isDraggingRef.current = false
+        return
+      }
 
       // Only allow pull down (positive distance) when at top
-      if (distance > 0 && scrollTop <= 5) {
+      if (distance > 0) {
         // Only prevent default when pulling down significantly
         if (distance > 10) {
           e.preventDefault()
@@ -72,6 +80,13 @@ export default function PullToRefresh({
 
       isDraggingRef.current = false
 
+      // Double check we're still at top before refreshing
+      if (!isAtTop()) {
+        setIsPulling(false)
+        setPullDistance(0)
+        return
+      }
+
       if (pullDistance >= threshold && !isRefreshing) {
         setIsRefreshing(true)
         try {
@@ -82,7 +97,7 @@ export default function PullToRefresh({
             setIsRefreshing(false)
             setIsPulling(false)
             setPullDistance(0)
-          }, 300)
+          }, 200)
         }
       } else {
         // Reset if not enough pull

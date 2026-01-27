@@ -40,8 +40,8 @@ interface SearchResult {
 
 export default function ShoppingListPage() {
   // Use TanStack Query hooks for data fetching
-  const { data: items = [], isLoading: isLoadingItems } = useShoppingListItems()
-  const { data: suggestions = [], isLoading: isLoadingSuggestions } = useSuggestions()
+  const { data: items = [], isLoading: isLoadingItems, refetch: refetchItems } = useShoppingListItems()
+  const { data: suggestions = [], isLoading: isLoadingSuggestions, refetch: refetchSuggestions } = useSuggestions()
   const queryClient = useQueryClient()
 
   // Mutations
@@ -67,12 +67,14 @@ export default function ShoppingListPage() {
     queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
   }
 
-  // Pull to refresh handler
+  // Pull to refresh handler - use refetch for faster refresh
   const handleRefresh = async () => {
     clearScroll() // Clear scroll position on refresh
+    // Use refetch instead of invalidate for faster response
+    // Refetch immediately fetches new data, invalidate waits for next use
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.shoppingListItems }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.suggestions }),
+      refetchItems(),
+      refetchSuggestions(),
     ])
   }
 
