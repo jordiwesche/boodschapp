@@ -7,6 +7,7 @@ import SearchResults from './SearchResults'
 import ShoppingList from './ShoppingList'
 import ShoppingListSkeleton from './ShoppingListSkeleton'
 import SuggestionSkeleton from './SuggestionSkeleton'
+import PullToRefresh from './PullToRefresh'
 import { parseProductInput } from '@/lib/annotation-parser'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -23,6 +24,8 @@ import {
   queryKeys,
 } from '@/lib/hooks/use-shopping-list'
 import { useQueryClient } from '@tanstack/react-query'
+import { useScrollRestore } from '@/lib/hooks/use-scroll-restore'
+import { haptic } from '@/lib/haptics'
 
 interface SearchResult {
   id: string
@@ -55,11 +58,22 @@ export default function ShoppingListPage() {
   const [keepSuggestionsOpen, setKeepSuggestionsOpen] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const { clearScroll } = useScrollRestore(scrollContainerRef)
 
   // Helper function to invalidate queries (used by realtime subscription)
   const invalidateQueries = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.shoppingListItems })
     queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
+  }
+
+  // Pull to refresh handler
+  const handleRefresh = async () => {
+    clearScroll() // Clear scroll position on refresh
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.shoppingListItems }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.suggestions }),
+    ])
   }
 
   // Search products
@@ -205,6 +219,7 @@ export default function ShoppingListPage() {
   const purchaseHistoryTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
 
   const handleCheck = async (id: string) => {
+    haptic('light')
     try {
       try {
         await checkItemMutation.mutateAsync(id)
@@ -245,6 +260,7 @@ export default function ShoppingListPage() {
   }
 
   const handleUncheck = async (id: string) => {
+    haptic('light')
     try {
       // Cancel purchase history timer if item is unchecked before 30 seconds
       const timer = purchaseHistoryTimersRef.current.get(id)
@@ -262,6 +278,7 @@ export default function ShoppingListPage() {
   }
 
   const handleDelete = async (id: string) => {
+    haptic('medium')
     try {
       await deleteItemMutation.mutateAsync(id)
     } catch (error) {
@@ -550,19 +567,24 @@ export default function ShoppingListPage() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
-        {isLoadingItems ? (
-          <ShoppingListSkeleton />
-        ) : (
-          <ShoppingList
-            items={items}
-            onCheck={handleCheck}
-            onUncheck={handleUncheck}
-            onDelete={handleDelete}
-            onUpdateDescription={handleUpdateDescription}
-            onClearChecked={handleClearChecked}
-          />
-        )}
+      <main 
+        ref={scrollContainerRef}
+        className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8 overflow-auto"
+      >
+        <PullToRefresh onRefresh={handleRefresh}>
+          {isLoadingItems ? (
+            <ShoppingListSkeleton />
+          ) : (
+            <ShoppingList
+              items={items}
+              onCheck={handleCheck}
+              onUncheck={handleUncheck}
+              onDelete={handleDelete}
+              onUpdateDescription={handleUpdateDescription}
+              onClearChecked={handleClearChecked}
+            />
+          )}
+        </PullToRefresh>
       </main>
 
       <SearchBar

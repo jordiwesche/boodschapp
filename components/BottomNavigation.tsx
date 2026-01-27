@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { ShoppingCart, Calendar, User } from 'lucide-react'
 import { useEffect, useRef } from 'react'
+import { haptic } from '@/lib/haptics'
 
 export default function BottomNavigation() {
   const pathname = usePathname()
@@ -63,7 +64,10 @@ export default function BottomNavigation() {
           return (
             <button
               key={item.path}
-              onClick={() => router.push(item.path)}
+              onClick={() => {
+                haptic('light')
+                router.push(item.path)
+              }}
               onMouseEnter={() => {
                 // Prefetch route on hover
                 router.prefetch(item.path)
