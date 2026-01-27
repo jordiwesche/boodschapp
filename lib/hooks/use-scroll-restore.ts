@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
  * Hook to save and restore scroll position when navigating between pages
  * Uses sessionStorage to persist scroll position per route
  */
-export function useScrollRestore(containerRef: React.RefObject<HTMLElement>) {
+export function useScrollRestore(containerRef: React.RefObject<HTMLElement | null>) {
   const pathname = usePathname()
   const scrollKey = `scroll-${pathname}`
   const isRestoringRef = useRef(false)
