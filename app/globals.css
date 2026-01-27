@@ -24,3 +24,19 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Prevent zoom on input focus on mobile devices */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+@media screen and (max-width: 768px) {
+  /* Prevent page scrolling when keyboard appears */
+  body.keyboard-open {
+    position: fixed;
+    width: 100%;
+    overflow: hidden;
+  }
+}

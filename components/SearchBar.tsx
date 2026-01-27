@@ -82,7 +82,8 @@ export default function SearchBar({
               onFocus={handleFocus}
               onBlur={handleBlur}
               placeholder={placeholder}
-              className="flex-1 border-0 bg-transparent text-gray-900 placeholder:text-gray-400 focus:outline-none"
+              className="flex-1 border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
+              style={{ fontSize: '16px' }}
             />
           </div>
         </div>

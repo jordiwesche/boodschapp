@@ -136,6 +136,16 @@ export default function ShoppingListPage() {
     setSearchQuery('')
   }
 
+  // Cleanup purchase history timers on unmount
+  useEffect(() => {
+    return () => {
+      purchaseHistoryTimersRef.current.forEach((timer) => {
+        clearTimeout(timer)
+      })
+      purchaseHistoryTimersRef.current.clear()
+    }
+  }, [])
+
   // Set up realtime subscription for shopping list items
   useEffect(() => {
     fetchItems()
@@ -222,6 +232,8 @@ export default function ShoppingListPage() {
     }
   }, [])
 
+  const purchaseHistoryTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
+
   const handleCheck = async (id: string) => {
     try {
       const response = await fetch(`/api/shopping-list/check/${id}`, {
@@ -232,6 +244,32 @@ export default function ShoppingListPage() {
         // Refresh items and suggestions
         await fetchItems()
         await fetchSuggestions()
+
+        // Schedule purchase history recording after 30 seconds
+        // Clear any existing timer for this item
+        const existingTimer = purchaseHistoryTimersRef.current.get(id)
+        if (existingTimer) {
+          clearTimeout(existingTimer)
+        }
+
+        const timer = setTimeout(async () => {
+          try {
+            // Verify item is still checked before recording
+            const checkResponse = await fetch(`/api/shopping-list/record-purchase/${id}`, {
+              method: 'POST',
+            })
+            if (checkResponse.ok) {
+              // Refresh suggestions as purchase history affects predictions
+              await fetchSuggestions()
+            }
+          } catch (error) {
+            console.error('Error recording purchase history:', error)
+          } finally {
+            purchaseHistoryTimersRef.current.delete(id)
+          }
+        }, 30000) // 30 seconds
+
+        purchaseHistoryTimersRef.current.set(id, timer)
       } else {
         console.error('Error checking item')
       }
@@ -242,6 +280,13 @@ export default function ShoppingListPage() {
 
   const handleUncheck = async (id: string) => {
     try {
+      // Cancel purchase history timer if item is unchecked before 30 seconds
+      const timer = purchaseHistoryTimersRef.current.get(id)
+      if (timer) {
+        clearTimeout(timer)
+        purchaseHistoryTimersRef.current.delete(id)
+      }
+
       const response = await fetch(`/api/shopping-list/${id}`, {
         method: 'PATCH',
         headers: {
@@ -576,9 +621,41 @@ export default function ShoppingListPage() {
   const handleSearchFocus = () => {
     setIsSearchActive(true)
     fetchSuggestions() // Refresh suggestions when search becomes active
+    
+    // Prevent page scrolling when keyboard appears on mobile
+    // Only apply on mobile devices
+    if (window.innerWidth <= 768) {
+      // Store current scroll position
+      const scrollY = window.scrollY || window.pageYOffset
+      // Save scroll position to data attribute
+      document.documentElement.setAttribute('data-scroll-y', scrollY.toString())
+      // Prevent body scroll
+      document.body.style.position = 'fixed'
+      document.body.style.top = `-${scrollY}px`
+      document.body.style.width = '100%'
+      document.body.style.overflow = 'hidden'
+    }
   }
 
   const handleSearchBlur = () => {
+    // Restore scroll position when keyboard closes
+    // Only apply on mobile devices
+    if (window.innerWidth <= 768) {
+      const scrollY = document.documentElement.getAttribute('data-scroll-y')
+      document.body.style.position = ''
+      document.body.style.top = ''
+      document.body.style.width = ''
+      document.body.style.overflow = ''
+      document.documentElement.removeAttribute('data-scroll-y')
+      
+      if (scrollY) {
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+          window.scrollTo(0, parseInt(scrollY))
+        })
+      }
+    }
+    
     // Don't hide immediately to allow clicks on results
     // Increase timeout to ensure clicks are processed
     setTimeout(() => {

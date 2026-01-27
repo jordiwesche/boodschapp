@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { hasRecentPurchase } from '@/lib/prediction'
 
-// POST /api/shopping-list/check/[id] - Check item and log to purchase history
+// POST /api/shopping-list/check/[id] - Check item (purchase history recorded after 30s delay)
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -49,30 +48,7 @@ export async function POST(
       )
     }
 
-    if (!item.product_id) {
-      return NextResponse.json(
-        { error: 'Item heeft geen gekoppeld product' },
-        { status: 400 }
-      )
-    }
-
-    // Check if there's a recent purchase (< 30 seconds ago) for this product
-    const { data: recentPurchases, error: purchaseHistoryError } = await supabase
-      .from('purchase_history')
-      .select('*')
-      .eq('household_id', user.household_id)
-      .eq('product_id', item.product_id)
-      .order('purchased_at', { ascending: false })
-      .limit(1)
-
-    if (purchaseHistoryError) {
-      console.error('Error fetching purchase history:', purchaseHistoryError)
-    }
-
     const now = new Date().toISOString()
-    const hasRecent = recentPurchases && recentPurchases.length > 0
-      ? hasRecentPurchase(recentPurchases, 30)
-      : false
 
     // Update shopping list item
     const { data: updatedItem, error: updateError } = await supabase
@@ -93,39 +69,8 @@ export async function POST(
       )
     }
 
-    // Handle purchase history
-    if (hasRecent && recentPurchases && recentPurchases.length > 0) {
-      // Update existing recent purchase instead of creating new one
-      const { error: updatePurchaseError } = await supabase
-        .from('purchase_history')
-        .update({
-          purchased_at: now,
-          shopping_list_item_id: id,
-          added_by: userId,
-        })
-        .eq('id', recentPurchases[0].id)
-
-      if (updatePurchaseError) {
-        console.error('Update purchase history error:', updatePurchaseError)
-        // Don't fail the request, just log the error
-      }
-    } else {
-      // Create new purchase history entry
-      const { error: insertError } = await supabase
-        .from('purchase_history')
-        .insert({
-          household_id: user.household_id,
-          product_id: item.product_id,
-          shopping_list_item_id: id,
-          purchased_at: now,
-          added_by: userId,
-        })
-
-      if (insertError) {
-        console.error('Insert purchase history error:', insertError)
-        // Don't fail the request, just log the error
-      }
-    }
+    // Purchase history will be recorded after 30 seconds delay (handled client-side)
+    // This prevents accidental double-taps from being recorded immediately
 
     return NextResponse.json({
       success: true,

@@ -136,7 +136,8 @@ export default function ShoppingListItem({
             onBlur={handleSaveDescription}
             onKeyDown={handleKeyDown}
             placeholder="Toelichting..."
-            className="flex-1 px-2 py-1 text-sm text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-2 py-1 text-base text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ fontSize: '16px' }}
             autoFocus
           />
         </div>
