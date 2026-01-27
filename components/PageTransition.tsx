@@ -2,7 +2,6 @@
 
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef } from 'react'
-import { animate } from 'motion'
 
 interface PageTransitionProps {
   children: React.ReactNode
@@ -16,19 +15,16 @@ export default function PageTransition({ children }: PageTransitionProps) {
   useEffect(() => {
     // Only animate if pathname actually changed (not on initial mount)
     if (prevPathnameRef.current !== pathname && containerRef.current && prevPathnameRef.current !== '') {
-      // Fade transition between routes
-      animate(
-        containerRef.current,
-        { opacity: [1, 0] },
-        { duration: 0.1, easing: 'ease-in' }
-      ).then(() => {
-        // Fade in
-        animate(
-          containerRef.current!,
-          { opacity: [0, 1] },
-          { duration: 0.2, easing: 'ease-out' }
-        )
-      })
+      // Fade transition between routes using CSS transitions
+      containerRef.current.style.transition = 'opacity 0.1s ease-in'
+      containerRef.current.style.opacity = '0'
+      
+      setTimeout(() => {
+        if (containerRef.current) {
+          containerRef.current.style.transition = 'opacity 0.2s ease-out'
+          containerRef.current.style.opacity = '1'
+        }
+      }, 100)
     }
     
     prevPathnameRef.current = pathname

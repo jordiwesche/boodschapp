@@ -69,11 +69,13 @@ export default function ShoppingListItem({
       setIsDeleting(true)
       // Animate slide out
       if (itemRef.current) {
-        await animate(
-          itemRef.current,
-          { x: -100, opacity: [1, 0] },
-          { duration: 0.2, easing: 'ease-in' }
-        )
+        itemRef.current.style.transition = 'transform 0.2s ease-in, opacity 0.2s ease-in'
+        itemRef.current.style.transform = 'translateX(-100px)'
+        itemRef.current.style.opacity = '0'
+        setTimeout(() => {
+          onDelete(item.id)
+        }, 200)
+        return
       }
       onDelete(item.id)
     }
@@ -84,11 +86,14 @@ export default function ShoppingListItem({
     if (itemRef.current) {
       itemRef.current.style.opacity = '0'
       itemRef.current.style.transform = 'translateY(10px)'
-      animate(
-        itemRef.current,
-        { opacity: [0, 1], y: [10, 0] },
-        { duration: 0.2, easing: 'ease-out' }
-      )
+      itemRef.current.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out'
+      // Trigger animation on next frame
+      requestAnimationFrame(() => {
+        if (itemRef.current) {
+          itemRef.current.style.opacity = '1'
+          itemRef.current.style.transform = 'translateY(0)'
+        }
+      })
     }
   }, [])
 

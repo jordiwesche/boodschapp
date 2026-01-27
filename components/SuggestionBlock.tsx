@@ -1,7 +1,6 @@
 'use client'
 
 import { X } from 'lucide-react'
-import { animate } from 'motion'
 import { useEffect, useRef } from 'react'
 
 interface Suggestion {
@@ -34,13 +33,13 @@ export default function SuggestionBlock({
         if (element) {
           element.style.opacity = '0'
           element.style.transform = 'translateY(10px)'
+          element.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out'
           setTimeout(() => {
-            animate(
-              element,
-              { opacity: [0, 1], y: [10, 0] },
-              { duration: 0.2, delay: index * 0.03, easing: 'ease-out' }
-            )
-          }, 50)
+            if (element) {
+              element.style.opacity = '1'
+              element.style.transform = 'translateY(0)'
+            }
+          }, 50 + index * 30) // 30ms stagger delay
         }
       })
     }
