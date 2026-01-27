@@ -1,6 +1,8 @@
 'use client'
 
 import { X } from 'lucide-react'
+import { animate } from 'motion'
+import { useEffect, useRef } from 'react'
 
 interface Suggestion {
   id: string
@@ -22,6 +24,28 @@ export default function SuggestionBlock({
   onClose,
   isVisible,
 }: SuggestionBlockProps) {
+  const suggestionRefs = useRef<Map<string, HTMLElement>>(new Map())
+
+  // Stagger fade-in animation for suggestions
+  useEffect(() => {
+    if (isVisible && suggestions.length > 0) {
+      suggestions.forEach((suggestion, index) => {
+        const element = suggestionRefs.current.get(suggestion.id)
+        if (element) {
+          element.style.opacity = '0'
+          element.style.transform = 'translateY(10px)'
+          setTimeout(() => {
+            animate(
+              element,
+              { opacity: [0, 1], y: [10, 0] },
+              { duration: 0.2, delay: index * 0.03, easing: 'ease-out' }
+            )
+          }, 50)
+        }
+      })
+    }
+  }, [isVisible, suggestions])
+
   if (!isVisible || suggestions.length === 0) {
     return null
   }
@@ -43,6 +67,13 @@ export default function SuggestionBlock({
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion.id}
+                ref={(el) => {
+                  if (el) {
+                    suggestionRefs.current.set(suggestion.id, el)
+                  } else {
+                    suggestionRefs.current.delete(suggestion.id)
+                  }
+                }}
                 onClick={() => onSelect(suggestion)}
                 className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                   suggestion.suggestion_type === 'basic'

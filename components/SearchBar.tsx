@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Search } from 'lucide-react'
+import { animate } from 'motion'
 
 interface SearchBarProps {
   onSearch?: (query: string) => void
@@ -23,11 +24,20 @@ export default function SearchBar({
   const [isActive, setIsActive] = useState(false)
   const [internalQuery, setInternalQuery] = useState('')
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const query = controlledValue !== undefined ? controlledValue : internalQuery
 
   const handleFocus = () => {
     setIsActive(true)
+    // Subtle scale animation on focus
+    if (containerRef.current) {
+      animate(
+        containerRef.current,
+        { scale: [1, 1.02] },
+        { duration: 0.2, easing: 'ease-out' }
+      )
+    }
     onFocus?.()
   }
 
@@ -35,6 +45,14 @@ export default function SearchBar({
     // Delay blur to allow click events on suggestions
     setTimeout(() => {
       setIsActive(false)
+      // Scale back on blur
+      if (containerRef.current) {
+        animate(
+          containerRef.current,
+          { scale: [1.02, 1] },
+          { duration: 0.2, easing: 'ease-in' }
+        )
+      }
       onBlur?.()
     }, 200)
   }
@@ -69,6 +87,7 @@ export default function SearchBar({
     <div className="fixed bottom-[92px] left-0 right-0 z-40 px-4">
       <div className="mx-auto max-w-md">
         <div
+          ref={containerRef}
           className={`relative rounded-lg bg-white shadow-lg transition-all ${
             isActive ? 'ring-2 ring-blue-500' : 'ring-1 ring-gray-200'
           }`}

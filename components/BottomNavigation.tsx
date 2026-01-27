@@ -2,10 +2,13 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { ShoppingCart, Calendar, User } from 'lucide-react'
+import { animate } from 'motion'
+import { useEffect, useRef } from 'react'
 
 export default function BottomNavigation() {
   const pathname = usePathname()
   const router = useRouter()
+  const prevPathnameRef = useRef(pathname)
 
   const navItems = [
     {
@@ -32,6 +35,24 @@ export default function BottomNavigation() {
     return pathname.startsWith(path)
   }
 
+  // Animate active indicator transition
+  useEffect(() => {
+    if (prevPathnameRef.current !== pathname) {
+      // Find active button and animate
+      const activeButton = document.querySelector(
+        '[data-nav-active="true"]'
+      ) as HTMLElement
+      if (activeButton) {
+        animate(
+          activeButton,
+          { scale: [1, 1.1, 1] },
+          { duration: 0.2, easing: 'ease-out' }
+        )
+      }
+      prevPathnameRef.current = pathname
+    }
+  }, [pathname])
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white shadow-lg">
       <div className="mx-auto flex max-w-md items-center justify-around px-4 py-2">
@@ -43,6 +64,11 @@ export default function BottomNavigation() {
             <button
               key={item.path}
               onClick={() => router.push(item.path)}
+              onMouseEnter={() => {
+                // Prefetch route on hover
+                router.prefetch(item.path)
+              }}
+              data-nav-active={active}
               className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 transition-colors ${
                 active
                   ? 'text-blue-600'

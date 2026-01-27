@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Check, X, Pencil } from 'lucide-react'
+import { animate } from 'motion'
 
 interface ShoppingListItemData {
   id: string
@@ -38,8 +39,20 @@ export default function ShoppingListItem({
 }: ShoppingListItemProps) {
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [editValue, setEditValue] = useState(item.description || '')
+  const checkboxRef = useRef<HTMLButtonElement>(null)
+  const itemRef = useRef<HTMLDivElement>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleCheck = async () => {
+    // Animate checkbox
+    if (checkboxRef.current) {
+      animate(
+        checkboxRef.current,
+        { scale: [1, 1.2, 1], opacity: [1, 0.8, 1] },
+        { duration: 0.15, easing: 'ease-out' }
+      )
+    }
+
     if (item.is_checked) {
       onUncheck?.(item.id)
     } else {
@@ -47,11 +60,33 @@ export default function ShoppingListItem({
     }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm('Weet je zeker dat je dit item wilt verwijderen?')) {
+      setIsDeleting(true)
+      // Animate slide out
+      if (itemRef.current) {
+        await animate(
+          itemRef.current,
+          { x: -100, opacity: [1, 0] },
+          { duration: 0.2, easing: 'ease-in' }
+        )
+      }
       onDelete(item.id)
     }
   }
+
+  // Fade in animation on mount
+  useEffect(() => {
+    if (itemRef.current) {
+      itemRef.current.style.opacity = '0'
+      itemRef.current.style.transform = 'translateY(10px)'
+      animate(
+        itemRef.current,
+        { opacity: [0, 1], y: [10, 0] },
+        { duration: 0.2, easing: 'ease-out' }
+      )
+    }
+  }, [])
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -77,14 +112,20 @@ export default function ShoppingListItem({
     }
   }
 
+  if (isDeleting) {
+    return null
+  }
+
   return (
     <div
+      ref={itemRef}
       className={`flex items-center gap-3 border-t border-b border-gray-200 py-2 px-3 transition-opacity ${
         item.is_checked ? 'opacity-60' : ''
       }`}
     >
       {/* Checkbox */}
       <button
+        ref={checkboxRef}
         onClick={handleCheck}
         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
           item.is_checked
