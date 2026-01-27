@@ -5,6 +5,8 @@ import SearchBar from './SearchBar'
 import SuggestionBlock from './SuggestionBlock'
 import SearchResults from './SearchResults'
 import ShoppingList from './ShoppingList'
+import ShoppingListSkeleton from './ShoppingListSkeleton'
+import SuggestionSkeleton from './SuggestionSkeleton'
 import { parseProductInput } from '@/lib/annotation-parser'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -35,8 +37,8 @@ interface SearchResult {
 
 export default function ShoppingListPage() {
   // Use TanStack Query hooks for data fetching
-  const { data: items = [], isLoading } = useShoppingListItems()
-  const { data: suggestions = [] } = useSuggestions()
+  const { data: items = [], isLoading: isLoadingItems } = useShoppingListItems()
+  const { data: suggestions = [], isLoading: isLoadingSuggestions } = useSuggestions()
   const queryClient = useQueryClient()
 
   // Mutations
@@ -51,6 +53,8 @@ export default function ShoppingListPage() {
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [keepSuggestionsOpen, setKeepSuggestionsOpen] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // Helper function to invalidate queries (used by realtime subscription)
   const invalidateQueries = () => {
@@ -70,9 +74,11 @@ export default function ShoppingListPage() {
 
     if (!query || query.trim().length < 2) {
       setSearchResults([])
+      setIsSearching(false)
       return
     }
 
+    setIsSearching(true)
     try {
       const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`)
       if (response.ok) {
@@ -95,6 +101,8 @@ export default function ShoppingListPage() {
     } catch (error) {
       console.error('Error searching products:', error)
       // Don't clear results on error - keep previous results visible
+    } finally {
+      setIsSearching(false)
     }
   }
 
@@ -198,7 +206,13 @@ export default function ShoppingListPage() {
 
   const handleCheck = async (id: string) => {
     try {
-      await checkItemMutation.mutateAsync(id)
+      try {
+        await checkItemMutation.mutateAsync(id)
+      } catch (error) {
+        setErrorMessage('Kon item niet afvinken. Probeer het opnieuw.')
+        setTimeout(() => setErrorMessage(null), 5000)
+        throw error
+      }
 
       // Schedule purchase history recording after 30 seconds
       // Clear any existing timer for this item
@@ -239,7 +253,13 @@ export default function ShoppingListPage() {
         purchaseHistoryTimersRef.current.delete(id)
       }
 
-      await uncheckItemMutation.mutateAsync(id)
+      try {
+        await uncheckItemMutation.mutateAsync(id)
+      } catch (error) {
+        setErrorMessage('Kon item niet unchecken. Probeer het opnieuw.')
+        setTimeout(() => setErrorMessage(null), 5000)
+        throw error
+      }
     } catch (error) {
       console.error('Error unchecking item:', error)
     }
@@ -249,6 +269,8 @@ export default function ShoppingListPage() {
     try {
       await deleteItemMutation.mutateAsync(id)
     } catch (error) {
+      setErrorMessage('Kon item niet verwijderen. Probeer het opnieuw.')
+      setTimeout(() => setErrorMessage(null), 5000)
       console.error('Error deleting item:', error)
     }
   }
@@ -257,6 +279,8 @@ export default function ShoppingListPage() {
     try {
       await updateDescriptionMutation.mutateAsync({ id, description })
     } catch (error) {
+      setErrorMessage('Kon toelichting niet opslaan. Probeer het opnieuw.')
+      setTimeout(() => setErrorMessage(null), 5000)
       console.error('Error updating description:', error)
     }
   }
@@ -279,8 +303,9 @@ export default function ShoppingListPage() {
     try {
       await clearCheckedMutation.mutateAsync()
     } catch (error) {
+      setErrorMessage('Kon afgevinkte items niet verwijderen. Probeer het opnieuw.')
+      setTimeout(() => setErrorMessage(null), 5000)
       console.error('Error clearing checked items:', error)
-      alert('Er is een fout opgetreden bij het verwijderen van de items.')
     }
   }
 
@@ -521,14 +546,6 @@ export default function ShoppingListPage() {
   }, [items.length, isSearchActive, searchQuery, showSuggestions, showSearchResults]);
   // #endregion
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center pb-20">
-        <p className="text-gray-500">Laden...</p>
-      </div>
-    )
-  }
-
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
       <header className="bg-white shadow">
@@ -538,14 +555,18 @@ export default function ShoppingListPage() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
-        <ShoppingList
-          items={items}
-          onCheck={handleCheck}
-          onUncheck={handleUncheck}
-          onDelete={handleDelete}
-          onUpdateDescription={handleUpdateDescription}
-          onClearChecked={handleClearChecked}
-        />
+        {isLoadingItems ? (
+          <ShoppingListSkeleton />
+        ) : (
+          <ShoppingList
+            items={items}
+            onCheck={handleCheck}
+            onUncheck={handleUncheck}
+            onDelete={handleDelete}
+            onUpdateDescription={handleUpdateDescription}
+            onClearChecked={handleClearChecked}
+          />
+        )}
       </main>
 
       <SearchBar
@@ -555,15 +576,31 @@ export default function ShoppingListPage() {
         onFocus={handleSearchFocus}
         onBlur={handleSearchBlur}
         placeholder="Typ product (en toelichting)"
+        isLoading={isSearching}
       />
 
+      {/* Error message toast */}
+      {errorMessage && (
+        <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 transform">
+          <div className="mx-auto max-w-md rounded-lg bg-red-50 border border-red-200 px-4 py-3 shadow-lg">
+            <p className="text-sm font-medium text-red-800">{errorMessage}</p>
+          </div>
+        </div>
+      )}
+
       {showSuggestions && (
-        <SuggestionBlock
-          suggestions={suggestions}
-          onSelect={handleSuggestionSelect}
-          onClose={handleCloseSuggestions}
-          isVisible={showSuggestions}
-        />
+        <>
+          {isLoadingSuggestions ? (
+            <SuggestionSkeleton />
+          ) : (
+            <SuggestionBlock
+              suggestions={suggestions}
+              onSelect={handleSuggestionSelect}
+              onClose={handleCloseSuggestions}
+              isVisible={showSuggestions}
+            />
+          )}
+        </>
       )}
 
       {showSearchResults && (

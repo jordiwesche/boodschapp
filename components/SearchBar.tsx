@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search } from 'lucide-react'
+import { Search, Loader2 } from 'lucide-react'
 
 interface SearchBarProps {
   onSearch?: (query: string) => void
@@ -10,6 +10,7 @@ interface SearchBarProps {
   placeholder?: string
   value?: string
   onChange?: (value: string) => void
+  isLoading?: boolean
 }
 
 export default function SearchBar({
@@ -19,6 +20,7 @@ export default function SearchBar({
   placeholder = 'Typ product (en toelichting)',
   value: controlledValue,
   onChange,
+  isLoading = false,
 }: SearchBarProps) {
   const [isActive, setIsActive] = useState(false)
   const [internalQuery, setInternalQuery] = useState('')
@@ -86,7 +88,11 @@ export default function SearchBar({
           }`}
         >
           <div className="flex items-center gap-3 px-4 py-3">
-            <Search className="h-5 w-5 text-gray-400" />
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+            ) : (
+              <Search className="h-5 w-5 text-gray-400" />
+            )}
             <input
               type="text"
               value={query}
