@@ -23,11 +23,19 @@ export default function PullToRefresh({
   const isDraggingRef = useRef(false)
   const threshold = 80 // Distance in pixels to trigger refresh
 
-  // Helper to check if at top of scroll
+  // Helper to check if at top of scroll - check both window and container
   const isAtTop = (): boolean => {
+    // Check window scroll first (most common case)
+    if (window.scrollY !== 0) {
+      return false
+    }
+    
+    // If there's a specific scroll container, check that too
     if (scrollContainerRef?.current) {
       return scrollContainerRef.current.scrollTop === 0
     }
+    
+    // Default: check window scroll
     return window.scrollY === 0
   }
 
@@ -35,8 +43,9 @@ export default function PullToRefresh({
     if (disabled) return
 
     const handleTouchStart = (e: TouchEvent) => {
-      // Only trigger if EXACTLY at top of scroll (no tolerance)
+      // CRITICAL: Check if at top BEFORE allowing drag to start
       if (!isAtTop()) {
+        isDraggingRef.current = false
         return
       }
       
@@ -45,19 +54,21 @@ export default function PullToRefresh({
     }
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (!isDraggingRef.current) return
+      // Don't do anything if we didn't start dragging at the top
+      if (!isDraggingRef.current) {
+        return
+      }
 
-      const currentY = e.touches[0].clientY
-      const distance = currentY - touchStartY.current
-
-      // Check if still at top - must be exactly 0
+      // CRITICAL: Check if still at top on every move - if not, immediately stop
       if (!isAtTop()) {
-        // Reset if scrolled away from top
         setIsPulling(false)
         setPullDistance(0)
         isDraggingRef.current = false
         return
       }
+
+      const currentY = e.touches[0].clientY
+      const distance = currentY - touchStartY.current
 
       // Only allow pull down (positive distance) when at top
       if (distance > 0) {
@@ -80,7 +91,7 @@ export default function PullToRefresh({
 
       isDraggingRef.current = false
 
-      // Double check we're still at top before refreshing
+      // CRITICAL: Double check we're still at top before refreshing
       if (!isAtTop()) {
         setIsPulling(false)
         setPullDistance(0)
@@ -106,7 +117,8 @@ export default function PullToRefresh({
       }
     }
 
-    // Use capture phase to catch events early
+    // Use capture phase but make touchstart passive to not block normal scroll
+    // Only touchmove needs to be non-passive to allow preventDefault
     document.addEventListener('touchstart', handleTouchStart, { passive: true })
     document.addEventListener('touchmove', handleTouchMove, { passive: false })
     document.addEventListener('touchend', handleTouchEnd, { passive: true })
