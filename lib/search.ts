@@ -11,6 +11,11 @@ export const fuseOptions: IFuseOptions<Product> = {
   includeScore: true,
 }
 
+export type ScoredProduct = {
+  product: Product
+  score: number | null
+}
+
 /**
  * Search products using fuzzy matching
  * Handles singular/plural, small typos (1-2 wrong letters)
@@ -28,4 +33,25 @@ export function searchProducts(
 
   // Return products sorted by relevance (best matches first)
   return results.map((result) => result.item)
+}
+
+/**
+ * Search products using fuzzy matching, including Fuse score.
+ * Lower score = better match.
+ */
+export function searchProductsWithScores(
+  products: Product[],
+  query: string
+): ScoredProduct[] {
+  if (!query || query.trim().length < 2) {
+    return []
+  }
+
+  const fuse = new Fuse(products, fuseOptions)
+  const results = fuse.search(query.trim())
+
+  return results.map((result) => ({
+    product: result.item,
+    score: typeof result.score === 'number' ? result.score : null,
+  }))
 }

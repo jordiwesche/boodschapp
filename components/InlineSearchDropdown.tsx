@@ -18,6 +18,7 @@ interface InlineSearchDropdownProps {
   isVisible: boolean
   isSearching: boolean
   onSelect: (result: SearchResult, query: string) => void
+  onCreate: (query: string) => void
 }
 
 export default function InlineSearchDropdown({
@@ -26,6 +27,7 @@ export default function InlineSearchDropdown({
   isVisible,
   isSearching,
   onSelect,
+  onCreate,
 }: InlineSearchDropdownProps) {
   if (!isVisible || !query || query.trim().length < 2) {
     return null
@@ -42,7 +44,16 @@ export default function InlineSearchDropdown({
   if (results.length === 0) {
     return (
       <div className="mb-2 rounded-2xl bg-white p-4 shadow-lg">
-        <p className="text-sm text-gray-500">Geen resultaten gevonden</p>
+        <button
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onCreate(query)
+          }}
+          className="w-full text-left text-sm font-medium text-blue-600 hover:text-blue-700"
+        >
+          Voeg &quot;{query.trim()}&quot; toe
+        </button>
       </div>
     )
   }

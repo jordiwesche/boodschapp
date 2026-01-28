@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { searchProducts } from '@/lib/search'
+import { searchProductsWithScores } from '@/lib/search'
 import { parseProductInput } from '@/lib/annotation-parser'
 import { Product } from '@/types/database'
 
@@ -114,10 +114,10 @@ export async function GET(request: NextRequest) {
     }
     
     // Use the extracted product name for search (ignores descriptions/annotations)
-    const searchResults = searchProducts(transformedProducts, searchQuery || queryTrimmed)
+    const searchResults = searchProductsWithScores(transformedProducts, searchQuery || queryTrimmed)
 
     // Transform response with category info
-    const resultsWithCategory = searchResults.map((product) => {
+    const resultsWithCategory = searchResults.map(({ product, score }) => {
       const originalProduct = products?.find((p) => p.id === product.id)
       const category = originalProduct &&
         Array.isArray(originalProduct.product_categories) &&
@@ -131,6 +131,7 @@ export async function GET(request: NextRequest) {
         name: product.name,
         description: product.description,
         category_id: product.category_id,
+        score,
         category: category
           ? {
               id: category.id,

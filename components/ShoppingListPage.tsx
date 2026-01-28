@@ -29,11 +29,77 @@ interface SearchResult {
   emoji: string
   name: string
   description?: string | null
+  score?: number | null
   category: {
     id: string
     name: string
     display_order: number
   } | null
+}
+
+function normalizeForMatch(input: string): string {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '') // keep letters/numbers/spaces/hyphens
+    .replace(/\s+/g, ' ')
+}
+
+function tokenize(input: string): string[] {
+  const stopwords = new Set([
+    'de',
+    'het',
+    'een',
+    'voor',
+    'van',
+    'met',
+    'en',
+    'in',
+    'op',
+    'aan',
+    'bij',
+    'naar',
+    'te',
+    'om',
+  ])
+
+  return normalizeForMatch(input)
+    .split(' ')
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 2 && !stopwords.has(t))
+}
+
+function tokenOverlapRatio(a: string, b: string): number {
+  const aTokens = tokenize(a)
+  const bTokens = tokenize(b)
+  if (aTokens.length === 0 || bTokens.length === 0) return 0
+
+  const bSet = new Set(bTokens)
+  let overlap = 0
+  for (const t of aTokens) {
+    if (bSet.has(t)) overlap += 1
+  }
+  return overlap / Math.max(aTokens.length, bTokens.length)
+}
+
+function isAcceptableMatch(query: string, candidateName: string, score?: number | null): boolean {
+  const q = normalizeForMatch(query)
+  const c = normalizeForMatch(candidateName)
+
+  // Exact match always acceptable
+  if (q === c) return true
+
+  // If we have Fuse score: require both good score and strong token overlap
+  const SCORE_CUTOFF = 0.25
+  const OVERLAP_CUTOFF = 0.7
+  const overlap = tokenOverlapRatio(query, candidateName)
+
+  if (typeof score === 'number') {
+    return score <= SCORE_CUTOFF && overlap >= OVERLAP_CUTOFF
+  }
+
+  // Fallback: only accept if token overlap is very strong
+  return overlap >= 0.85
 }
 
 export default function ShoppingListPage() {
@@ -57,6 +123,8 @@ export default function ShoppingListPage() {
   const [showEmptyItemDropdown, setShowEmptyItemDropdown] = useState(false)
   const [emptyItemKey, setEmptyItemKey] = useState(0) // Key to force remount for focus
   const [shouldFocusEmptyItem, setShouldFocusEmptyItem] = useState(false)
+  const searchAbortRef = useRef<AbortController | null>(null)
+  const searchCacheRef = useRef<Map<string, SearchResult[]>>(new Map())
   const searchDebounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -123,13 +191,18 @@ export default function ShoppingListPage() {
     setEmptyItemQuery('')
     setEmptyItemSearchResults([])
     setShowEmptyItemDropdown(false)
+    setIsSearchingEmptyItem(false)
+    if (searchAbortRef.current) {
+      searchAbortRef.current.abort()
+      searchAbortRef.current = null
+    }
     if (searchDebounceTimerRef.current) {
       clearTimeout(searchDebounceTimerRef.current)
       searchDebounceTimerRef.current = null
     }
   }
 
-  // Search handler for empty item (debounced)
+  // Search handler for empty item (near-instant)
   const handleEmptyItemSearch = async (query: string) => {
     setEmptyItemQuery(query)
 
@@ -138,36 +211,61 @@ export default function ShoppingListPage() {
       clearTimeout(searchDebounceTimerRef.current)
     }
 
-    // Hide dropdown while typing
-    setShowEmptyItemDropdown(false)
-
     if (!query || query.trim().length < 2) {
+      // Cancel any in-flight request
+      if (searchAbortRef.current) {
+        searchAbortRef.current.abort()
+        searchAbortRef.current = null
+      }
       setEmptyItemSearchResults([])
+      setIsSearchingEmptyItem(false)
+      setShowEmptyItemDropdown(false)
+      return
+    }
+
+    const normalizedQuery = query.trim().toLowerCase()
+
+    // Show dropdown immediately (will show "Zoeken..." or cached results)
+    setShowEmptyItemDropdown(true)
+
+    // Serve cached results instantly if available
+    const cached = searchCacheRef.current.get(normalizedQuery)
+    if (cached) {
+      setEmptyItemSearchResults(cached)
       setIsSearchingEmptyItem(false)
       return
     }
 
-    // Show dropdown after 1 second of no typing
+    // Tiny debounce (0ms) to batch rapid state updates; still feels instant
     searchDebounceTimerRef.current = setTimeout(async () => {
       setIsSearchingEmptyItem(true)
+
+      // Abort any previous request
+      if (searchAbortRef.current) {
+        searchAbortRef.current.abort()
+      }
+      const controller = new AbortController()
+      searchAbortRef.current = controller
+
       try {
-        const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`)
+        const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        })
         if (response.ok) {
           const data = await response.json()
-          if (data.products && data.products.length > 0) {
-            setEmptyItemSearchResults(data.products)
-            setShowEmptyItemDropdown(true)
-          } else {
-            setEmptyItemSearchResults([])
-            setShowEmptyItemDropdown(true)
-          }
+          const results: SearchResult[] = Array.isArray(data.products) ? data.products : []
+          searchCacheRef.current.set(normalizedQuery, results)
+          setEmptyItemSearchResults(results)
         }
       } catch (error) {
-        console.error('Error searching products:', error)
+        // Ignore abort errors (expected when typing fast)
+        if ((error as any)?.name !== 'AbortError') {
+          console.error('Error searching products:', error)
+        }
       } finally {
         setIsSearchingEmptyItem(false)
       }
-    }, 1000)
+    }, 0)
   }
 
   // Add product from empty item (optimistic UI)
@@ -224,12 +322,15 @@ export default function ShoppingListPage() {
 
       if (searchResponse.ok) {
         const searchData = await searchResponse.json()
-        if (searchData.products && searchData.products.length > 0) {
-          // Use first match
+        if (Array.isArray(searchData.products) && searchData.products.length > 0) {
+          // Use first match, but only if it's a strong match
           const matchedProduct = searchData.products[0]
-          productId = matchedProduct.id
-          categoryId = matchedProduct.category?.id || null
-          emoji = matchedProduct.emoji
+          const ok = isAcceptableMatch(query.trim(), matchedProduct.name, matchedProduct.score)
+          if (ok) {
+            productId = matchedProduct.id
+            categoryId = matchedProduct.category?.id || null
+            emoji = matchedProduct.emoji
+          }
         }
       }
 
@@ -238,11 +339,14 @@ export default function ShoppingListPage() {
         searchResponse = await fetch(`/api/products/search?q=${encodeURIComponent(productName)}`)
         if (searchResponse.ok) {
           const searchData = await searchResponse.json()
-          if (searchData.products && searchData.products.length > 0) {
+          if (Array.isArray(searchData.products) && searchData.products.length > 0) {
             const matchedProduct = searchData.products[0]
-            productId = matchedProduct.id
-            categoryId = matchedProduct.category?.id || null
-            emoji = matchedProduct.emoji
+            const ok = isAcceptableMatch(productName, matchedProduct.name, matchedProduct.score)
+            if (ok) {
+              productId = matchedProduct.id
+              categoryId = matchedProduct.category?.id || null
+              emoji = matchedProduct.emoji
+            }
           }
         }
       }
@@ -680,6 +784,7 @@ export default function ShoppingListPage() {
                       isVisible={true}
                       isSearching={isSearchingEmptyItem}
                       onSelect={handleEmptyItemResultSelect}
+                      onCreate={handleEmptyItemAdd}
                     />
                   )}
                 </>
