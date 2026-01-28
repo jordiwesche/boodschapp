@@ -19,12 +19,25 @@ export default function EmptyListItem({
   const [showAddButton, setShowAddButton] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Auto-focus input on mount
+  // Auto-focus input on mount (with better mobile support)
   useEffect(() => {
     if (inputRef.current) {
-      setTimeout(() => {
-        inputRef.current?.focus()
-      }, 100)
+      // Use requestAnimationFrame for better mobile support
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          if (inputRef.current) {
+            // On mobile, we need to explicitly click to trigger keyboard
+            if (window.innerWidth <= 768) {
+              inputRef.current.click()
+            }
+            inputRef.current.focus()
+            // Force focus on mobile by setting selection
+            if (window.innerWidth <= 768 && inputRef.current.setSelectionRange) {
+              inputRef.current.setSelectionRange(0, 0)
+            }
+          }
+        }, 150)
+      })
     }
   }, [])
 

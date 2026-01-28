@@ -150,33 +150,69 @@ export default function ShoppingList({
     return nameA.localeCompare(nameB, 'nl')
   })
 
+  // Group unchecked items by category for displaying category headers
+  const uncheckedByCategory = sortedUncheckedItems.reduce((acc, item) => {
+    const categoryId = item.category?.id || 'overig'
+    if (!acc[categoryId]) {
+      acc[categoryId] = {
+        category: item.category,
+        items: [],
+      }
+    }
+    acc[categoryId].items.push(item)
+    return acc
+  }, {} as Record<string, { category: ShoppingListItemData['category']; items: ShoppingListItemData[] }>)
+
+  // Get sorted category groups for unchecked items
+  const sortedUncheckedCategories = Object.values(uncheckedByCategory).sort((a, b) => {
+    const orderA = a.category?.display_order ?? 999
+    const orderB = b.category?.display_order ?? 999
+    return orderA - orderB
+  })
+
   return (
     <div className="pb-32">
-      {/* Unchecked items - grouped by category, sorted by display_order */}
-      {sortedUncheckedItems.map((item) => (
-        <div key={item.id} className="mb-2">
-          <ShoppingListItem
-            item={item}
-            onCheck={onCheck}
-            onUncheck={onUncheck}
-            onDelete={onDelete}
-            onUpdateDescription={onUpdateDescription}
-          />
+      {/* Unchecked items - grouped by category with headers */}
+      {sortedUncheckedCategories.map((categoryGroup, index) => (
+        <div key={categoryGroup.category?.id || 'overig'}>
+          {/* Category header */}
+          <h2 className={`mb-2 px-4 text-xs font-medium text-gray-500 uppercase tracking-wide ${index === 0 ? 'mt-0' : 'mt-4'}`}>
+            {categoryGroup.category?.name || 'Overig'}
+          </h2>
+          {/* Items in this category */}
+          {categoryGroup.items.map((item) => (
+            <div key={item.id} className="mb-2">
+              <ShoppingListItem
+                item={item}
+                onCheck={onCheck}
+                onUncheck={onUncheck}
+                onDelete={onDelete}
+                onUpdateDescription={onUpdateDescription}
+              />
+            </div>
+          ))}
         </div>
       ))}
 
       {/* Checked items - all at the bottom, sorted by checked_at */}
-      {sortedCheckedItems.map((item) => (
-        <div key={item.id} className="mb-2">
-          <ShoppingListItem
-            item={item}
-            onCheck={onCheck}
-            onUncheck={onUncheck}
-            onDelete={onDelete}
-            onUpdateDescription={onUpdateDescription}
-          />
-        </div>
-      ))}
+      {sortedCheckedItems.length > 0 && (
+        <>
+          <h2 className="mb-2 mt-4 px-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
+            Afgevinkt
+          </h2>
+          {sortedCheckedItems.map((item) => (
+            <div key={item.id} className="mb-2">
+              <ShoppingListItem
+                item={item}
+                onCheck={onCheck}
+                onUncheck={onUncheck}
+                onDelete={onDelete}
+                onUpdateDescription={onUpdateDescription}
+              />
+            </div>
+          ))}
+        </>
+      )}
 
       {/* Clear checked items button - centered below checked items */}
       {checkedItemsCount > 0 && onClearChecked && (
