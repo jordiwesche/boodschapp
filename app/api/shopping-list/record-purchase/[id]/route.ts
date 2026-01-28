@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { hasRecentPurchase } from '@/lib/prediction'
 
 // POST /api/shopping-list/record-purchase/[id] - Record purchase history after 30 second delay
 export async function POST(
@@ -101,7 +100,8 @@ export async function POST(
     }
 
     const now = new Date().toISOString()
-    // Check if there's a purchase within the last hour (not just 30 seconds)
+    // If we found a purchase within the last hour, update it instead of creating new one
+    // This handles: check -> uncheck -> check again within 1 hour (same purchase)
     const hasRecent = recentPurchases && recentPurchases.length > 0
 
     // Handle purchase history
