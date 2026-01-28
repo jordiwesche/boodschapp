@@ -152,20 +152,6 @@ export default function ShoppingList({
 
   return (
     <div className="pb-32">
-      {/* Clear checked items button - fixed at top right */}
-      {checkedItemsCount > 0 && onClearChecked && (
-        <div className="mb-4 flex justify-end sticky top-0 z-10 bg-gray-50 -mx-4 px-4 py-2">
-          <button
-            onClick={onClearChecked}
-            className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors shadow-sm"
-            aria-label="Wis alle afgevinkte items"
-          >
-            <CheckSquare className="h-4 w-4" />
-            <span>Wis afgevinkte items ({checkedItemsCount})</span>
-          </button>
-        </div>
-      )}
-      
       {/* Unchecked items - grouped by category, sorted by display_order */}
       {sortedUncheckedItems.map((item) => (
         <div key={item.id} className="mb-2">
@@ -191,6 +177,20 @@ export default function ShoppingList({
           />
         </div>
       ))}
+
+      {/* Clear checked items button - centered below checked items */}
+      {checkedItemsCount > 0 && onClearChecked && (
+        <div className="mt-10 flex justify-center">
+          <button
+            onClick={onClearChecked}
+            className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
+            aria-label="Wis alle afgevinkte items"
+          >
+            <CheckSquare className="h-4 w-4" />
+            <span>Wis afgevinkte items ({checkedItemsCount})</span>
+          </button>
+        </div>
+      )}
     </div>
   )
 }
