@@ -192,14 +192,16 @@ export default function ShoppingListItem({
         </div>
       )}
 
-      {/* Delete button */}
-      <button
-        onClick={handleDelete}
-        className="shrink-0 p-1 text-gray-400 hover:text-red-500 transition-colors"
-        aria-label="Verwijderen"
-      >
-        <X className="h-4 w-4" />
-      </button>
+      {/* Delete button - only show when not checked */}
+      {!item.is_checked && (
+        <button
+          onClick={handleDelete}
+          className="shrink-0 p-1 text-gray-400 hover:text-red-500 transition-colors"
+          aria-label="Verwijderen"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
     </div>
   )
 }
