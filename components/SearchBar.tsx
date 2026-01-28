@@ -12,6 +12,7 @@ interface SearchBarProps {
   onChange?: (value: string) => void
   isLoading?: boolean
   inOverlay?: boolean
+  inputRef?: React.RefObject<HTMLInputElement | null>
 }
 
 export default function SearchBar({
@@ -23,6 +24,7 @@ export default function SearchBar({
   onChange,
   isLoading = false,
   inOverlay = false,
+  inputRef,
 }: SearchBarProps) {
   const [isActive, setIsActive] = useState(false)
   const [internalQuery, setInternalQuery] = useState('')
@@ -96,6 +98,7 @@ export default function SearchBar({
               <Search className="h-5 w-5 text-gray-400" />
             )}
             <input
+              ref={inputRef}
               type="text"
               value={query}
               onChange={handleChange}
@@ -127,6 +130,7 @@ export default function SearchBar({
               <Search className="h-5 w-5 text-gray-400" />
             )}
             <input
+              ref={inputRef}
               type="text"
               value={query}
               onChange={handleChange}

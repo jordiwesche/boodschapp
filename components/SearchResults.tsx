@@ -1,5 +1,7 @@
 'use client'
 
+import { Check } from 'lucide-react'
+
 interface SearchResult {
   id: string
   emoji: string
@@ -33,75 +35,71 @@ export default function SearchResults({
 
   if (results.length === 0) {
     return (
-      <div className="w-full">
-        <div className="rounded-lg bg-white p-4 shadow-lg">
-          <p className="text-sm text-gray-500">Geen resultaten gevonden</p>
-        </div>
+      <div className="w-full py-4">
+        <p className="text-sm text-gray-500">Geen resultaten gevonden</p>
       </div>
     )
   }
 
   return (
     <div className="w-full">
-      <div className="rounded-lg bg-white shadow-lg">
-        <div className="divide-y divide-gray-200">
-          {results.map((result) => {
-            const isAdded = addedResultIds.has(result.id)
-            // Extract annotation from query (everything after product name)
-            const productNameLower = result.name.toLowerCase().trim()
-            const queryLower = query.toLowerCase().trim()
-            let annotationText = ''
-            
-            if (queryLower.startsWith(productNameLower)) {
-              // Extract everything after the product name
-              annotationText = query.substring(result.name.length).trim()
-            }
+      {results.map((result) => {
+        const isAdded = addedResultIds.has(result.id)
+        // Extract annotation from query (everything after product name)
+        const productNameLower = result.name.toLowerCase().trim()
+        const queryLower = query.toLowerCase().trim()
+        let annotationText = ''
+        
+        if (queryLower.startsWith(productNameLower)) {
+          // Extract everything after the product name
+          annotationText = query.substring(result.name.length).trim()
+        }
 
-            return (
-              <button
-                key={result.id}
-                onMouseDown={(e) => {
-                  // Use onMouseDown instead of onClick to fire before blur
-                  e.preventDefault()
-                  e.stopPropagation()
-                  onSelect(result, query)
-                }}
-                className={`w-full px-4 py-3 text-left transition-colors ${
-                  isAdded
-                    ? 'bg-green-100 hover:bg-green-100'
-                    : 'hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">{result.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-900 truncate">
-                        {result.name}
-                      </p>
-                      {result.description && (
-                        <span className="text-sm text-gray-500 whitespace-nowrap">
-                          {result.description}
-                        </span>
-                      )}
-                      {annotationText && (
-                        <span className="text-sm text-gray-500 whitespace-nowrap">
-                          {annotationText}
-                        </span>
-                      )}
-                    </div>
-                    {result.category && (
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {result.category.name}
-                      </p>
-                    )}
-                  </div>
+        return (
+          <button
+            key={result.id}
+            onMouseDown={(e) => {
+              // Use onMouseDown instead of onClick to fire before blur
+              e.preventDefault()
+              e.stopPropagation()
+              onSelect(result, query)
+            }}
+            className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-lg">{result.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-medium text-gray-900">
+                    {result.name}
+                  </p>
+                  {isAdded && (
+                    <span className="text-xs text-green-600 flex items-center gap-1">
+                      <Check className="h-3 w-3" />
+                      toegevoegd
+                    </span>
+                  )}
+                  {result.description && (
+                    <span className="text-sm text-gray-500 whitespace-nowrap">
+                      {result.description}
+                    </span>
+                  )}
+                  {annotationText && (
+                    <span className="text-sm text-gray-500 whitespace-nowrap">
+                      {annotationText}
+                    </span>
+                  )}
                 </div>
-              </button>
-            )
-          })}
-        </div>
-      </div>
+                {result.category && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {result.category.name}
+                  </p>
+                )}
+              </div>
+            </div>
+          </button>
+        )
+      })}
     </div>
   )
 }

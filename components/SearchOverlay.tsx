@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import SearchBar from './SearchBar'
 import SuggestionBlock from './SuggestionBlock'
@@ -71,6 +71,17 @@ export default function SearchOverlay({
   onSearchFocus,
 }: SearchOverlayProps) {
   const { isSearchActive, setIsSearchActive } = useSearch()
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Auto-focus search input when overlay opens
+  useEffect(() => {
+    if (isSearchActive && searchInputRef.current) {
+      // Small delay to ensure overlay is rendered
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 100)
+    }
+  }, [isSearchActive])
 
   // Handle Escape key to close overlay
   useEffect(() => {
@@ -120,34 +131,9 @@ export default function SearchOverlay({
 
       {/* Content container */}
       <div className="flex flex-col h-full">
-        {/* Suggestions area - 40px gap above search bar */}
-        <div className="flex-shrink-0 px-4 pt-20 pb-10">
-          {showSuggestions && (
-            <>
-              {isLoadingSuggestions ? (
-                <div className="flex flex-wrap gap-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="h-8 w-20 bg-gray-200 rounded-full animate-pulse"
-                    />
-                  ))}
-                </div>
-              ) : (
-                <SuggestionBlock
-                  suggestions={suggestions}
-                  onSelect={onSuggestionSelect}
-                  onClose={onCloseSuggestions}
-                  isVisible={showSuggestions}
-                />
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Search results area - scrollable between suggestions and search bar */}
+        {/* Search results area - scrollable, takes up available space */}
         {showSearchResults && (
-          <div className="flex-1 overflow-y-auto px-4">
+          <div className="flex-1 overflow-y-auto px-4 pt-4">
             <SearchResults
               results={searchResults}
               onSelect={onSearchResultSelect}
@@ -158,8 +144,33 @@ export default function SearchOverlay({
           </div>
         )}
 
-        {/* Search bar at bottom */}
+        {/* Suggestions area - 40px gap above search bar, at bottom */}
         <div className="flex-shrink-0 px-4 pb-4">
+          {showSuggestions && (
+            <>
+              {isLoadingSuggestions ? (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="h-8 w-20 bg-gray-200 rounded-full animate-pulse"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <SuggestionBlock
+                    suggestions={suggestions}
+                    onSelect={onSuggestionSelect}
+                    onClose={onCloseSuggestions}
+                    isVisible={showSuggestions}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Search bar at bottom */}
           <SearchBar
             value={searchQuery}
             onChange={onSearchQueryChange}
@@ -169,6 +180,7 @@ export default function SearchOverlay({
             placeholder="Typ product (en toelichting)"
             isLoading={isSearching}
             inOverlay={true}
+            inputRef={searchInputRef}
           />
         </div>
       </div>
