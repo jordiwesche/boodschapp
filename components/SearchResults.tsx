@@ -47,7 +47,7 @@ export default function SearchResults({
         <div className="divide-y divide-gray-200">
           {results.map((result) => {
             const isAdded = addedResultIds.has(result.id)
-              // Extract annotation from query (everything after product name)
+            // Extract annotation from query (everything after product name)
               const productNameLower = result.name.toLowerCase().trim()
               const queryLower = query.toLowerCase().trim()
               let annotationText = ''
