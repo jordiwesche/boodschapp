@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { searchProducts } from '@/lib/search'
+import { parseProductInput } from '@/lib/annotation-parser'
 import { Product } from '@/types/database'
 
 // GET /api/products/search - Search products with fuzzy matching
@@ -90,19 +91,29 @@ export async function GET(request: NextRequest) {
     })
 
     // Perform fuzzy search
-    // Extract just the product name part (before any quantity/annotation)
-    // This allows searching "Bananen 12x" and still finding "Bananen"
+    // Extract just the product name part (before any quantity/annotation/description)
+    // This allows searching "Bananen 12x" or "Bananen voor ontbijt" and still finding "Bananen"
     const queryTrimmed = query.trim()
-    // Try to extract product name by removing common quantity patterns
-    let searchQuery = queryTrimmed
-    const quantityPattern = /\s+\d+[xX]?\s*$/
-    if (quantityPattern.test(searchQuery)) {
-      // Remove quantity suffix for search
-      searchQuery = searchQuery.replace(quantityPattern, '').trim()
-    }
-    // Also try removing parentheses content
-    searchQuery = searchQuery.replace(/\s*\([^)]*\)\s*$/, '').trim()
     
+    // Use annotation parser to extract product name (handles descriptions, quantities, etc.)
+    const parsed = parseProductInput(queryTrimmed)
+    const productName = parsed.productName || queryTrimmed
+    
+    // If parser found a product name, use that for search
+    // Otherwise, try to extract product name by removing common patterns
+    let searchQuery = productName
+    if (searchQuery === queryTrimmed) {
+      // Parser didn't extract a product name, try manual extraction
+      const quantityPattern = /\s+\d+[xX]?\s*$/
+      if (quantityPattern.test(searchQuery)) {
+        // Remove quantity suffix for search
+        searchQuery = searchQuery.replace(quantityPattern, '').trim()
+      }
+      // Also try removing parentheses content
+      searchQuery = searchQuery.replace(/\s*\([^)]*\)\s*$/, '').trim()
+    }
+    
+    // Use the extracted product name for search (ignores descriptions/annotations)
     const searchResults = searchProducts(transformedProducts, searchQuery || queryTrimmed)
 
     // Transform response with category info

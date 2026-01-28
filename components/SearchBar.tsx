@@ -11,6 +11,7 @@ interface SearchBarProps {
   value?: string
   onChange?: (value: string) => void
   isLoading?: boolean
+  inOverlay?: boolean
 }
 
 export default function SearchBar({
@@ -21,6 +22,7 @@ export default function SearchBar({
   value: controlledValue,
   onChange,
   isLoading = false,
+  inOverlay = false,
 }: SearchBarProps) {
   const [isActive, setIsActive] = useState(false)
   const [internalQuery, setInternalQuery] = useState('')
@@ -77,6 +79,37 @@ export default function SearchBar({
       }
     }
   }, [])
+
+  if (inOverlay) {
+    return (
+      <div className="w-full">
+        <div
+          ref={containerRef}
+          className={`relative rounded-lg bg-white shadow-lg transition-all ${
+            isActive ? 'ring-2 ring-blue-500' : 'ring-1 ring-gray-200'
+          }`}
+        >
+          <div className="flex items-center gap-3 px-4 py-3">
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+            ) : (
+              <Search className="h-5 w-5 text-gray-400" />
+            )}
+            <input
+              type="text"
+              value={query}
+              onChange={handleChange}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              placeholder={placeholder}
+              className="flex-1 border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
+              style={{ fontSize: '16px' }}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed bottom-[92px] left-0 right-0 z-40 px-4">

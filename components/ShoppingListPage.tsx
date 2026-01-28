@@ -1,12 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import SearchBar from './SearchBar'
-import SuggestionBlock from './SuggestionBlock'
-import SearchResults from './SearchResults'
+import SearchOverlay from './SearchOverlay'
 import ShoppingList from './ShoppingList'
 import ShoppingListSkeleton from './ShoppingListSkeleton'
-import SuggestionSkeleton from './SuggestionSkeleton'
 import PullToRefresh from './PullToRefresh'
 import { parseProductInput } from '@/lib/annotation-parser'
 import { createClient } from '@/lib/supabase/client'
@@ -26,6 +23,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import { useScrollRestore } from '@/lib/hooks/use-scroll-restore'
 import { haptic } from '@/lib/haptics'
+import { useSearch } from './SearchContext'
 
 interface SearchResult {
   id: string
@@ -53,11 +51,12 @@ export default function ShoppingListPage() {
   const clearCheckedMutation = useClearChecked()
 
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
-  const [isSearchActive, setIsSearchActive] = useState(false)
+  const { isSearchActive, setIsSearchActive } = useSearch()
   const [searchQuery, setSearchQuery] = useState('')
   const [keepSuggestionsOpen, setKeepSuggestionsOpen] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [addedResultIds, setAddedResultIds] = useState<Set<string>>(new Set())
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const { clearScroll } = useScrollRestore(scrollContainerRef)
 
@@ -384,17 +383,7 @@ export default function ShoppingListPage() {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:210',message:'Creating shopping list item',data:{requestBody},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
       // #endregion
-      const response = await fetch('/api/shopping-list', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      })
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:222',message:'Shopping list POST response',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
-      // #endregion
+      // Fix: Use only mutation, not direct fetch (removes double-add bug)
       await addItemMutation.mutateAsync(requestBody)
       // Keep suggestions open after adding
       setKeepSuggestionsOpen(true)
@@ -463,18 +452,18 @@ export default function ShoppingListPage() {
             // Use product description as initial description, or annotation if provided
             const initialDescription = annotationText || productDescription || null
             
-            const requestBody = {
-              product_id: result.id,
-              category_id: fetchedCategoryId,
-              quantity: '1',
-              description: initialDescription,
-            }
+              const requestBody = {
+                product_id: result.id,
+                category_id: fetchedCategoryId,
+                quantity: '1',
+                description: initialDescription,
+              }
               await addItemMutation.mutateAsync(requestBody)
-              setTimeout(() => {
-                setSearchQuery('')
-                setIsSearchActive(false)
-                setSearchResults([])
-              }, 500)
+              // Mark result as added for green highlight
+              setAddedResultIds((prev) => new Set(prev).add(result.id))
+              // Clear search query so user can continue searching
+              setSearchQuery('')
+              // Keep overlay open
               return
             }
           }
@@ -502,13 +491,11 @@ export default function ShoppingListPage() {
         description: initialDescription,
       }
       await addItemMutation.mutateAsync(requestBody)
-      // Don't clear search query immediately - let user see it was added
-      // Clear after a short delay or when they interact again
-      setTimeout(() => {
-        setSearchQuery('')
-        setIsSearchActive(false)
-        setSearchResults([])
-      }, 500)
+      // Mark result as added for green highlight
+      setAddedResultIds((prev) => new Set(prev).add(result.id))
+      // Clear search query so user can continue searching
+      setSearchQuery('')
+      // Keep overlay open
     } catch (error) {
       // #region agent log
       fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:285',message:'Exception in handleSearchResultSelect',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
@@ -555,12 +542,7 @@ export default function ShoppingListPage() {
         })
       }
     }
-    
-    // Don't hide immediately to allow clicks on results
-    // Increase timeout to ensure clicks are processed
-    setTimeout(() => {
-      setIsSearchActive(false)
-    }, 300)
+    // Note: Don't close overlay on blur - let user close explicitly or with Escape
   }
 
   // Show suggestions if:
@@ -607,14 +589,53 @@ export default function ShoppingListPage() {
         </PullToRefresh>
       </main>
 
-      <SearchBar
-        value={searchQuery}
-        onChange={setSearchQuery}
+      {/* Regular search bar (shown when overlay is not active) */}
+      {!isSearchActive && (
+        <div className="fixed bottom-[92px] left-0 right-0 z-40 px-4">
+          <div className="mx-auto max-w-md">
+            <div
+              className="relative rounded-lg bg-white shadow-lg ring-1 ring-gray-200"
+              onClick={handleSearchFocus}
+            >
+              <div className="flex items-center gap-3 px-4 py-3 cursor-text">
+                <svg
+                  className="h-5 w-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <span className="flex-1 text-base text-gray-400">
+                  Typ product (en toelichting)
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search Overlay */}
+      <SearchOverlay
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
         onSearch={handleSearch}
-        onFocus={handleSearchFocus}
-        onBlur={handleSearchBlur}
-        placeholder="Typ product (en toelichting)"
-        isLoading={isSearching}
+        isSearching={isSearching}
+        suggestions={suggestions}
+        isLoadingSuggestions={isLoadingSuggestions}
+        searchResults={searchResults}
+        showSearchResults={showSearchResults}
+        showSuggestions={showSuggestions}
+        onSuggestionSelect={handleSuggestionSelect}
+        onSearchResultSelect={handleSearchResultSelect}
+        onCloseSuggestions={handleCloseSuggestions}
+        addedResultIds={addedResultIds}
+        onSearchFocus={handleSearchFocus}
       />
 
       {/* Error message toast */}
@@ -624,30 +645,6 @@ export default function ShoppingListPage() {
             <p className="text-sm font-medium text-red-800">{errorMessage}</p>
           </div>
         </div>
-      )}
-
-      {showSuggestions && (
-        <>
-          {isLoadingSuggestions ? (
-            <SuggestionSkeleton />
-          ) : (
-            <SuggestionBlock
-              suggestions={suggestions}
-              onSelect={handleSuggestionSelect}
-              onClose={handleCloseSuggestions}
-              isVisible={showSuggestions}
-            />
-          )}
-        </>
-      )}
-
-      {showSearchResults && (
-        <SearchResults
-          results={searchResults}
-          onSelect={handleSearchResultSelect}
-          isVisible={true}
-          query={searchQuery}
-        />
       )}
     </div>
   )

@@ -17,6 +17,7 @@ interface SearchResultsProps {
   onSelect: (result: SearchResult, query: string) => void
   isVisible: boolean
   query: string
+  addedResultIds?: Set<string>
 }
 
 export default function SearchResults({
@@ -24,6 +25,7 @@ export default function SearchResults({
   onSelect,
   isVisible,
   query,
+  addedResultIds = new Set(),
 }: SearchResultsProps) {
   if (!isVisible || !query || query.trim().length < 2) {
     return null
@@ -31,22 +33,20 @@ export default function SearchResults({
 
   if (results.length === 0) {
     return (
-      <div className="fixed bottom-32 left-0 right-0 z-30 px-4">
-        <div className="mx-auto max-w-md">
-          <div className="rounded-lg bg-white p-4 shadow-lg">
-            <p className="text-sm text-gray-500">Geen resultaten gevonden</p>
-          </div>
+      <div className="w-full">
+        <div className="rounded-lg bg-white p-4 shadow-lg">
+          <p className="text-sm text-gray-500">Geen resultaten gevonden</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="fixed bottom-32 left-0 right-0 z-30 px-4 max-h-64 overflow-y-auto">
-      <div className="mx-auto max-w-md">
-        <div className="rounded-lg bg-white shadow-lg">
-          <div className="divide-y divide-gray-200">
-            {results.map((result) => {
+    <div className="w-full">
+      <div className="rounded-lg bg-white shadow-lg">
+        <div className="divide-y divide-gray-200">
+          {results.map((result) => {
+            const isAdded = addedResultIds.has(result.id)
               // Extract annotation from query (everything after product name)
               const productNameLower = result.name.toLowerCase().trim()
               const queryLower = query.toLowerCase().trim()
@@ -81,7 +81,11 @@ export default function SearchResults({
                     e.stopPropagation()
                     onSelect(result, query)
                   }}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                  className={`w-full px-4 py-3 text-left transition-colors ${
+                    isAdded
+                      ? 'bg-green-100 hover:bg-green-100'
+                      : 'hover:bg-gray-50'
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-lg">{result.emoji}</span>
