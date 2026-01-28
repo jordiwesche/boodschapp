@@ -27,6 +27,9 @@ interface ShoppingListItemProps {
   onUncheck?: (id: string) => void
   onDelete: (id: string) => void
   onUpdateDescription: (id: string, description: string) => void
+  isFirst?: boolean
+  isLast?: boolean
+  isOnly?: boolean
 }
 
 export default function ShoppingListItem({
@@ -35,6 +38,9 @@ export default function ShoppingListItem({
   onUncheck,
   onDelete,
   onUpdateDescription,
+  isFirst = false,
+  isLast = false,
+  isOnly = false,
 }: ShoppingListItemProps) {
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [editValue, setEditValue] = useState(item.description || '')
@@ -124,21 +130,31 @@ export default function ShoppingListItem({
     return null
   }
 
+  // Calculate border radius based on position
+  let borderRadius = ''
+  if (isOnly) {
+    borderRadius = 'rounded-2xl'
+  } else if (isFirst) {
+    borderRadius = 'rounded-t-2xl'
+  } else if (isLast) {
+    borderRadius = 'rounded-b-2xl'
+  }
+
   return (
     <div
       ref={itemRef}
-      className={`flex items-center gap-3 border-t border-b border-gray-200 py-2 px-3 transition-opacity ${
-        item.is_checked ? 'opacity-60' : ''
-      }`}
+      className={`flex items-center gap-3 px-4 py-3 transition-opacity ${
+        item.is_checked ? 'bg-transparent' : 'bg-white'
+      } ${borderRadius}`}
     >
       {/* Checkbox */}
       <button
         ref={checkboxRef}
         onClick={handleCheck}
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
+        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
           item.is_checked
-            ? 'border-blue-600 bg-blue-600'
-            : 'border-gray-300 hover:border-blue-500'
+            ? 'border-green-600 bg-green-600'
+            : 'border-gray-300 hover:border-green-500'
         }`}
         aria-label={item.is_checked ? 'Afgevinkt' : 'Afvinken'}
       >

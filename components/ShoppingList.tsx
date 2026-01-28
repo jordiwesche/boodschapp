@@ -142,58 +142,39 @@ export default function ShoppingList({
         </div>
       )}
       
-      {allSortedCategories.map((group) => (
-        <div key={group.category?.id || 'overig'} className="mb-6">
-          {/* Category header */}
-          <h2 className="mb-2 text-sm font-medium text-gray-500">
-            {group.categoryName}
-          </h2>
+      {allSortedCategories.map((group, categoryIndex) => {
+        // Combine all items in category (unchecked first, then checked)
+        const allItemsInCategory = [
+          ...group.uncheckedItems.sort((a, b) => {
+            const nameA = (a.product_name || '').toLowerCase()
+            const nameB = (b.product_name || '').toLowerCase()
+            return nameA.localeCompare(nameB, 'nl')
+          }),
+          ...group.checkedItems.sort((a, b) => {
+            const nameA = (a.product_name || '').toLowerCase()
+            const nameB = (b.product_name || '').toLowerCase()
+            return nameA.localeCompare(nameB, 'nl')
+          }),
+        ]
 
-          {/* Unchecked items - sorted alphabetically */}
-          {group.uncheckedItems.length > 0 && (
-            <div>
-              {[...group.uncheckedItems]
-                .sort((a, b) => {
-                  const nameA = (a.product_name || '').toLowerCase()
-                  const nameB = (b.product_name || '').toLowerCase()
-                  return nameA.localeCompare(nameB, 'nl')
-                })
-                .map((item) => (
-                  <ShoppingListItem
-                    key={item.id}
-                    item={item}
-                    onCheck={onCheck}
-                    onUncheck={onUncheck}
-                    onDelete={onDelete}
-                    onUpdateDescription={onUpdateDescription}
-                  />
-                ))}
-            </div>
-          )}
-
-          {/* Checked items (within same category) - sorted alphabetically */}
-          {group.checkedItems.length > 0 && (
-            <div>
-              {[...group.checkedItems]
-                .sort((a, b) => {
-                  const nameA = (a.product_name || '').toLowerCase()
-                  const nameB = (b.product_name || '').toLowerCase()
-                  return nameA.localeCompare(nameB, 'nl')
-                })
-                .map((item) => (
-                  <ShoppingListItem
-                    key={item.id}
-                    item={item}
-                    onCheck={onCheck}
-                    onUncheck={onUncheck}
-                    onDelete={onDelete}
-                    onUpdateDescription={onUpdateDescription}
-                  />
-                ))}
-            </div>
-          )}
-        </div>
-      ))}
+        return (
+          <div key={group.category?.id || 'overig'} className={categoryIndex > 0 ? 'mt-2' : ''}>
+            {allItemsInCategory.map((item, index) => (
+              <ShoppingListItem
+                key={item.id}
+                item={item}
+                onCheck={onCheck}
+                onUncheck={onUncheck}
+                onDelete={onDelete}
+                onUpdateDescription={onUpdateDescription}
+                isFirst={index === 0}
+                isLast={index === allItemsInCategory.length - 1}
+                isOnly={allItemsInCategory.length === 1}
+              />
+            ))}
+          </div>
+        )
+      })}
     </div>
   )
 }
