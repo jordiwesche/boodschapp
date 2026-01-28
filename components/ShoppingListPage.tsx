@@ -66,7 +66,7 @@ export default function ShoppingListPage() {
   const invalidateQueries = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.shoppingListItems })
     queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
-    // Refresh last update info
+    // Refresh last update info when items change
     fetchLastUpdate()
   }
 
@@ -83,22 +83,15 @@ export default function ShoppingListPage() {
     }
   }
 
-  // Fetch last update on mount and when items change
+  // Fetch last update on mount
+  useEffect(() => {
+    fetchLastUpdate()
+  }, [])
+
+  // Update last update info when items change (triggered by realtime subscription)
   useEffect(() => {
     fetchLastUpdate()
   }, [items.length])
-
-  // Update time display every minute
-  useEffect(() => {
-    if (!lastUpdate) return
-
-    const interval = setInterval(() => {
-      // Force re-render to update time display
-      setLastUpdate((prev) => prev ? { ...prev } : null)
-    }, 60000) // Update every minute
-
-    return () => clearInterval(interval)
-  }, [lastUpdate])
 
   // Pull to refresh handler - use refetch for faster refresh
   const handleRefresh = async () => {
