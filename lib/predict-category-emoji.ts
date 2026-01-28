@@ -30,7 +30,18 @@ export function predictCategoryAndEmoji(productName: string): CategoryPrediction
   for (const concept of CATEGORY_CONCEPT_PRODUCTS) {
     // Check if any product term matches
     for (const term of concept.productTerms) {
-      if (nameLower.includes(term.toLowerCase())) {
+      const termLower = term.toLowerCase()
+      // Check direct match or if product name contains the term
+      // Also handle plural/singular: "appels" should match "appel"
+      const matches = 
+        nameLower === termLower ||
+        nameLower.includes(termLower) ||
+        termLower.includes(nameLower) ||
+        // Handle plural: remove 's' from end and compare
+        (nameLower.endsWith('s') && nameLower.slice(0, -1) === termLower) ||
+        (termLower.endsWith('s') && termLower.slice(0, -1) === nameLower)
+      
+      if (matches) {
         // Determine category name from canonical tokens
         let categoryName = 'Overig'
         if (concept.canonicalTokens.includes('fruit') || concept.canonicalTokens.includes('groente')) {

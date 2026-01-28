@@ -176,7 +176,7 @@ export default function ShoppingList({
       {sortedUncheckedCategories.map((categoryGroup, index) => (
         <div key={categoryGroup.category?.id || 'overig'}>
           {/* Category header */}
-          <h2 className={`mb-2 px-4 text-xs font-medium text-gray-500 uppercase tracking-wide ${index === 0 ? 'mt-0' : 'mt-4'}`}>
+          <h2 className={`mb-2 px-4 text-xs font-medium text-gray-500 tracking-wide ${index === 0 ? 'mt-0' : 'mt-4'}`}>
             {categoryGroup.category?.name || 'Overig'}
           </h2>
           {/* Items in this category */}
@@ -197,7 +197,7 @@ export default function ShoppingList({
       {/* Checked items - all at the bottom, sorted by checked_at */}
       {sortedCheckedItems.length > 0 && (
         <>
-          <h2 className="mb-2 mt-4 px-4 text-xs font-medium text-gray-500 uppercase tracking-wide">
+          <h2 className="mb-2 mt-4 px-4 text-xs font-medium text-gray-500 tracking-wide">
             Afgevinkt
           </h2>
           {sortedCheckedItems.map((item) => (

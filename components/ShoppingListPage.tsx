@@ -106,6 +106,28 @@ export default function ShoppingListPage() {
     setEmptyItemSearchResults([])
     setShowEmptyItemDropdown(false)
     setEmptyItemKey((prev) => prev + 1) // Force remount for focus
+    
+    // Also try to focus after a short delay (for mobile)
+    setTimeout(() => {
+      const input = document.querySelector('input[placeholder="Typ product..."]') as HTMLInputElement
+      if (input) {
+        // Multiple attempts for mobile
+        if (window.innerWidth <= 768) {
+          input.click()
+          setTimeout(() => {
+            input.focus()
+            if (input.setSelectionRange) {
+              input.setSelectionRange(0, 0)
+            }
+          }, 50)
+          setTimeout(() => {
+            input.focus()
+          }, 200)
+        } else {
+          input.focus()
+        }
+      }
+    }, 200)
   }
 
   const handleCloseEmptyItem = () => {
@@ -248,8 +270,14 @@ export default function ShoppingListPage() {
         if (createResponse.ok) {
           const createData = await createResponse.json()
           productId = createData.product.id
+          // IMPORTANT: Use the category_id from the created product
           categoryId = createData.product.category_id
           emoji = createData.product.emoji
+          
+          // Double-check: if category_id is still null, something went wrong
+          if (!categoryId) {
+            console.error('Created product but category_id is null:', createData.product)
+          }
         }
       }
 
@@ -307,7 +335,19 @@ export default function ShoppingListPage() {
         })
 
         // Keep empty item open and force remount for focus
+        // Use setTimeout to ensure DOM is ready before focusing
         setEmptyItemKey((prev) => prev + 1)
+        setTimeout(() => {
+          // Find the input and focus it
+          const input = document.querySelector('input[placeholder="Typ product..."]') as HTMLInputElement
+          if (input) {
+            input.focus()
+            if (window.innerWidth <= 768) {
+              // On mobile, also trigger click
+              input.click()
+            }
+          }
+        }, 100)
       } else {
         // Error: remove optimistic item
         queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
@@ -409,6 +449,17 @@ export default function ShoppingListPage() {
         })
         // Keep empty item open and force remount for focus
         setEmptyItemKey((prev) => prev + 1)
+        setTimeout(() => {
+          // Find the input and focus it
+          const input = document.querySelector('input[placeholder="Typ product..."]') as HTMLInputElement
+          if (input) {
+            input.focus()
+            if (window.innerWidth <= 768) {
+              // On mobile, also trigger click
+              input.click()
+            }
+          }
+        }, 100)
       } else {
         // Remove optimistic item on error
         queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
@@ -648,6 +699,7 @@ export default function ShoppingListPage() {
                     onQueryChange={handleEmptyItemSearch}
                     onAdd={handleEmptyItemAdd}
                     onCancel={handleCloseEmptyItem}
+                    autoFocus={true}
                   />
                   {/* Inline search dropdown */}
                   {showEmptyItemDropdown && emptyItemQuery.trim().length >= 2 && (

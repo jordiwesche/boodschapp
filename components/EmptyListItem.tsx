@@ -8,6 +8,7 @@ interface EmptyListItemProps {
   onQueryChange: (query: string) => void
   onAdd: (query: string) => void
   onCancel: () => void
+  autoFocus?: boolean
 }
 
 export default function EmptyListItem({
@@ -15,31 +16,54 @@ export default function EmptyListItem({
   onQueryChange,
   onAdd,
   onCancel,
+  autoFocus = true,
 }: EmptyListItemProps) {
   const [showAddButton, setShowAddButton] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Auto-focus input on mount (with better mobile support)
   useEffect(() => {
-    if (inputRef.current) {
-      // Use requestAnimationFrame for better mobile support
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          if (inputRef.current) {
-            // On mobile, we need to explicitly click to trigger keyboard
-            if (window.innerWidth <= 768) {
-              inputRef.current.click()
-            }
+    if (autoFocus && inputRef.current) {
+      // Multiple attempts for mobile - some devices need more time
+      const focusInput = () => {
+        if (inputRef.current) {
+          // Try multiple methods for mobile
+          const isMobile = window.innerWidth <= 768
+          
+          if (isMobile) {
+            // Method 1: Direct click and focus
+            inputRef.current.click()
             inputRef.current.focus()
-            // Force focus on mobile by setting selection
-            if (window.innerWidth <= 768 && inputRef.current.setSelectionRange) {
-              inputRef.current.setSelectionRange(0, 0)
-            }
+            
+            // Method 2: Force focus with selection after a delay
+            setTimeout(() => {
+              if (inputRef.current) {
+                inputRef.current.focus()
+                if (inputRef.current.setSelectionRange) {
+                  inputRef.current.setSelectionRange(0, 0)
+                }
+              }
+            }, 100)
+            
+            // Method 3: Another attempt after longer delay
+            setTimeout(() => {
+              if (inputRef.current) {
+                inputRef.current.focus()
+              }
+            }, 300)
+          } else {
+            // Desktop: simple focus
+            inputRef.current.focus()
           }
-        }, 150)
+        }
+      }
+      
+      // Use requestAnimationFrame for better timing
+      requestAnimationFrame(() => {
+        setTimeout(focusInput, 50)
       })
     }
-  }, [])
+  }, [autoFocus])
 
   // Show add button when typing
   useEffect(() => {
