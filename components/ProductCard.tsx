@@ -1,5 +1,11 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+import { ShoppingCart } from 'lucide-react'
+import { calculatePurchaseFrequency } from '@/lib/prediction'
+import { formatPurchaseFrequency } from '@/lib/format-frequency'
+import { PurchaseHistory } from '@/types/database'
+
 interface Product {
   id: string
   emoji: string
@@ -24,6 +30,33 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onEdit }: ProductCardProps) {
+  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseHistory[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+
+  // Fetch purchase history for this product
+  useEffect(() => {
+    const fetchPurchaseHistory = async () => {
+      setLoadingHistory(true)
+      try {
+        const response = await fetch(`/api/products/${product.id}/purchase-history`)
+        if (response.ok) {
+          const data = await response.json()
+          setPurchaseHistory(data.history || [])
+        }
+      } catch (error) {
+        console.error('Error fetching purchase history:', error)
+      } finally {
+        setLoadingHistory(false)
+      }
+    }
+
+    fetchPurchaseHistory()
+  }, [product.id])
+
+  // Calculate frequency
+  const frequencyDays = calculatePurchaseFrequency(purchaseHistory)
+  const frequencyText = formatPurchaseFrequency(frequencyDays)
+  const purchaseCount = purchaseHistory.length
 
   return (
     <div 
@@ -35,10 +68,24 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
           <div className="flex items-center gap-2">
             <span className="text-lg shrink-0 flex items-center">{product.emoji}</span>
             <div className="flex-1 min-w-0 flex items-center">
-              <div className="flex items-center gap-2 w-full">
-                <h3 className="text-sm font-semibold text-gray-900 truncate">{product.name}</h3>
-                {product.is_basic && (
-                  <span className="text-yellow-500 shrink-0">★</span>
+              <div className="flex flex-col gap-0.5 w-full">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-900 truncate">{product.name}</h3>
+                  {product.is_basic && (
+                    <span className="text-yellow-500 shrink-0">★</span>
+                  )}
+                </div>
+                {/* Purchase history info */}
+                {!loadingHistory && purchaseCount > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <ShoppingCart className="h-3 w-3 shrink-0" />
+                    <span>
+                      {purchaseCount}x
+                      {frequencyText && (
+                        <> • {frequencyText}</>
+                      )}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>
