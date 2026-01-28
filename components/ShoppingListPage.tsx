@@ -206,8 +206,8 @@ export default function ShoppingListPage() {
 
     // Background: search for product or create new one
     try {
-      // First, try to find existing product
-      const searchResponse = await fetch(`/api/products/search?q=${encodeURIComponent(productName)}`)
+      // First, try to find existing product with full query (to match "Appels merk" with "Appels")
+      let searchResponse = await fetch(`/api/products/search?q=${encodeURIComponent(query.trim())}`)
       let productId: string | null = null
       let categoryId: string | null = null
       let emoji = '📦'
@@ -220,6 +220,20 @@ export default function ShoppingListPage() {
           productId = matchedProduct.id
           categoryId = matchedProduct.category?.id || null
           emoji = matchedProduct.emoji
+        }
+      }
+
+      // If no match with full query, try with just product name
+      if (!productId && productName !== query.trim()) {
+        searchResponse = await fetch(`/api/products/search?q=${encodeURIComponent(productName)}`)
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json()
+          if (searchData.products && searchData.products.length > 0) {
+            const matchedProduct = searchData.products[0]
+            productId = matchedProduct.id
+            categoryId = matchedProduct.category?.id || null
+            emoji = matchedProduct.emoji
+          }
         }
       }
 
@@ -239,7 +253,7 @@ export default function ShoppingListPage() {
         }
       }
 
-      // Fallback: get category if still missing
+      // Fallback: get category if still missing (shouldn't happen, but safety check)
       if (!categoryId) {
         const userResponse = await fetch('/api/user/current')
         if (userResponse.ok) {
@@ -256,11 +270,22 @@ export default function ShoppingListPage() {
         }
       }
 
+      // Ensure we have a category_id before proceeding
+      if (!categoryId) {
+        // Remove optimistic item on error
+        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+          old.filter((item) => item.id !== tempId)
+        )
+        setErrorMessage('Kon categorie niet vinden. Probeer het opnieuw.')
+        setTimeout(() => setErrorMessage(null), 5000)
+        return
+      }
+
       // Now add item to shopping list with real data
       const requestBody = {
         product_id: productId,
         product_name: productId ? null : productName,
-        category_id: categoryId || '',
+        category_id: categoryId,
         quantity: '1',
         description: annotation,
       }

@@ -96,6 +96,20 @@ export function parseProductInput(input: string): {
         productName = words.slice(0, -1).join(' ')
         annotationText = lastWord
       }
+    } else if (words.length === 2) {
+      // For two-word inputs like "Appels merk", check if second word is likely an annotation
+      // Common annotation words: merk, soort, variant, etc.
+      const commonAnnotationWords = [
+        'merk', 'soort', 'variant', 'type', 'maat', 'grootte', 'kleur',
+        'smaak', 'versie', 'editie', 'uitvoering', 'model'
+      ]
+      const secondWord = words[1].toLowerCase()
+      
+      // If second word is a common annotation word, treat it as annotation
+      if (commonAnnotationWords.includes(secondWord)) {
+        productName = words[0]
+        annotationText = words[1]
+      }
     }
   }
 
