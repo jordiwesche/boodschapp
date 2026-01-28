@@ -126,6 +126,30 @@ export default function ShoppingList({
     )
   }
 
+  // Sort unchecked items by category display_order, then alphabetically
+  const sortedUncheckedItems = uncheckedItems.sort((a, b) => {
+    const orderA = a.category?.display_order ?? 999
+    const orderB = b.category?.display_order ?? 999
+    if (orderA !== orderB) {
+      return orderA - orderB
+    }
+    const nameA = (a.product_name || '').toLowerCase()
+    const nameB = (b.product_name || '').toLowerCase()
+    return nameA.localeCompare(nameB, 'nl')
+  })
+
+  // Sort checked items by checked_at (most recent first), then alphabetically
+  const sortedCheckedItems = checkedItems.sort((a, b) => {
+    if (a.checked_at && b.checked_at) {
+      return new Date(b.checked_at).getTime() - new Date(a.checked_at).getTime()
+    }
+    if (a.checked_at) return -1
+    if (b.checked_at) return 1
+    const nameA = (a.product_name || '').toLowerCase()
+    const nameB = (b.product_name || '').toLowerCase()
+    return nameA.localeCompare(nameB, 'nl')
+  })
+
   return (
     <div className="pb-32">
       {/* Clear checked items button - fixed at top right */}
@@ -142,39 +166,31 @@ export default function ShoppingList({
         </div>
       )}
       
-      {allSortedCategories.map((group, categoryIndex) => {
-        // Combine all items in category (unchecked first, then checked)
-        const allItemsInCategory = [
-          ...group.uncheckedItems.sort((a, b) => {
-            const nameA = (a.product_name || '').toLowerCase()
-            const nameB = (b.product_name || '').toLowerCase()
-            return nameA.localeCompare(nameB, 'nl')
-          }),
-          ...group.checkedItems.sort((a, b) => {
-            const nameA = (a.product_name || '').toLowerCase()
-            const nameB = (b.product_name || '').toLowerCase()
-            return nameA.localeCompare(nameB, 'nl')
-          }),
-        ]
+      {/* Unchecked items - grouped by category, sorted by display_order */}
+      {sortedUncheckedItems.map((item) => (
+        <div key={item.id} className="mb-2">
+          <ShoppingListItem
+            item={item}
+            onCheck={onCheck}
+            onUncheck={onUncheck}
+            onDelete={onDelete}
+            onUpdateDescription={onUpdateDescription}
+          />
+        </div>
+      ))}
 
-        return (
-          <div key={group.category?.id || 'overig'} className={categoryIndex > 0 ? 'mt-2' : ''}>
-            {allItemsInCategory.map((item, index) => (
-              <ShoppingListItem
-                key={item.id}
-                item={item}
-                onCheck={onCheck}
-                onUncheck={onUncheck}
-                onDelete={onDelete}
-                onUpdateDescription={onUpdateDescription}
-                isFirst={index === 0}
-                isLast={index === allItemsInCategory.length - 1}
-                isOnly={allItemsInCategory.length === 1}
-              />
-            ))}
-          </div>
-        )
-      })}
+      {/* Checked items - all at the bottom, sorted by checked_at */}
+      {sortedCheckedItems.map((item) => (
+        <div key={item.id} className="mb-2">
+          <ShoppingListItem
+            item={item}
+            onCheck={onCheck}
+            onUncheck={onUncheck}
+            onDelete={onDelete}
+            onUpdateDescription={onUpdateDescription}
+          />
+        </div>
+      ))}
     </div>
   )
 }

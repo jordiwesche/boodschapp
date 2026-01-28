@@ -27,9 +27,6 @@ interface ShoppingListItemProps {
   onUncheck?: (id: string) => void
   onDelete: (id: string) => void
   onUpdateDescription: (id: string, description: string) => void
-  isFirst?: boolean
-  isLast?: boolean
-  isOnly?: boolean
 }
 
 export default function ShoppingListItem({
@@ -38,9 +35,6 @@ export default function ShoppingListItem({
   onUncheck,
   onDelete,
   onUpdateDescription,
-  isFirst = false,
-  isLast = false,
-  isOnly = false,
 }: ShoppingListItemProps) {
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [editValue, setEditValue] = useState(item.description || '')
@@ -130,22 +124,12 @@ export default function ShoppingListItem({
     return null
   }
 
-  // Calculate border radius based on position
-  let borderRadius = ''
-  if (isOnly) {
-    borderRadius = 'rounded-2xl'
-  } else if (isFirst) {
-    borderRadius = 'rounded-t-2xl'
-  } else if (isLast) {
-    borderRadius = 'rounded-b-2xl'
-  }
-
   return (
     <div
       ref={itemRef}
-      className={`flex items-center gap-3 px-4 py-3 transition-opacity ${
+      className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-opacity ${
         item.is_checked ? 'bg-transparent' : 'bg-white'
-      } ${borderRadius}`}
+      }`}
     >
       {/* Checkbox */}
       <button
