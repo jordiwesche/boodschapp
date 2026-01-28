@@ -84,12 +84,15 @@ export async function POST(
       )
     }
 
-    // Check if there's a recent purchase (< 30 seconds ago) for this product
+    // Check if there's a recent purchase (< 1 hour ago) for this product
+    // This handles the case where user checks -> unchecks -> checks again within 1 hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
     const { data: recentPurchases, error: purchaseHistoryError } = await supabase
       .from('purchase_history')
       .select('*')
       .eq('household_id', user.household_id)
       .eq('product_id', item.product_id)
+      .gte('purchased_at', oneHourAgo) // Purchases within last hour
       .order('purchased_at', { ascending: false })
       .limit(1)
 
@@ -98,13 +101,13 @@ export async function POST(
     }
 
     const now = new Date().toISOString()
+    // Check if there's a purchase within the last hour (not just 30 seconds)
     const hasRecent = recentPurchases && recentPurchases.length > 0
-      ? hasRecentPurchase(recentPurchases, 30)
-      : false
 
     // Handle purchase history
     if (hasRecent && recentPurchases && recentPurchases.length > 0) {
       // Update existing recent purchase instead of creating new one
+      // This handles: check -> uncheck -> check again within 1 hour (same purchase)
       const { error: updatePurchaseError } = await supabase
         .from('purchase_history')
         .update({
@@ -121,6 +124,8 @@ export async function POST(
           { status: 500 }
         )
       }
+      
+      console.log(`✅ Updated existing purchase history for product ${item.product_id} (within 1 hour)`)
     } else {
       // Create new purchase history entry
       const { error: insertError } = await supabase
