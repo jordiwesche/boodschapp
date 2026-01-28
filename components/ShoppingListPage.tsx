@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import SearchOverlay from './SearchOverlay'
+import FloatingAddButton from './FloatingAddButton'
+import EmptyListItem from './EmptyListItem'
+import InlineSearchDropdown from './InlineSearchDropdown'
 import ShoppingList from './ShoppingList'
 import ShoppingListSkeleton from './ShoppingListSkeleton'
 import PullToRefresh from './PullToRefresh'
@@ -9,27 +11,24 @@ import { parseProductInput } from '@/lib/annotation-parser'
 import { createClient } from '@/lib/supabase/client'
 import {
   useShoppingListItems,
-  useSuggestions,
   useCheckItem,
   useUncheckItem,
   useDeleteItem,
   useUpdateDescription,
   useAddItem,
   useClearChecked,
-  type ShoppingListItemData,
-  type Suggestion,
   queryKeys,
 } from '@/lib/hooks/use-shopping-list'
 import { useQueryClient } from '@tanstack/react-query'
 import { useScrollRestore } from '@/lib/hooks/use-scroll-restore'
 import { haptic } from '@/lib/haptics'
-import { useSearch } from './SearchContext'
 import { formatTimeAgo } from '@/lib/format-time-ago'
 
 interface SearchResult {
   id: string
   emoji: string
   name: string
+  description?: string | null
   category: {
     id: string
     name: string
@@ -40,7 +39,6 @@ interface SearchResult {
 export default function ShoppingListPage() {
   // Use TanStack Query hooks for data fetching
   const { data: items = [], isLoading: isLoadingItems, refetch: refetchItems } = useShoppingListItems()
-  const { data: suggestions = [], isLoading: isLoadingSuggestions, refetch: refetchSuggestions } = useSuggestions()
   const queryClient = useQueryClient()
 
   // Mutations
@@ -51,13 +49,16 @@ export default function ShoppingListPage() {
   const addItemMutation = useAddItem()
   const clearCheckedMutation = useClearChecked()
 
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
-  const { isSearchActive, setIsSearchActive } = useSearch()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [keepSuggestionsOpen, setKeepSuggestionsOpen] = useState(false)
-  const [isSearching, setIsSearching] = useState(false)
+  // Empty item state
+  const [isEmptyItemOpen, setIsEmptyItemOpen] = useState(false)
+  const [emptyItemQuery, setEmptyItemQuery] = useState('')
+  const [emptyItemSearchResults, setEmptyItemSearchResults] = useState<SearchResult[]>([])
+  const [isSearchingEmptyItem, setIsSearchingEmptyItem] = useState(false)
+  const [showEmptyItemDropdown, setShowEmptyItemDropdown] = useState(false)
+  const [emptyItemKey, setEmptyItemKey] = useState(0) // Key to force remount for focus
+  const searchDebounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [addedResultIds, setAddedResultIds] = useState<Set<string>>(new Set())
   const [lastUpdate, setLastUpdate] = useState<{ userName: string; updatedAt: string } | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const { clearScroll } = useScrollRestore(scrollContainerRef)
@@ -65,7 +66,6 @@ export default function ShoppingListPage() {
   // Helper function to invalidate queries (used by realtime subscription)
   const invalidateQueries = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.shoppingListItems })
-    queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
     // Refresh last update info when items change
     fetchLastUpdate()
   }
@@ -93,80 +93,326 @@ export default function ShoppingListPage() {
     fetchLastUpdate()
   }, [items.length])
 
-  // Pull to refresh handler - use refetch for faster refresh
+  // Pull to refresh handler
   const handleRefresh = async () => {
-    clearScroll() // Clear scroll position on refresh
-    // Use refetch instead of invalidate for faster response
-    // Refetch immediately fetches new data, invalidate waits for next use
-    await Promise.all([
-      refetchItems(),
-      refetchSuggestions(),
-    ])
+    clearScroll()
+    await refetchItems()
   }
 
-  // Search products
-  const handleSearch = async (query: string) => {
-    // Don't update searchQuery here - it's already updated by onChange
-    // This prevents clearing results while user is typing
+  // Empty item handlers
+  const handleOpenEmptyItem = () => {
+    setIsEmptyItemOpen(true)
+    setEmptyItemQuery('')
+    setEmptyItemSearchResults([])
+    setShowEmptyItemDropdown(false)
+    setEmptyItemKey((prev) => prev + 1) // Force remount for focus
+  }
 
-    // If user starts typing, close suggestions
-    if (query && query.trim().length > 0) {
-      setKeepSuggestionsOpen(false)
+  const handleCloseEmptyItem = () => {
+    setIsEmptyItemOpen(false)
+    setEmptyItemQuery('')
+    setEmptyItemSearchResults([])
+    setShowEmptyItemDropdown(false)
+    if (searchDebounceTimerRef.current) {
+      clearTimeout(searchDebounceTimerRef.current)
+      searchDebounceTimerRef.current = null
+    }
+  }
+
+  // Search handler for empty item (debounced)
+  const handleEmptyItemSearch = async (query: string) => {
+    setEmptyItemQuery(query)
+
+    // Clear existing timer
+    if (searchDebounceTimerRef.current) {
+      clearTimeout(searchDebounceTimerRef.current)
     }
 
+    // Hide dropdown while typing
+    setShowEmptyItemDropdown(false)
+
     if (!query || query.trim().length < 2) {
-      setSearchResults([])
-      setIsSearching(false)
+      setEmptyItemSearchResults([])
+      setIsSearchingEmptyItem(false)
       return
     }
 
-    setIsSearching(true)
+    // Show dropdown after 1 second of no typing
+    searchDebounceTimerRef.current = setTimeout(async () => {
+      setIsSearchingEmptyItem(true)
+      try {
+        const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.products && data.products.length > 0) {
+            setEmptyItemSearchResults(data.products)
+            setShowEmptyItemDropdown(true)
+          } else {
+            setEmptyItemSearchResults([])
+            setShowEmptyItemDropdown(true)
+          }
+        }
+      } catch (error) {
+        console.error('Error searching products:', error)
+      } finally {
+        setIsSearchingEmptyItem(false)
+      }
+    }, 1000)
+  }
+
+  // Add product from empty item (optimistic UI)
+  const handleEmptyItemAdd = async (query: string) => {
+    if (!query.trim()) {
+      handleCloseEmptyItem()
+      return
+    }
+
+    haptic('light')
+
+    // Parse query for annotation
+    const parsed = parseProductInput(query.trim())
+    const productName = parsed.productName
+    const annotation = parsed.annotation?.fullText || null
+
+    // Optimistic: create temporary item ID
+    const tempId = `temp-${Date.now()}`
+
+    // Optimistic update: add item immediately to list
+    const optimisticItem = {
+      id: tempId,
+      product_id: null,
+      product_name: productName,
+      emoji: '📦', // Temporary, will be updated
+      quantity: '1',
+      description: annotation,
+      category_id: '', // Temporary, will be updated
+      category: null,
+      is_checked: false,
+      checked_at: null,
+      created_at: new Date().toISOString(),
+    }
+
+    // Optimistically add to list
+    queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => [
+      optimisticItem,
+      ...old,
+    ])
+
+    // Clear query but keep empty item open
+    setEmptyItemQuery('')
+    setEmptyItemSearchResults([])
+    setShowEmptyItemDropdown(false)
+    // Keep isEmptyItemOpen = true (don't close)
+
+    // Background: search for product or create new one
     try {
-      const response = await fetch(`/api/products/search?q=${encodeURIComponent(query)}`)
-      if (response.ok) {
-        const data = await response.json()
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:104',message:'Search results received',data:{query,resultsCount:data.products?.length,results:data.products?.map((p:any)=>({id:p.id,name:p.name}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-        // #endregion
-        // Only update results if we got results, don't clear if search failed
-        if (data.products && data.products.length > 0) {
-          setSearchResults(data.products)
-        } else {
-          // Only clear if query is definitely not matching (not just typing)
-          // Keep previous results while user is still typing
-          const trimmedQuery = query.trim()
-          if (trimmedQuery.length >= 3) {
-            setSearchResults([])
+      // First, try to find existing product
+      const searchResponse = await fetch(`/api/products/search?q=${encodeURIComponent(productName)}`)
+      let productId: string | null = null
+      let categoryId: string | null = null
+      let emoji = '📦'
+
+      if (searchResponse.ok) {
+        const searchData = await searchResponse.json()
+        if (searchData.products && searchData.products.length > 0) {
+          // Use first match
+          const matchedProduct = searchData.products[0]
+          productId = matchedProduct.id
+          categoryId = matchedProduct.category?.id || null
+          emoji = matchedProduct.emoji
+        }
+      }
+
+      // If no match, create new product
+      if (!productId) {
+        const createResponse = await fetch('/api/products/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: productName }),
+        })
+
+        if (createResponse.ok) {
+          const createData = await createResponse.json()
+          productId = createData.product.id
+          categoryId = createData.product.category_id
+          emoji = createData.product.emoji
+        }
+      }
+
+      // Fallback: get category if still missing
+      if (!categoryId) {
+        const userResponse = await fetch('/api/user/current')
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          const categoryResponse = await fetch('/api/categories')
+          if (categoryResponse.ok) {
+            const categoryData = await categoryResponse.json()
+            const categories = categoryData.categories || []
+            const overigCategory = categories.find((c: any) => c.name === 'Overig')
+            if (overigCategory) {
+              categoryId = overigCategory.id
+            }
           }
         }
       }
+
+      // Now add item to shopping list with real data
+      const requestBody = {
+        product_id: productId,
+        product_name: productId ? null : productName,
+        category_id: categoryId || '',
+        quantity: '1',
+        description: annotation,
+      }
+
+      const addResponse = await fetch('/api/shopping-list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      })
+
+      if (addResponse.ok) {
+        const addData = await addResponse.json()
+        const newItem = addData.item
+
+        // Replace optimistic item with real item
+        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => {
+          const filtered = old.filter((item) => item.id !== tempId)
+          return [newItem, ...filtered]
+        })
+
+        // Keep empty item open and force remount for focus
+        setEmptyItemKey((prev) => prev + 1)
+      } else {
+        // Error: remove optimistic item
+        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+          old.filter((item) => item.id !== tempId)
+        )
+        setErrorMessage('Kon product niet toevoegen. Probeer het opnieuw.')
+        setTimeout(() => setErrorMessage(null), 5000)
+      }
     } catch (error) {
-      console.error('Error searching products:', error)
-      // Don't clear results on error - keep previous results visible
-    } finally {
-      setIsSearching(false)
+      console.error('Error adding product:', error)
+      // Remove optimistic item on error
+      queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+        old.filter((item) => item.id !== tempId)
+      )
+      setErrorMessage('Kon product niet toevoegen. Probeer het opnieuw.')
+      setTimeout(() => setErrorMessage(null), 5000)
     }
   }
 
-  const handleCloseSuggestions = () => {
-    setKeepSuggestionsOpen(false)
-    setIsSearchActive(false)
-    setSearchQuery('')
+  // Handle search result select from dropdown
+  const handleEmptyItemResultSelect = async (result: SearchResult, query: string) => {
+    haptic('light')
+
+    // Parse annotation from query
+    const productNameLower = result.name.toLowerCase().trim()
+    const queryLower = query.toLowerCase().trim()
+    let annotationText = ''
+    
+    if (queryLower.startsWith(productNameLower)) {
+      annotationText = query.substring(result.name.length).trim()
+    } else {
+      const parsed = parseProductInput(query)
+      annotationText = parsed.annotation?.fullText || ''
+    }
+
+    // Get category
+    let categoryId = result.category?.id
+    if (!categoryId) {
+      const productResponse = await fetch(`/api/products/${result.id}`)
+      if (productResponse.ok) {
+        const productData = await productResponse.json()
+        categoryId = productData.product?.category_id
+      }
+    }
+
+    if (!categoryId) {
+      setErrorMessage('Kon categorie niet vinden')
+      setTimeout(() => setErrorMessage(null), 5000)
+      return
+    }
+
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`
+    const optimisticItem = {
+      id: tempId,
+      product_id: result.id,
+      product_name: null,
+      emoji: result.emoji,
+      quantity: '1',
+      description: annotationText || null,
+      category_id: categoryId,
+      category: result.category,
+      is_checked: false,
+      checked_at: null,
+      created_at: new Date().toISOString(),
+    }
+
+    queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => [
+      optimisticItem,
+      ...old,
+    ])
+
+    // Clear query but keep empty item open
+    setEmptyItemQuery('')
+    setEmptyItemSearchResults([])
+    setShowEmptyItemDropdown(false)
+
+    // Background: add to shopping list
+    try {
+      const requestBody = {
+        product_id: result.id,
+        category_id: categoryId,
+        quantity: '1',
+        description: annotationText || null,
+      }
+
+      const response = await fetch('/api/shopping-list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Replace optimistic item
+        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => {
+          const filtered = old.filter((item) => item.id !== tempId)
+          return [data.item, ...filtered]
+        })
+        // Keep empty item open and force remount for focus
+        setEmptyItemKey((prev) => prev + 1)
+      } else {
+        // Remove optimistic item on error
+        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+          old.filter((item) => item.id !== tempId)
+        )
+        setErrorMessage('Kon product niet toevoegen')
+        setTimeout(() => setErrorMessage(null), 5000)
+      }
+    } catch (error) {
+      console.error('Error adding product:', error)
+      queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+        old.filter((item) => item.id !== tempId)
+      )
+      setErrorMessage('Kon product niet toevoegen')
+      setTimeout(() => setErrorMessage(null), 5000)
+    }
   }
 
-  // Cleanup purchase history timers on unmount
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
-      purchaseHistoryTimersRef.current.forEach((timer) => {
-        clearTimeout(timer)
-      })
-      purchaseHistoryTimersRef.current.clear()
+      if (searchDebounceTimerRef.current) {
+        clearTimeout(searchDebounceTimerRef.current)
+      }
     }
   }, [])
 
-  // Set up realtime subscription for shopping list items
+  // Set up realtime subscription
   useEffect(() => {
-    // Get household_id from user API
     const setupRealtime = async () => {
       try {
         const userResponse = await fetch('/api/user/current')
@@ -177,8 +423,6 @@ export default function ShoppingListPage() {
 
         const supabase = createClient()
         
-        // Subscribe to changes in shopping_list_items for this household
-        // Use separate subscriptions for better reliability with DELETE events
         const channel = supabase
           .channel('shopping_list_items_changes')
           .on(
@@ -189,10 +433,7 @@ export default function ShoppingListPage() {
               table: 'shopping_list_items',
               filter: `household_id=eq.${userData.household_id}`,
             },
-            (payload) => {
-              console.log('Realtime INSERT:', payload)
-              invalidateQueries()
-            }
+            () => invalidateQueries()
           )
           .on(
             'postgres_changes',
@@ -202,10 +443,7 @@ export default function ShoppingListPage() {
               table: 'shopping_list_items',
               filter: `household_id=eq.${userData.household_id}`,
             },
-            (payload) => {
-              console.log('Realtime UPDATE:', payload)
-              invalidateQueries()
-            }
+            () => invalidateQueries()
           )
           .on(
             'postgres_changes',
@@ -215,16 +453,10 @@ export default function ShoppingListPage() {
               table: 'shopping_list_items',
               filter: `household_id=eq.${userData.household_id}`,
             },
-            (payload) => {
-              console.log('Realtime DELETE:', payload)
-              invalidateQueries()
-            }
+            () => invalidateQueries()
           )
-          .subscribe((status) => {
-            console.log('Realtime subscription status:', status)
-          })
+          .subscribe()
 
-        // Cleanup subscription on unmount
         return () => {
           supabase.removeChannel(channel)
         }
@@ -249,30 +481,22 @@ export default function ShoppingListPage() {
   const handleCheck = async (id: string) => {
     haptic('light')
     try {
-      // Clear any existing timer for this item first
       const existingTimer = purchaseHistoryTimersRef.current.get(id)
       if (existingTimer) {
         clearTimeout(existingTimer)
         purchaseHistoryTimersRef.current.delete(id)
       }
 
-      // Wait for mutation to complete and get the response
       const result = await checkItemMutation.mutateAsync(id)
       
-      // Get the checked_at timestamp from the server response
-      // This ensures we use the actual server time, not the optimistic update time
       const checkedAt = result?.item?.checked_at || new Date().toISOString()
       const checkedAtTime = new Date(checkedAt).getTime()
       const now = Date.now()
-      const delay = 30000 - (now - checkedAtTime) // Adjust delay based on actual server time
-      
-      // Schedule purchase history recording after 30 seconds from server checked_at
-      // Use max to ensure we don't go negative
+      const delay = 30000 - (now - checkedAtTime)
       const timerDelay = Math.max(delay, 0)
       
       const timer = setTimeout(async () => {
         try {
-          // Verify item is still checked before recording
           const checkResponse = await fetch(`/api/shopping-list/record-purchase/${id}`, {
             method: 'POST',
           })
@@ -280,18 +504,11 @@ export default function ShoppingListPage() {
           if (checkResponse.ok) {
             const result = await checkResponse.json()
             if (result.success) {
-              // Refresh suggestions as purchase history affects predictions
               queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
-              console.log(`✅ Purchase history recorded for item ${id}`)
-            } else {
-              console.warn(`⚠️ Purchase history not recorded for item ${id}:`, result.message)
             }
-          } else {
-            const errorData = await checkResponse.json().catch(() => ({ error: 'Unknown error' }))
-            console.error(`❌ Error recording purchase history for item ${id}:`, errorData)
           }
         } catch (error) {
-          console.error(`❌ Error recording purchase history for item ${id}:`, error)
+          console.error(`Error recording purchase history for item ${id}:`, error)
         } finally {
           purchaseHistoryTimersRef.current.delete(id)
         }
@@ -308,13 +525,10 @@ export default function ShoppingListPage() {
   const handleUncheck = async (id: string) => {
     haptic('light')
     try {
-      // Cancel purchase history timer if item is unchecked before 30 seconds
       const timer = purchaseHistoryTimersRef.current.get(id)
       if (timer) {
         clearTimeout(timer)
-        purchaseHistoryTimersRef.current.delete(id)
       }
-
       await uncheckItemMutation.mutateAsync(id)
     } catch (error) {
       setErrorMessage('Kon item niet unchecken. Probeer het opnieuw.')
@@ -368,225 +582,15 @@ export default function ShoppingListPage() {
     }
   }
 
-  const handleSuggestionSelect = async (suggestion: Suggestion) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:186',message:'handleSuggestionSelect entry',data:{suggestionId:suggestion.id,suggestionName:suggestion.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-    // #endregion
-    try {
-      // Fetch the product to get its category_id and full product info
-      const productResponse = await fetch(`/api/products/${suggestion.id}`)
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:190',message:'Product fetch response',data:{ok:productResponse.ok,status:productResponse.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-      // #endregion
-      if (!productResponse.ok) {
-        console.error('Failed to fetch product:', productResponse.status)
-        return
-      }
-
-      const productData = await productResponse.json()
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:196',message:'Product data received',data:{hasProduct:!!productData.product,productId:productData.product?.id,productName:productData.product?.name,categoryId:productData.product?.category_id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-      // #endregion
-      const product = productData.product
-
-      if (!product) {
-        console.error('Product not found in response')
-        return
-      }
-
-      const categoryId = product.category_id
-
-      if (!categoryId) {
-        console.error('Product has no category_id')
-        return
-      }
-
-      const requestBody = {
-        product_id: suggestion.id, // Use product_id so it links to the product
-        category_id: categoryId,
-        quantity: '1',
-        description: product.description || null, // Auto-populate from product description
-      }
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:210',message:'Creating shopping list item',data:{requestBody},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
-      // #endregion
-      // Fix: Use only mutation, not direct fetch (removes double-add bug)
-      await addItemMutation.mutateAsync(requestBody)
-      // Keep suggestions open after adding
-      setKeepSuggestionsOpen(true)
-      setIsSearchActive(true) // Keep search active to show suggestions
-      setSearchQuery('') // Clear search query
-    } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:231',message:'Exception in handleSuggestionSelect',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-      // #endregion
-      console.error('Error adding suggestion to list:', error)
-    }
-  }
-
-  const handleSearchResultSelect = async (result: SearchResult, query: string) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:235',message:'handleSearchResultSelect entry',data:{resultId:result.id,resultName:result.name,query},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
-    // #endregion
-    try {
-      // Extract annotation from query (everything after the product name)
-      // The product name should match the search result name
-      const productNameLower = result.name.toLowerCase()
-      const queryLower = query.toLowerCase()
-      
-      let annotationText = ''
-      if (queryLower.startsWith(productNameLower)) {
-        // Extract everything after the product name
-        annotationText = query.substring(result.name.length).trim()
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:245',message:'Annotation extracted',data:{productName:result.name,query,annotationText,substringStart:result.name.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-        // #endregion
-      } else {
-        // If product name doesn't match start of query, try parsing the whole query
-        const parsed = parseProductInput(query)
-        annotationText = parsed.annotation?.fullText || ''
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:249',message:'Annotation parsed via parser',data:{query,parsedAnnotation:parsed.annotation,annotationText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H6'})}).catch(()=>{});
-        // #endregion
-      }
-
-      // Use the selected product's category
-      const categoryId = result.category?.id
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:297',message:'Category check',data:{resultId:result.id,hasCategory:!!result.category,categoryId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-      // #endregion
-
-      if (!categoryId) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:300',message:'Search result has no category - fetching product',data:{resultId:result.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-        // #endregion
-        // Fetch product to get category_id
-        try {
-          const productResponse = await fetch(`/api/products/${result.id}`)
-          if (productResponse.ok) {
-            const productData = await productResponse.json()
-            const fetchedCategoryId = productData.product?.category_id
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:307',message:'Fetched category from product',data:{fetchedCategoryId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-            // #endregion
-            if (fetchedCategoryId) {
-            // Fetch full product to get description
-            const fullProductResponse = await fetch(`/api/products/${result.id}`)
-            const fullProductData = fullProductResponse.ok ? await fullProductResponse.json() : null
-            const productDescription = fullProductData?.product?.description || null
-            
-            // Use product description as initial description, or annotation if provided
-            const initialDescription = annotationText || productDescription || null
-            
-              const requestBody = {
-                product_id: result.id,
-                category_id: fetchedCategoryId,
-                quantity: '1',
-                description: initialDescription,
-              }
-              await addItemMutation.mutateAsync(requestBody)
-              // Mark result as added for green highlight
-              setAddedResultIds((prev) => new Set(prev).add(result.id))
-              // Clear search query so user can continue searching
-              setSearchQuery('')
-              // Keep overlay open
-              return
-            }
-          }
-        } catch (error) {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:342',message:'Error fetching product for category',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-          // #endregion
-        }
-        console.error('Search result has no category')
-        return
-      }
-
-      // Fetch full product to get description
-      const fullProductResponse = await fetch(`/api/products/${result.id}`)
-      const fullProductData = fullProductResponse.ok ? await fullProductResponse.json() : null
-      const productDescription = fullProductData?.product?.description || null
-      
-      // Use product description as initial description, or annotation if provided
-      const initialDescription = annotationText || productDescription || null
-      
-      const requestBody = {
-        product_id: result.id,
-        category_id: categoryId,
-        quantity: '1',
-        description: initialDescription,
-      }
-      await addItemMutation.mutateAsync(requestBody)
-      // Mark result as added for green highlight
-      setAddedResultIds((prev) => new Set(prev).add(result.id))
-      // Clear search query so user can continue searching
-      setSearchQuery('')
-      // Keep overlay open
-    } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:285',message:'Exception in handleSearchResultSelect',data:{error:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
-      // #endregion
-      console.error('Error adding search result to list:', error)
-    }
-  }
-
-  const handleSearchFocus = () => {
-    setIsSearchActive(true)
-    // Refresh suggestions when search becomes active
-    queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
-    
-    // Prevent page scrolling when keyboard appears on mobile
-    // Only apply on mobile devices
-    if (window.innerWidth <= 768) {
-      // Store current scroll position
-      const scrollY = window.scrollY || window.pageYOffset
-      // Save scroll position to data attribute
-      document.documentElement.setAttribute('data-scroll-y', scrollY.toString())
-      // Prevent body scroll
-      document.body.style.position = 'fixed'
-      document.body.style.top = `-${scrollY}px`
-      document.body.style.width = '100%'
-      document.body.style.overflow = 'hidden'
-    }
-  }
-
-  const handleSearchBlur = () => {
-    // Restore scroll position when keyboard closes
-    // Only apply on mobile devices
-    if (window.innerWidth <= 768) {
-      const scrollY = document.documentElement.getAttribute('data-scroll-y')
-      document.body.style.position = ''
-      document.body.style.top = ''
-      document.body.style.width = ''
-      document.body.style.overflow = ''
-      document.documentElement.removeAttribute('data-scroll-y')
-      
-      if (scrollY) {
-        // Use requestAnimationFrame to ensure DOM is ready
-        requestAnimationFrame(() => {
-          window.scrollTo(0, parseInt(scrollY))
-        })
-      }
-    }
-    // Note: Don't close overlay on blur - let user close explicitly or with Escape
-  }
-
-  // Show suggestions if:
-  // 1. List is empty (always show suggestions when not searching)
-  // 2. OR search is active AND (no query OR query too short) - but NOT if there's a search query >= 2 chars
-  // 3. OR keepSuggestionsOpen is true (after adding from suggestions)
-  const showSearchResults = Boolean(isSearchActive && searchQuery && searchQuery.trim().length >= 2)
-  const showSuggestions = 
-    keepSuggestionsOpen ||
-    (!showSearchResults && items.length === 0) || 
-    (!showSearchResults && isSearchActive && (!searchQuery || searchQuery.trim().length < 2))
-  
-  // #region agent log
+  // Cleanup purchase history timers on unmount
   useEffect(() => {
-    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ShoppingListPage.tsx:297',message:'Visibility state',data:{itemsLength:items.length,isSearchActive,searchQuery,searchQueryLength:searchQuery?.trim().length,showSuggestions,showSearchResults},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H7'})}).catch(()=>{});
-  }, [items.length, isSearchActive, searchQuery, showSuggestions, showSearchResults]);
-  // #endregion
+    return () => {
+      purchaseHistoryTimersRef.current.forEach((timer) => {
+        clearTimeout(timer)
+      })
+      purchaseHistoryTimersRef.current.clear()
+    }
+  }, [])
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
@@ -609,66 +613,44 @@ export default function ShoppingListPage() {
           {isLoadingItems ? (
             <ShoppingListSkeleton />
           ) : (
-            <ShoppingList
-              items={items}
-              onCheck={handleCheck}
-              onUncheck={handleUncheck}
-              onDelete={handleDelete}
-              onUpdateDescription={handleUpdateDescription}
-              onClearChecked={handleClearChecked}
-            />
+            <>
+              {/* Empty item at top */}
+              {isEmptyItemOpen && (
+                <>
+                  <EmptyListItem
+                    key={emptyItemKey}
+                    query={emptyItemQuery}
+                    onQueryChange={handleEmptyItemSearch}
+                    onAdd={handleEmptyItemAdd}
+                    onCancel={handleCloseEmptyItem}
+                  />
+                  {/* Inline search dropdown */}
+                  {showEmptyItemDropdown && emptyItemQuery.trim().length >= 2 && (
+                    <InlineSearchDropdown
+                      results={emptyItemSearchResults}
+                      query={emptyItemQuery}
+                      isVisible={true}
+                      isSearching={isSearchingEmptyItem}
+                      onSelect={handleEmptyItemResultSelect}
+                    />
+                  )}
+                </>
+              )}
+              <ShoppingList
+                items={items}
+                onCheck={handleCheck}
+                onUncheck={handleUncheck}
+                onDelete={handleDelete}
+                onUpdateDescription={handleUpdateDescription}
+                onClearChecked={handleClearChecked}
+              />
+            </>
           )}
         </PullToRefresh>
       </main>
 
-      {/* Regular search bar (shown when overlay is not active) */}
-      {!isSearchActive && (
-        <div className="fixed bottom-[92px] left-0 right-0 z-40 px-4">
-          <div className="mx-auto max-w-md">
-            <div
-              className="relative rounded-lg bg-white shadow-lg ring-1 ring-gray-200"
-              onClick={handleSearchFocus}
-            >
-              <div className="flex items-center gap-3 px-4 py-3 cursor-text">
-                <svg
-                  className="h-5 w-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                <span className="flex-1 text-base text-gray-400">
-                  Typ product (en toelichting)
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Search Overlay */}
-      <SearchOverlay
-        searchQuery={searchQuery}
-        onSearchQueryChange={setSearchQuery}
-        onSearch={handleSearch}
-        isSearching={isSearching}
-        suggestions={suggestions}
-        isLoadingSuggestions={isLoadingSuggestions}
-        searchResults={searchResults}
-        showSearchResults={showSearchResults}
-        showSuggestions={showSuggestions}
-        onSuggestionSelect={handleSuggestionSelect}
-        onSearchResultSelect={handleSearchResultSelect}
-        onCloseSuggestions={handleCloseSuggestions}
-        addedResultIds={addedResultIds}
-        onSearchFocus={handleSearchFocus}
-      />
+      {/* Floating add button */}
+      <FloatingAddButton onClick={handleOpenEmptyItem} />
 
       {/* Error message toast */}
       {errorMessage && (
