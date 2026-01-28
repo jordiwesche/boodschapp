@@ -244,12 +244,22 @@ export default function ShoppingListPage() {
           const checkResponse = await fetch(`/api/shopping-list/record-purchase/${id}`, {
             method: 'POST',
           })
+          
           if (checkResponse.ok) {
-            // Refresh suggestions as purchase history affects predictions
-            queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
+            const result = await checkResponse.json()
+            if (result.success) {
+              // Refresh suggestions as purchase history affects predictions
+              queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
+              console.log(`✅ Purchase history recorded for item ${id}`)
+            } else {
+              console.warn(`⚠️ Purchase history not recorded for item ${id}:`, result.message)
+            }
+          } else {
+            const errorData = await checkResponse.json().catch(() => ({ error: 'Unknown error' }))
+            console.error(`❌ Error recording purchase history for item ${id}:`, errorData)
           }
         } catch (error) {
-          console.error('Error recording purchase history:', error)
+          console.error(`❌ Error recording purchase history for item ${id}:`, error)
         } finally {
           purchaseHistoryTimersRef.current.delete(id)
         }

@@ -58,17 +58,23 @@ export async function POST(
     }
 
     // Verify at least 30 seconds have passed since checked_at
+    // Note: We allow a small buffer (28 seconds) to account for network latency
     if (item.checked_at) {
       const checkedAt = new Date(item.checked_at).getTime()
       const now = Date.now()
       const diffSeconds = (now - checkedAt) / 1000
 
-      if (diffSeconds < 30) {
+      if (diffSeconds < 28) {
+        console.warn(`Purchase history recording too early for item ${id}: ${diffSeconds.toFixed(1)}s < 30s`)
         return NextResponse.json({
           success: false,
-          message: 'Nog niet 30 seconden verstreken',
+          message: `Nog niet 30 seconden verstreken (${diffSeconds.toFixed(1)}s)`,
         }, { status: 400 })
       }
+    } else {
+      // If checked_at is null, we can't verify the delay, but we'll still record it
+      // This handles edge cases where checked_at might not be set
+      console.warn(`Item ${id} has no checked_at timestamp, recording purchase history anyway`)
     }
 
     if (!item.product_id) {
