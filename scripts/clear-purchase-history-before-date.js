@@ -7,10 +7,25 @@ const { createClient } = require('@supabase/supabase-js')
 const fs = require('fs')
 const path = require('path')
 
-// Try to load .env.local
+// Try to load .env.local (dotenv is optional)
 const envPath = path.join(__dirname, '..', '.env.local')
 if (fs.existsSync(envPath)) {
-  require('dotenv').config({ path: envPath })
+  try {
+    require('dotenv').config({ path: envPath })
+  } catch (e) {
+    // dotenv not installed, try to read .env.local manually
+    const envContent = fs.readFileSync(envPath, 'utf8')
+    envContent.split('\n').forEach(line => {
+      const match = line.match(/^([^=]+)=(.*)$/)
+      if (match) {
+        const key = match[1].trim()
+        const value = match[2].trim().replace(/^["']|["']$/g, '')
+        if (!process.env[key]) {
+          process.env[key] = value
+        }
+      }
+    })
+  }
 }
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL

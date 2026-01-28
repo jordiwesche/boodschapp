@@ -223,21 +223,27 @@ export default function ShoppingListPage() {
   const handleCheck = async (id: string) => {
     haptic('light')
     try {
-      try {
-        await checkItemMutation.mutateAsync(id)
-      } catch (error) {
-        setErrorMessage('Kon item niet afvinken. Probeer het opnieuw.')
-        setTimeout(() => setErrorMessage(null), 5000)
-        throw error
-      }
-
-      // Schedule purchase history recording after 30 seconds
-      // Clear any existing timer for this item
+      // Clear any existing timer for this item first
       const existingTimer = purchaseHistoryTimersRef.current.get(id)
       if (existingTimer) {
         clearTimeout(existingTimer)
+        purchaseHistoryTimersRef.current.delete(id)
       }
 
+      // Wait for mutation to complete and get the response
+      const result = await checkItemMutation.mutateAsync(id)
+      
+      // Get the checked_at timestamp from the server response
+      // This ensures we use the actual server time, not the optimistic update time
+      const checkedAt = result?.item?.checked_at || new Date().toISOString()
+      const checkedAtTime = new Date(checkedAt).getTime()
+      const now = Date.now()
+      const delay = 30000 - (now - checkedAtTime) // Adjust delay based on actual server time
+      
+      // Schedule purchase history recording after 30 seconds from server checked_at
+      // Use max to ensure we don't go negative
+      const timerDelay = Math.max(delay, 0)
+      
       const timer = setTimeout(async () => {
         try {
           // Verify item is still checked before recording
@@ -263,10 +269,12 @@ export default function ShoppingListPage() {
         } finally {
           purchaseHistoryTimersRef.current.delete(id)
         }
-      }, 30000) // 30 seconds
+      }, timerDelay)
 
       purchaseHistoryTimersRef.current.set(id, timer)
     } catch (error) {
+      setErrorMessage('Kon item niet afvinken. Probeer het opnieuw.')
+      setTimeout(() => setErrorMessage(null), 5000)
       console.error('Error checking item:', error)
     }
   }
