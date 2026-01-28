@@ -24,6 +24,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useScrollRestore } from '@/lib/hooks/use-scroll-restore'
 import { haptic } from '@/lib/haptics'
 import { useSearch } from './SearchContext'
+import { formatTimeAgo } from '@/lib/format-time-ago'
 
 interface SearchResult {
   id: string
@@ -57,6 +58,7 @@ export default function ShoppingListPage() {
   const [isSearching, setIsSearching] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [addedResultIds, setAddedResultIds] = useState<Set<string>>(new Set())
+  const [lastUpdate, setLastUpdate] = useState<{ userName: string; updatedAt: string } | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const { clearScroll } = useScrollRestore(scrollContainerRef)
 
@@ -64,7 +66,39 @@ export default function ShoppingListPage() {
   const invalidateQueries = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.shoppingListItems })
     queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
+    // Refresh last update info
+    fetchLastUpdate()
   }
+
+  // Fetch last update info
+  const fetchLastUpdate = async () => {
+    try {
+      const response = await fetch('/api/shopping-list/last-update')
+      if (response.ok) {
+        const data = await response.json()
+        setLastUpdate(data.lastUpdate)
+      }
+    } catch (error) {
+      console.error('Error fetching last update:', error)
+    }
+  }
+
+  // Fetch last update on mount and when items change
+  useEffect(() => {
+    fetchLastUpdate()
+  }, [items.length])
+
+  // Update time display every minute
+  useEffect(() => {
+    if (!lastUpdate) return
+
+    const interval = setInterval(() => {
+      // Force re-render to update time display
+      setLastUpdate((prev) => prev ? { ...prev } : null)
+    }, 60000) // Update every minute
+
+    return () => clearInterval(interval)
+  }, [lastUpdate])
 
   // Pull to refresh handler - use refetch for faster refresh
   const handleRefresh = async () => {
@@ -566,6 +600,11 @@ export default function ShoppingListPage() {
       <header className="bg-white shadow">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900">Boodschappen</h1>
+          {lastUpdate && (
+            <p className="text-sm text-gray-500 mt-1">
+              {lastUpdate.userName} • {formatTimeAgo(lastUpdate.updatedAt)}
+            </p>
+          )}
         </div>
       </header>
 
