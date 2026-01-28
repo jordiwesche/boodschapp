@@ -9,6 +9,7 @@ interface EmptyListItemProps {
   onAdd: (query: string) => void
   onCancel: () => void
   autoFocus?: boolean
+  onFocusComplete?: () => void
 }
 
 export default function EmptyListItem({
@@ -17,51 +18,57 @@ export default function EmptyListItem({
   onAdd,
   onCancel,
   autoFocus = true,
+  onFocusComplete,
 }: EmptyListItemProps) {
   const [showAddButton, setShowAddButton] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Auto-focus input on mount (with better mobile support)
+  // Use callback ref for immediate focus when element is mounted
+  const inputCallbackRef = (node: HTMLInputElement | null) => {
+    inputRef.current = node
+    if (node && autoFocus) {
+      // Focus immediately when element is mounted (works better on mobile)
+      // iOS Safari allows focus if it's triggered synchronously during render
+      // Use multiple attempts for better mobile compatibility
+      const focusAttempts = [
+        () => {
+          node.focus()
+          if (window.innerWidth <= 768) {
+            node.click()
+          }
+        },
+        () => {
+          requestAnimationFrame(() => {
+            node.focus()
+            if (window.innerWidth <= 768) {
+              node.click()
+            }
+          })
+        },
+      ]
+      
+      // Try immediate focus
+      focusAttempts[0]()
+      
+      // Try with requestAnimationFrame
+      focusAttempts[1]()
+      
+      // Notify parent that focus attempt is complete
+      if (onFocusComplete) {
+        setTimeout(() => onFocusComplete(), 100)
+      }
+    }
+  }
+
+  // Also try focus in useEffect as fallback
   useEffect(() => {
     if (autoFocus && inputRef.current) {
-      // Multiple attempts for mobile - some devices need more time
-      const focusInput = () => {
-        if (inputRef.current) {
-          // Try multiple methods for mobile
-          const isMobile = window.innerWidth <= 768
-          
-          if (isMobile) {
-            // Method 1: Direct click and focus
-            inputRef.current.click()
-            inputRef.current.focus()
-            
-            // Method 2: Force focus with selection after a delay
-            setTimeout(() => {
-              if (inputRef.current) {
-                inputRef.current.focus()
-                if (inputRef.current.setSelectionRange) {
-                  inputRef.current.setSelectionRange(0, 0)
-                }
-              }
-            }, 100)
-            
-            // Method 3: Another attempt after longer delay
-            setTimeout(() => {
-              if (inputRef.current) {
-                inputRef.current.focus()
-              }
-            }, 300)
-          } else {
-            // Desktop: simple focus
-            inputRef.current.focus()
-          }
-        }
+      // Immediate focus attempt
+      inputRef.current.focus()
+      if (window.innerWidth <= 768) {
+        inputRef.current.click()
       }
-      
-      // Use requestAnimationFrame for better timing
-      requestAnimationFrame(() => {
-        setTimeout(focusInput, 50)
-      })
     }
   }, [autoFocus])
 
@@ -80,6 +87,9 @@ export default function EmptyListItem({
     if (query.trim()) {
       onAdd(query.trim())
       onQueryChange('')
+    } else {
+      // If query is empty, close the empty item
+      onCancel()
     }
   }
 
@@ -104,7 +114,7 @@ export default function EmptyListItem({
         {/* Input field */}
         <form onSubmit={handleSubmit} className="flex-1">
           <input
-            ref={inputRef}
+            ref={inputCallbackRef}
             type="text"
             value={query}
             onChange={handleChange}
@@ -112,6 +122,8 @@ export default function EmptyListItem({
             placeholder="Typ product..."
             className="w-full border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
             style={{ fontSize: '16px' }}
+            autoFocus={autoFocus}
+            inputMode="text"
           />
         </form>
 

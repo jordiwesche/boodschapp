@@ -56,6 +56,7 @@ export default function ShoppingListPage() {
   const [isSearchingEmptyItem, setIsSearchingEmptyItem] = useState(false)
   const [showEmptyItemDropdown, setShowEmptyItemDropdown] = useState(false)
   const [emptyItemKey, setEmptyItemKey] = useState(0) // Key to force remount for focus
+  const [shouldFocusEmptyItem, setShouldFocusEmptyItem] = useState(false)
   const searchDebounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -106,28 +107,15 @@ export default function ShoppingListPage() {
     setEmptyItemSearchResults([])
     setShowEmptyItemDropdown(false)
     setEmptyItemKey((prev) => prev + 1) // Force remount for focus
+    setShouldFocusEmptyItem(true) // Trigger focus after mount
     
-    // Also try to focus after a short delay (for mobile)
-    setTimeout(() => {
-      const input = document.querySelector('input[placeholder="Typ product..."]') as HTMLInputElement
-      if (input) {
-        // Multiple attempts for mobile
-        if (window.innerWidth <= 768) {
-          input.click()
-          setTimeout(() => {
-            input.focus()
-            if (input.setSelectionRange) {
-              input.setSelectionRange(0, 0)
-            }
-          }, 50)
-          setTimeout(() => {
-            input.focus()
-          }, 200)
-        } else {
-          input.focus()
-        }
+    // Scroll to top so empty item is visible
+    requestAnimationFrame(() => {
+      const emptyItem = document.querySelector('input[placeholder="Typ product..."]')
+      if (emptyItem) {
+        emptyItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       }
-    }, 200)
+    })
   }
 
   const handleCloseEmptyItem = () => {
@@ -335,19 +323,8 @@ export default function ShoppingListPage() {
         })
 
         // Keep empty item open and force remount for focus
-        // Use setTimeout to ensure DOM is ready before focusing
         setEmptyItemKey((prev) => prev + 1)
-        setTimeout(() => {
-          // Find the input and focus it
-          const input = document.querySelector('input[placeholder="Typ product..."]') as HTMLInputElement
-          if (input) {
-            input.focus()
-            if (window.innerWidth <= 768) {
-              // On mobile, also trigger click
-              input.click()
-            }
-          }
-        }, 100)
+        // Focus will be handled by EmptyListItem's autoFocus prop
       } else {
         // Error: remove optimistic item
         queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
@@ -449,17 +426,7 @@ export default function ShoppingListPage() {
         })
         // Keep empty item open and force remount for focus
         setEmptyItemKey((prev) => prev + 1)
-        setTimeout(() => {
-          // Find the input and focus it
-          const input = document.querySelector('input[placeholder="Typ product..."]') as HTMLInputElement
-          if (input) {
-            input.focus()
-            if (window.innerWidth <= 768) {
-              // On mobile, also trigger click
-              input.click()
-            }
-          }
-        }, 100)
+        // Focus will be handled by EmptyListItem's autoFocus prop
       } else {
         // Remove optimistic item on error
         queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
@@ -698,8 +665,12 @@ export default function ShoppingListPage() {
                     query={emptyItemQuery}
                     onQueryChange={handleEmptyItemSearch}
                     onAdd={handleEmptyItemAdd}
-                    onCancel={handleCloseEmptyItem}
-                    autoFocus={true}
+                    onCancel={() => {
+                      handleCloseEmptyItem()
+                      setShouldFocusEmptyItem(false)
+                    }}
+                    autoFocus={shouldFocusEmptyItem}
+                    onFocusComplete={() => setShouldFocusEmptyItem(false)}
                   />
                   {/* Inline search dropdown */}
                   {showEmptyItemDropdown && emptyItemQuery.trim().length >= 2 && (
