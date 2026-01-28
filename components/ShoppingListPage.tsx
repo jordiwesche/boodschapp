@@ -549,7 +549,7 @@ export default function ShoppingListPage() {
   // 1. List is empty (always show suggestions when not searching)
   // 2. OR search is active AND (no query OR query too short) - but NOT if there's a search query >= 2 chars
   // 3. OR keepSuggestionsOpen is true (after adding from suggestions)
-  const showSearchResults = isSearchActive && searchQuery && searchQuery.trim().length >= 2
+  const showSearchResults = Boolean(isSearchActive && searchQuery && searchQuery.trim().length >= 2)
   const showSuggestions = 
     keepSuggestionsOpen ||
     (!showSearchResults && items.length === 0) || 
