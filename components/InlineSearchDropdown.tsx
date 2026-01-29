@@ -107,8 +107,8 @@ export default function InlineSearchDropdown({
               }}
               className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <span className="text-lg">{result.emoji}</span>
+              <div className="flex items-center gap-3 w-full">
+                <span className="text-lg shrink-0">{result.emoji}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-medium text-gray-900">
@@ -136,6 +136,12 @@ export default function InlineSearchDropdown({
                     </p>
                   )}
                 </div>
+                {index === 0 && (
+                  <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
+                    <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
+                    Enter
+                  </span>
+                )}
               </div>
             </button>
           )
