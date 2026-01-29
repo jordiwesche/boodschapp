@@ -81,15 +81,6 @@ function tokenOverlapRatio(a: string, b: string): number {
   return overlap / Math.max(aTokens.length, bTokens.length)
 }
 
-/** Normalize for singular/plural: strip trailing -s so "banaan" and "bananen" can match */
-function stemSingularPlural(s: string): string {
-  const t = s.trim().toLowerCase()
-  if (t.length <= 2) return t
-  if (t.endsWith('en') && t.length >= 4) return t.slice(0, -2) // bananen -> banaan
-  if (t.endsWith('s') && !t.endsWith('ss')) return t.slice(0, -1) // appels -> appel
-  return t
-}
-
 function isAcceptableMatch(query: string, candidateName: string, score?: number | null): boolean {
   const q = normalizeForMatch(query)
   const c = normalizeForMatch(candidateName)
@@ -97,8 +88,11 @@ function isAcceptableMatch(query: string, candidateName: string, score?: number 
   // Exact match always acceptable
   if (q === c) return true
 
-  // Singular/plural: same stem (banaan vs bananen, appel vs appels)
-  if (stemSingularPlural(q) === stemSingularPlural(c)) return true
+  // Dutch singular/plural: word + "en" (banaan↔bananen) or word + "s" (appel↔appels)
+  if (q.length >= 2 && c.length >= 2) {
+    if (q + 'en' === c || c + 'en' === q) return true
+    if (q + 's' === c || c + 's' === q) return true
+  }
 
   // If we have Fuse score: require both good score and strong token overlap
   const SCORE_CUTOFF = 0.25
