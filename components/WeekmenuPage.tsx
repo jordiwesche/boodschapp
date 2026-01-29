@@ -260,6 +260,9 @@ export default function WeekmenuPage() {
                 </span>
                 {showViewMode ? (
                   <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <span className="min-w-0 flex-1 font-semibold text-gray-900">
+                      {savedText}
+                    </span>
                     <button
                       type="button"
                       onClick={() => {
@@ -267,14 +270,11 @@ export default function WeekmenuPage() {
                         setEditingDay(day.day_of_week)
                         setLocalText((prev) => ({ ...prev, [day.day_of_week]: savedText }))
                       }}
-                      className="shrink-0 rounded p-1.5 text-gray-500 hover:bg-gray-100"
+                      className="shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
                       aria-label="Bewerken"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
-                    <span className="min-w-0 flex-1 font-semibold text-gray-900">
-                      {savedText}
-                    </span>
                   </div>
                 ) : (
                   <div className="flex min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
@@ -315,7 +315,7 @@ export default function WeekmenuPage() {
                             setEditingDay(null)
                             setLocalText((prev) => ({ ...prev, [day.day_of_week]: savedText }))
                           }}
-                          className="shrink-0 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
+                          className="shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
                           aria-label="Bewerken sluiten"
                         >
                           <Pencil className="h-4 w-4" />
@@ -424,11 +424,8 @@ export default function WeekmenuPage() {
                   <button
                     type="button"
                     onClick={() => goToLink(day.link_url!)}
-                    className="flex w-full items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-left hover:bg-gray-200"
+                    className="flex w-full items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-left hover:bg-blue-100"
                   >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-gray-200 text-gray-500">
-                      <LinkIcon className="h-4 w-4" />
-                    </span>
                     <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
                       {linkDisplayText(day)}
                     </span>
