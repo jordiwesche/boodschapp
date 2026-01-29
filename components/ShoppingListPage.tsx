@@ -731,7 +731,7 @@ export default function ShoppingListPage() {
               event: 'DELETE',
               schema: 'public',
               table: 'shopping_list_items',
-              filter: `household_id=eq.${userData.household_id}`,
+              /* Geen filter: DELETE payload ondersteunt filter soms niet; refetch toont alleen eigen huishouden */
             },
             () => invalidateQueries()
           )

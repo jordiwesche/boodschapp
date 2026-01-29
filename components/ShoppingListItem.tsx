@@ -180,9 +180,9 @@ export default function ShoppingListItem({
         </button>
       )}
 
-      {/* Edit description input – zelfde stijl als leeg item (divider, focus, compact Enter-knop) */}
+      {/* Edit description input – maximale breedte, Toelichting links, Enter rechts */}
       {isEditingDescription && (
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex-1 flex items-center gap-2 min-w-0">
           <div className="h-5 w-px shrink-0 bg-gray-200 self-center" aria-hidden />
           <input
             type="text"
@@ -191,7 +191,7 @@ export default function ShoppingListItem({
             onBlur={handleSaveDescription}
             onKeyDown={handleKeyDown}
             placeholder="Toelichting"
-            className="w-28 shrink-0 rounded bg-transparent px-2 py-1 text-gray-600 placeholder:text-gray-400 focus:outline-none placeholder:text-[14px]"
+            className="flex-1 min-w-0 rounded bg-transparent px-2 py-1 text-left text-gray-600 placeholder:text-gray-400 focus:outline-none placeholder:text-[14px]"
             style={{ fontSize: '12px' }}
             autoFocus
           />
