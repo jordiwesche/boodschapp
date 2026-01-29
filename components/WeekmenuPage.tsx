@@ -259,7 +259,7 @@ export default function WeekmenuPage() {
                   {label}
                 </span>
                 {showViewMode ? (
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
                     <span className="min-w-0 flex-1 font-semibold text-gray-900">
                       {savedText}
                     </span>
@@ -310,24 +310,12 @@ export default function WeekmenuPage() {
                       <>
                         <button
                           type="button"
-                          onClick={() => {
-                            haptic('light')
-                            setEditingDay(null)
-                            setLocalText((prev) => ({ ...prev, [day.day_of_week]: savedText }))
-                          }}
-                          className="shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
-                          aria-label="Bewerken sluiten"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
                           onClick={() => handleSubmit(day.day_of_week)}
                           disabled={isPatching}
-                          className="shrink-0 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
+                          className="shrink-0 flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
                           aria-label="Opslaan"
                         >
-                          <CornerDownLeft className="h-4 w-4" />
+                          <CornerDownLeft className="h-4 w-4" strokeWidth={2} />
                         </button>
                         <button
                           type="button"
