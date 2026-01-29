@@ -887,13 +887,13 @@ export default function ShoppingListPage() {
 
       <main 
         ref={scrollContainerRef}
-        className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8"
+        className="mx-auto w-full max-w-7xl flex-1 flex flex-col min-h-0 px-4 py-8 sm:px-6 lg:px-8"
       >
         <PullToRefresh onRefresh={handleRefresh} scrollContainerRef={scrollContainerRef}>
           {isLoadingItems ? (
             <ShoppingListSkeleton />
           ) : (
-            <div className="flex flex-col min-h-[50vh]">
+            <div className="flex flex-1 flex-col min-h-0">
               {/* Empty item at top */}
               {isEmptyItemOpen && (
                 <>
@@ -983,7 +983,7 @@ export default function ShoppingListPage() {
               />
               {/* Klikbare lege zone: open leeg item als gesloten, sluit als open en geen query */}
               <div
-                className="flex-1 min-h-[140px]"
+                className="flex-1 min-h-[20vh]"
                 onClick={() => {
                   if (isEmptyItemOpen && !emptyItemQuery.trim()) {
                     handleCloseEmptyItem()
