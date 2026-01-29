@@ -42,11 +42,15 @@ function WeekmenuGerechtTextarea({
 }) {
   const ref = useRef<HTMLTextAreaElement>(null)
 
+  const LINE_HEIGHT_PX = 20
+  const MIN_HEIGHT_PX = 24
+  const PADDING_TOP_PX = (MIN_HEIGHT_PX - LINE_HEIGHT_PX) / 2 // 2px: centreert één regel
+
   const resize = useCallback(() => {
     const el = ref.current
     if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.max(24, el.scrollHeight)}px`
+    el.style.height = '0'
+    el.style.height = `${Math.max(MIN_HEIGHT_PX, el.scrollHeight)}px`
   }, [])
 
   useEffect(() => {
@@ -86,8 +90,14 @@ function WeekmenuGerechtTextarea({
       disabled={disabled}
       autoFocus={autoFocus}
       rows={1}
-      className="min-h-[24px] min-w-0 flex-1 resize-none overflow-hidden border-0 bg-transparent py-0 text-base text-gray-900 placeholder:text-gray-500 focus:outline-none"
-      style={{ fontSize: 16, lineHeight: 1.25 }}
+      className="min-w-0 flex-1 resize-none overflow-hidden border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-500 focus:outline-none box-border"
+      style={{
+        fontSize: 16,
+        lineHeight: `${LINE_HEIGHT_PX}px`,
+        minHeight: MIN_HEIGHT_PX,
+        paddingTop: PADDING_TOP_PX,
+        paddingBottom: PADDING_TOP_PX,
+      }}
       onInput={resize}
     />
   )
