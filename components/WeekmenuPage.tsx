@@ -53,6 +53,21 @@ function WeekmenuGerechtTextarea({
     resize()
   }, [value, resize])
 
+  // Cursor aan het einde bij openen
+  const moveCursorToEnd = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    const len = el.value.length
+    el.setSelectionRange(len, len)
+  }, [])
+
+  useEffect(() => {
+    if (!autoFocus) return
+    moveCursorToEnd()
+    const t = setTimeout(moveCursorToEnd, 0)
+    return () => clearTimeout(t)
+  }, [autoFocus, moveCursorToEnd])
+
   return (
     <textarea
       ref={ref}
@@ -71,8 +86,8 @@ function WeekmenuGerechtTextarea({
       disabled={disabled}
       autoFocus={autoFocus}
       rows={1}
-      className="min-h-[24px] min-w-0 flex-1 resize-none border-0 bg-transparent py-0 text-base text-gray-900 placeholder:text-gray-500 focus:outline-none"
-      style={{ fontSize: 16 }}
+      className="min-h-[24px] min-w-0 flex-1 resize-none overflow-hidden border-0 bg-transparent py-0 text-base text-gray-900 placeholder:text-gray-500 focus:outline-none"
+      style={{ fontSize: 16, lineHeight: 1.25 }}
       onInput={resize}
     />
   )
@@ -332,7 +347,7 @@ export default function WeekmenuPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex min-w-0 flex-1 items-end gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                  <div className="flex min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
                     <WeekmenuGerechtTextarea
                       value={text}
                       onChange={(v) =>
