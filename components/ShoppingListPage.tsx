@@ -893,7 +893,7 @@ export default function ShoppingListPage() {
           {isLoadingItems ? (
             <ShoppingListSkeleton />
           ) : (
-            <>
+            <div className="flex flex-col min-h-[50vh]">
               {/* Empty item at top */}
               {isEmptyItemOpen && (
                 <>
@@ -981,7 +981,31 @@ export default function ShoppingListPage() {
                 onUpdateDescription={handleUpdateDescription}
                 onClearChecked={handleClearChecked}
               />
-            </>
+              {/* Klikbare lege zone: open leeg item als gesloten, sluit als open en geen query */}
+              <div
+                className="flex-1 min-h-[140px]"
+                onClick={() => {
+                  if (isEmptyItemOpen && !emptyItemQuery.trim()) {
+                    handleCloseEmptyItem()
+                  } else if (!isEmptyItemOpen) {
+                    handleOpenEmptyItem()
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    if (isEmptyItemOpen && !emptyItemQuery.trim()) {
+                      handleCloseEmptyItem()
+                    } else if (!isEmptyItemOpen) {
+                      handleOpenEmptyItem()
+                    }
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Leeg item openen of sluiten"
+              />
+            </div>
           )}
         </PullToRefresh>
       </main>

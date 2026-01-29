@@ -31,11 +31,13 @@ interface InlineSearchDropdownProps {
 function ActionButtons({
   q,
   desc,
+  showEnterOnFirstButton,
   onAddToListOnly,
   onAddToListAndSaveProduct,
 }: {
   q: string
   desc: string | null
+  showEnterOnFirstButton?: boolean
   onAddToListOnly: (productName: string, description: string | null) => void
   onAddToListAndSaveProduct: (productName: string, description: string | null) => void
 }) {
@@ -51,10 +53,12 @@ function ActionButtons({
       >
         <ListPlus className="h-4 w-4 shrink-0 text-gray-500" />
         <span className="flex-1">Zet &quot;{q}&quot; op de lijst</span>
-        <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
-          <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
-          Enter
-        </span>
+        {showEnterOnFirstButton !== false && (
+          <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
+            <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
+            Enter
+          </span>
+        )}
       </button>
       <button
         onMouseDown={(e) => {
@@ -103,6 +107,7 @@ export default function InlineSearchDropdown({
         <ActionButtons
           q={q}
           desc={desc}
+          showEnterOnFirstButton={true}
           onAddToListOnly={onAddToListOnly}
           onAddToListAndSaveProduct={onAddToListAndSaveProduct}
         />
@@ -185,6 +190,7 @@ export default function InlineSearchDropdown({
           <ActionButtons
             q={q}
             desc={desc}
+            showEnterOnFirstButton={false}
             onAddToListOnly={onAddToListOnly}
             onAddToListAndSaveProduct={onAddToListAndSaveProduct}
           />

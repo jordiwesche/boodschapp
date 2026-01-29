@@ -114,7 +114,7 @@ export default function EmptyListItem({
             }
           }}
           placeholder="toelichting"
-          className="w-32 shrink-0 rounded bg-transparent px-2 py-1 text-xs text-gray-600 placeholder:text-gray-400 focus:outline-none"
+          className="w-28 shrink-0 rounded bg-transparent px-2 py-1 text-xs text-gray-600 placeholder:text-gray-400 focus:outline-none"
           style={{ fontSize: '13px' }}
         />
       </form>
