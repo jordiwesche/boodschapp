@@ -902,7 +902,6 @@ export default function ShoppingListPage() {
                       }).catch(() => {})
                       // #endregion
                       const trimmed = name.trim()
-                      const acceptable = firstResult && isAcceptableMatch(trimmed, firstResult.name, firstResult.score)
                       if (acceptable) {
                         handleEmptyItemResultSelect(firstResult, trimmed)
                       } else {
