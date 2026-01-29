@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Link as LinkIcon, CornerDownLeft, X, Pencil } from 'lucide-react'
+import { Link as LinkIcon, CornerDownLeft, X, Pencil, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { haptic } from '@/lib/haptics'
 
@@ -203,8 +203,8 @@ export default function WeekmenuPage() {
     (day_of_week: number) => {
       haptic('light')
       patchDay(day_of_week, { link_url: null, link_title: null })
-      setUrlDropdownDay(null)
       setUrlInput('')
+      // keep dropdown open; show empty URL input (hasLink becomes false)
     },
     [patchDay]
   )
@@ -260,9 +260,6 @@ export default function WeekmenuPage() {
                 </span>
                 {showViewMode ? (
                   <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <span className="min-w-0 flex-1 font-semibold text-gray-900">
-                      {savedText}
-                    </span>
                     <button
                       type="button"
                       onClick={() => {
@@ -270,11 +267,14 @@ export default function WeekmenuPage() {
                         setEditingDay(day.day_of_week)
                         setLocalText((prev) => ({ ...prev, [day.day_of_week]: savedText }))
                       }}
-                      className="shrink-0 rounded p-1.5 text-blue-600 hover:bg-blue-50"
+                      className="shrink-0 rounded p-1.5 text-gray-500 hover:bg-gray-100"
                       aria-label="Bewerken"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
+                    <span className="min-w-0 flex-1 font-semibold text-gray-900">
+                      {savedText}
+                    </span>
                   </div>
                 ) : (
                   <div className="flex min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
@@ -310,6 +310,18 @@ export default function WeekmenuPage() {
                       <>
                         <button
                           type="button"
+                          onClick={() => {
+                            haptic('light')
+                            setEditingDay(null)
+                            setLocalText((prev) => ({ ...prev, [day.day_of_week]: savedText }))
+                          }}
+                          className="shrink-0 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
+                          aria-label="Bewerken sluiten"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => handleSubmit(day.day_of_week)}
                           disabled={isPatching}
                           className="shrink-0 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
@@ -330,6 +342,7 @@ export default function WeekmenuPage() {
                     )}
                   </div>
                 )}
+                {!showViewMode && (
                 <div className="relative shrink-0">
                   <button
                     type="button"
@@ -404,15 +417,22 @@ export default function WeekmenuPage() {
                     </div>
                   )}
                 </div>
+                )}
               </div>
               {hasLink && (
-                <div className="mt-1 pl-10">
+                <div className="mt-1.5 pl-10">
                   <button
                     type="button"
                     onClick={() => goToLink(day.link_url!)}
-                    className="text-sm text-blue-600 underline hover:text-blue-700"
+                    className="flex w-full items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-left hover:bg-gray-200"
                   >
-                    {linkDisplayText(day)}
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-gray-200 text-gray-500">
+                      <LinkIcon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
+                      {linkDisplayText(day)}
+                    </span>
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-gray-500" />
                   </button>
                 </div>
               )}
