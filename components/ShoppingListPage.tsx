@@ -81,12 +81,24 @@ function tokenOverlapRatio(a: string, b: string): number {
   return overlap / Math.max(aTokens.length, bTokens.length)
 }
 
+/** Normalize for singular/plural: strip trailing -s so "banaan" and "bananen" can match */
+function stemSingularPlural(s: string): string {
+  const t = s.trim().toLowerCase()
+  if (t.length <= 2) return t
+  if (t.endsWith('en') && t.length >= 4) return t.slice(0, -2) // bananen -> banaan
+  if (t.endsWith('s') && !t.endsWith('ss')) return t.slice(0, -1) // appels -> appel
+  return t
+}
+
 function isAcceptableMatch(query: string, candidateName: string, score?: number | null): boolean {
   const q = normalizeForMatch(query)
   const c = normalizeForMatch(candidateName)
 
   // Exact match always acceptable
   if (q === c) return true
+
+  // Singular/plural: same stem (banaan vs bananen, appel vs appels)
+  if (stemSingularPlural(q) === stemSingularPlural(c)) return true
 
   // If we have Fuse score: require both good score and strong token overlap
   const SCORE_CUTOFF = 0.25
@@ -887,8 +899,15 @@ export default function ShoppingListPage() {
                         }),
                       }).catch(() => {})
                       // #endregion
-                      if (showEmptyItemDropdown && emptyItemSearchResults.length === 0 && name.trim().length >= 2) {
-                        handleAddToListOnly(name.trim(), desc)
+                      const trimmed = name.trim()
+                      const noResults = showEmptyItemDropdown && emptyItemSearchResults.length === 0 && trimmed.length >= 2
+                      const hasResultsButNoMatch =
+                        showEmptyItemDropdown &&
+                        emptyItemSearchResults.length > 0 &&
+                        trimmed.length >= 2 &&
+                        (firstResult ? !isAcceptableMatch(trimmed, firstResult.name, firstResult.score) : true)
+                      if (noResults || hasResultsButNoMatch) {
+                        handleAddToListOnly(trimmed, desc)
                       } else {
                         handleEmptyItemAdd(name, desc)
                       }

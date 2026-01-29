@@ -69,6 +69,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Fetch categories for household so we can attach category when join is empty (e.g. FK set but relation not populated)
+    const { data: categories } = await supabase
+      .from('product_categories')
+      .select('id, name, display_order')
+      .eq('household_id', user.household_id)
+    const categoryById = new Map((categories || []).map((c) => [c.id, c]))
+
     // Transform to Product type
     const transformedProducts: Product[] = (products || []).map((product) => {
       const category = Array.isArray(product.product_categories) &&
@@ -116,14 +123,18 @@ export async function GET(request: NextRequest) {
     // Use the extracted product name for search (ignores descriptions/annotations)
     const searchResults = searchProductsWithScores(transformedProducts, searchQuery || queryTrimmed)
 
-    // Transform response with category info
+    // Transform response with category info (use join when present, else lookup by product.category_id)
     const resultsWithCategory = searchResults.map(({ product, score }) => {
       const originalProduct = products?.find((p) => p.id === product.id)
-      const category = originalProduct &&
+      let category =
+        originalProduct &&
         Array.isArray(originalProduct.product_categories) &&
         originalProduct.product_categories.length > 0
-        ? originalProduct.product_categories[0]
-        : null
+          ? originalProduct.product_categories[0]
+          : null
+      if (!category && product.category_id) {
+        category = categoryById.get(product.category_id) ?? null
+      }
 
       return {
         id: product.id,

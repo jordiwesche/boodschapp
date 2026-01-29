@@ -20,6 +20,18 @@ const CATEGORY_EMOJI_MAP: Record<string, string> = {
   'Overig': '📦',
 }
 
+/** Escape special regex chars so term can be used in RegExp */
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** True if term appears as a whole word in name (avoids "cola" matching in "chocoladereep") */
+function nameContainsWord(nameLower: string, termLower: string): boolean {
+  if (termLower.length === 0) return false
+  const wordBoundary = new RegExp(`\\b${escapeRegex(termLower)}\\b`, 'i')
+  return wordBoundary.test(nameLower)
+}
+
 /**
  * Predict category and emoji for a product name using keyword matching
  */
@@ -31,16 +43,13 @@ export function predictCategoryAndEmoji(productName: string): CategoryPrediction
     // Check if any product term matches
     for (const term of concept.productTerms) {
       const termLower = term.toLowerCase()
-      // Check direct match or if product name contains the term
-      // Also handle plural/singular: "appels" should match "appel"
-      const matches = 
+      // Direct match, whole-word containment, or singular/plural
+      const matches =
         nameLower === termLower ||
-        nameLower.includes(termLower) ||
-        termLower.includes(nameLower) ||
-        // Handle plural: remove 's' from end and compare
+        nameContainsWord(nameLower, termLower) ||
+        (termLower.length >= nameLower.length && termLower.includes(nameLower)) ||
         (nameLower.endsWith('s') && nameLower.slice(0, -1) === termLower) ||
         (termLower.endsWith('s') && termLower.slice(0, -1) === nameLower)
-      
       if (matches) {
         // #region agent log
         try {

@@ -82,7 +82,7 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'kruiden', 'specerijen', 'zout', 'peper', 'paprikapoeder', 'kerrie', 'oregano', 'basilicum', 'peterselie',
       'dille', 'nootmuskaat', 'kaneel', 'gember', 'knoflookpoeder', 'ui poeder', 'taco mix',
       'nasi mix', 'sate', 'ketjap', 'sojasaus', 'worcestersaus', 'tabasco', 'kokosmelk', 'hummus', 'tahin',
-      'pindakaas', 'jam', 'marmelade', 'chocoladepasta', 'nutella', 'appelstroop', 'honing', 'stroop',
+      'pindakaas', 'jam', 'marmelade', 'chocoladepasta', 'chocoladereep', 'chocolade', 'nutella', 'appelstroop', 'honing', 'stroop',
     ],
   },
   {
