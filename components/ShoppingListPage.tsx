@@ -179,7 +179,7 @@ export default function ShoppingListPage() {
     
     // Scroll to top so empty item is visible
     requestAnimationFrame(() => {
-      const emptyItem = document.querySelector('input[placeholder="Typ product..."]')
+      const emptyItem = document.querySelector('input[placeholder="Product / item"]')
       if (emptyItem) {
         emptyItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       }

@@ -96,12 +96,13 @@ export default function EmptyListItem({
           value={productName}
           onChange={(e) => onProductNameChange(e.target.value)}
           onKeyDown={handleProductKeyDown}
-          placeholder="Typ product..."
+          placeholder="Product / item"
           className="min-w-0 flex-1 border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
           style={{ fontSize: '16px' }}
           autoFocus={autoFocus}
           inputMode="text"
         />
+        <div className="h-5 w-px shrink-0 bg-gray-200 self-center" aria-hidden />
         <input
           type="text"
           value={description}

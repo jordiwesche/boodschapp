@@ -85,7 +85,7 @@ export default function InlineSearchDropdown({
   return (
     <div className="mb-2 rounded-2xl bg-white shadow-lg overflow-hidden">
       <div className="divide-y divide-gray-100">
-        {results.map((result) => {
+        {results.map((result, index) => {
           // Extract annotation from query (everything after product name)
           const productNameLower = result.name.toLowerCase().trim()
           const queryLower = query.toLowerCase().trim()
@@ -94,6 +94,8 @@ export default function InlineSearchDropdown({
           if (queryLower.startsWith(productNameLower)) {
             annotationText = query.substring(result.name.length).trim()
           }
+
+          const showToelichting = index === 0 && description?.trim()
 
           return (
             <button
@@ -117,12 +119,12 @@ export default function InlineSearchDropdown({
                         {result.description}
                       </span>
                     )}
-                    {description?.trim() && (
+                    {showToelichting && (
                       <span className="text-xs text-gray-500 whitespace-nowrap">
-                        {description.trim()}
+                        {description!.trim()}
                       </span>
                     )}
-                    {annotationText && !description?.trim() && (
+                    {annotationText && !showToelichting && (
                       <span className="text-xs text-gray-500 whitespace-nowrap">
                         {annotationText}
                       </span>
