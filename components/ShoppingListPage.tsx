@@ -7,7 +7,6 @@ import InlineSearchDropdown from './InlineSearchDropdown'
 import ShoppingList from './ShoppingList'
 import ShoppingListSkeleton from './ShoppingListSkeleton'
 import PullToRefresh from './PullToRefresh'
-import { parseProductInput } from '@/lib/annotation-parser'
 import { createClient } from '@/lib/supabase/client'
 import {
   useShoppingListItems,
@@ -115,9 +114,10 @@ export default function ShoppingListPage() {
   const addItemMutation = useAddItem()
   const clearCheckedMutation = useClearChecked()
 
-  // Empty item state
+  // Empty item state (product name + toelichting)
   const [isEmptyItemOpen, setIsEmptyItemOpen] = useState(false)
   const [emptyItemQuery, setEmptyItemQuery] = useState('')
+  const [emptyItemDescription, setEmptyItemDescription] = useState('')
   const [emptyItemSearchResults, setEmptyItemSearchResults] = useState<SearchResult[]>([])
   const [isSearchingEmptyItem, setIsSearchingEmptyItem] = useState(false)
   const [showEmptyItemDropdown, setShowEmptyItemDropdown] = useState(false)
@@ -189,6 +189,7 @@ export default function ShoppingListPage() {
   const handleCloseEmptyItem = () => {
     setIsEmptyItemOpen(false)
     setEmptyItemQuery('')
+    setEmptyItemDescription('')
     setEmptyItemSearchResults([])
     setShowEmptyItemDropdown(false)
     setIsSearchingEmptyItem(false)
@@ -268,54 +269,42 @@ export default function ShoppingListPage() {
     }, 0)
   }
 
-  // Add product from empty item (optimistic UI)
-  const handleEmptyItemAdd = async (query: string) => {
-    if (!query.trim()) {
+  // Add product from empty item (optimistic UI) – list + save to product DB
+  const handleEmptyItemAdd = async (productName: string, description: string | null) => {
+    if (!productName.trim()) {
       handleCloseEmptyItem()
       return
     }
 
     haptic('light')
 
-    // Parse query for annotation
-    const parsed = parseProductInput(query.trim())
-    const productName = parsed.productName
-    const annotation = parsed.annotation?.fullText || null
-
-    // Optimistic: create temporary item ID
     const tempId = `temp-${Date.now()}`
-
-    // Optimistic update: add item immediately to list
     const optimisticItem = {
       id: tempId,
       product_id: null,
-      product_name: productName,
-      emoji: '📦', // Temporary, will be updated
+      product_name: productName.trim(),
+      emoji: '📦',
       quantity: '1',
-      description: annotation,
-      category_id: '', // Temporary, will be updated
+      description: description,
+      category_id: '',
       category: null,
       is_checked: false,
       checked_at: null,
       created_at: new Date().toISOString(),
     }
 
-    // Optimistically add to list
     queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => [
       optimisticItem,
       ...old,
     ])
 
-    // Clear query but keep empty item open
     setEmptyItemQuery('')
+    setEmptyItemDescription('')
     setEmptyItemSearchResults([])
     setShowEmptyItemDropdown(false)
-    // Keep isEmptyItemOpen = true (don't close)
 
-    // Background: search for product or create new one
     try {
-      // First, try to find existing product with full query (to match "Appels merk" with "Appels")
-      let searchResponse = await fetch(`/api/products/search?q=${encodeURIComponent(query.trim())}`)
+      let searchResponse = await fetch(`/api/products/search?q=${encodeURIComponent(productName.trim())}`)
       let productId: string | null = null
       let categoryId: string | null = null
       let emoji = '📦'
@@ -323,30 +312,12 @@ export default function ShoppingListPage() {
       if (searchResponse.ok) {
         const searchData = await searchResponse.json()
         if (Array.isArray(searchData.products) && searchData.products.length > 0) {
-          // Use first match, but only if it's a strong match
           const matchedProduct = searchData.products[0]
-          const ok = isAcceptableMatch(query.trim(), matchedProduct.name, matchedProduct.score)
+          const ok = isAcceptableMatch(productName.trim(), matchedProduct.name, matchedProduct.score)
           if (ok) {
             productId = matchedProduct.id
             categoryId = matchedProduct.category?.id || null
             emoji = matchedProduct.emoji
-          }
-        }
-      }
-
-      // If no match with full query, try with just product name
-      if (!productId && productName !== query.trim()) {
-        searchResponse = await fetch(`/api/products/search?q=${encodeURIComponent(productName)}`)
-        if (searchResponse.ok) {
-          const searchData = await searchResponse.json()
-          if (Array.isArray(searchData.products) && searchData.products.length > 0) {
-            const matchedProduct = searchData.products[0]
-            const ok = isAcceptableMatch(productName, matchedProduct.name, matchedProduct.score)
-            if (ok) {
-              productId = matchedProduct.id
-              categoryId = matchedProduct.category?.id || null
-              emoji = matchedProduct.emoji
-            }
           }
         }
       }
@@ -401,13 +372,12 @@ export default function ShoppingListPage() {
         return
       }
 
-      // Now add item to shopping list with real data
       const requestBody = {
         product_id: productId,
-        product_name: productId ? null : productName,
+        product_name: productId ? null : productName.trim(),
         category_id: categoryId,
         quantity: '1',
-        description: annotation,
+        description: description,
       }
 
       const addResponse = await fetch('/api/shopping-list', {
@@ -448,21 +418,85 @@ export default function ShoppingListPage() {
     }
   }
 
-  // Handle search result select from dropdown
-  const handleEmptyItemResultSelect = async (result: SearchResult, query: string) => {
-    haptic('light')
-
-    // Parse annotation from query
-    const productNameLower = result.name.toLowerCase().trim()
-    const queryLower = query.toLowerCase().trim()
-    let annotationText = ''
-    
-    if (queryLower.startsWith(productNameLower)) {
-      annotationText = query.substring(result.name.length).trim()
-    } else {
-      const parsed = parseProductInput(query)
-      annotationText = parsed.annotation?.fullText || ''
+  // Add to list only (one-time item, no product in DB)
+  const handleAddToListOnly = async (productName: string, description: string | null) => {
+    if (!productName.trim()) {
+      handleCloseEmptyItem()
+      return
     }
+    haptic('light')
+    const name = productName.trim()
+    const tempId = `temp-${Date.now()}`
+    const optimisticItem = {
+      id: tempId,
+      product_id: null,
+      product_name: name,
+      emoji: '📦',
+      quantity: '1',
+      description: description,
+      category_id: '',
+      category: null,
+      is_checked: false,
+      checked_at: null,
+      created_at: new Date().toISOString(),
+    }
+    queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => [
+      optimisticItem,
+      ...old,
+    ])
+    setEmptyItemQuery('')
+    setEmptyItemDescription('')
+    setEmptyItemSearchResults([])
+    setShowEmptyItemDropdown(false)
+    try {
+      const categoryResponse = await fetch('/api/categories')
+      if (!categoryResponse.ok) {
+        throw new Error('Kon categorieën niet ophalen')
+      }
+      const categoryData = await categoryResponse.json()
+      const categories = categoryData.categories || []
+      const overigCategory = categories.find((c: any) => c.name === 'Overig')
+      if (!overigCategory) {
+        throw new Error('Overig-categorie niet gevonden')
+      }
+      const addResponse = await fetch('/api/shopping-list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_name: name,
+          category_id: overigCategory.id,
+          quantity: '1',
+          description: description,
+        }),
+      })
+      if (addResponse.ok) {
+        const addData = await addResponse.json()
+        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => {
+          const filtered = old.filter((item) => item.id !== tempId)
+          return [addData.item, ...filtered]
+        })
+        setEmptyItemKey((prev) => prev + 1)
+      } else {
+        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+          old.filter((item) => item.id !== tempId)
+        )
+        setErrorMessage('Kon item niet toevoegen.')
+        setTimeout(() => setErrorMessage(null), 5000)
+      }
+    } catch (error) {
+      console.error('Error adding list-only item:', error)
+      queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+        old.filter((item) => item.id !== tempId)
+      )
+      setErrorMessage('Kon item niet toevoegen.')
+      setTimeout(() => setErrorMessage(null), 5000)
+    }
+  }
+
+  // Handle search result select from dropdown (query = product name; description from toelichting field)
+  const handleEmptyItemResultSelect = async (result: SearchResult, _query: string) => {
+    haptic('light')
+    const annotationText = emptyItemDescription.trim() || null
 
     // Get category
     let categoryId = result.category?.id
@@ -501,18 +535,17 @@ export default function ShoppingListPage() {
       ...old,
     ])
 
-    // Clear query but keep empty item open
     setEmptyItemQuery('')
+    setEmptyItemDescription('')
     setEmptyItemSearchResults([])
     setShowEmptyItemDropdown(false)
 
-    // Background: add to shopping list
     try {
       const requestBody = {
         product_id: result.id,
         category_id: categoryId,
         quantity: '1',
-        description: annotationText || null,
+        description: annotationText,
       }
 
       const response = await fetch('/api/shopping-list', {
@@ -766,9 +799,14 @@ export default function ShoppingListPage() {
                 <>
                   <EmptyListItem
                     key={emptyItemKey}
-                    query={emptyItemQuery}
-                    onQueryChange={handleEmptyItemSearch}
-                    onAdd={handleEmptyItemAdd}
+                    productName={emptyItemQuery}
+                    onProductNameChange={(v) => {
+                      setEmptyItemQuery(v)
+                      handleEmptyItemSearch(v)
+                    }}
+                    description={emptyItemDescription}
+                    onDescriptionChange={setEmptyItemDescription}
+                    onAdd={(name, desc) => handleEmptyItemAdd(name, desc)}
                     onCancel={() => {
                       handleCloseEmptyItem()
                       setShouldFocusEmptyItem(false)
@@ -781,10 +819,12 @@ export default function ShoppingListPage() {
                     <InlineSearchDropdown
                       results={emptyItemSearchResults}
                       query={emptyItemQuery}
+                      description={emptyItemDescription}
                       isVisible={true}
                       isSearching={isSearchingEmptyItem}
                       onSelect={handleEmptyItemResultSelect}
-                      onCreate={handleEmptyItemAdd}
+                      onAddToListOnly={handleAddToListOnly}
+                      onAddToListAndSaveProduct={handleEmptyItemAdd}
                     />
                   )}
                 </>

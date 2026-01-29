@@ -2,6 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { predictCategoryAndEmoji } from '@/lib/predict-category-emoji'
 
+/** Normalize category name for matching (lowercase, &/en unified, no extra spaces) */
+function normalizeCategoryName(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s*&\s*/g, ' en ')
+    .replace(/\s+/g, ' ')
+}
+
+/** Aliases for predicted category names so we find DB categories with different wording */
+const CATEGORY_ALIASES: Record<string, string[]> = {
+  'Groente & Fruit': ['Groente & Fruit', 'Fruit & Groente', 'Groente en Fruit', 'Fruit en Groente'],
+  'Vlees & Vis': ['Vlees & Vis', 'Vlees en Vis'],
+  'Brood & Bakkerij': ['Brood & Bakkerij', 'Brood en Bakkerij'],
+  'Droge Kruidenierswaren': ['Droge Kruidenierswaren', 'Kruidenierswaren'],
+  'Houdbare Producten': ['Houdbare Producten', 'Houdbare waren', 'Conserven'],
+  'Persoonlijke Verzorging': ['Persoonlijke Verzorging', 'Verzorging'],
+  'Huishoudelijke Artikelen': ['Huishoudelijke Artikelen', 'Huishoud'],
+  'Overig': ['Overig'],
+}
+
 // POST /api/products/create - Create a new product
 export async function POST(request: NextRequest) {
   try {
@@ -46,28 +67,62 @@ export async function POST(request: NextRequest) {
 
     if (!finalCategoryId) {
       const prediction = predictCategoryAndEmoji(name.trim())
-      
-      // Find category by name in household
-      const { data: category, error: categoryError } = await supabase
+      const predictedNormalized = normalizeCategoryName(prediction.categoryName)
+
+      // Fetch all household categories and match by exact name, aliases, or normalized name
+      const { data: categories, error: categoriesError } = await supabase
         .from('product_categories')
-        .select('id')
+        .select('id, name')
         .eq('household_id', user.household_id)
-        .eq('name', prediction.categoryName)
-        .single()
 
-      if (category && !categoryError) {
-        finalCategoryId = category.id
-      } else {
-        // Fallback: find "Overig" category
-        const { data: overigCategory } = await supabase
-          .from('product_categories')
-          .select('id')
-          .eq('household_id', user.household_id)
-          .eq('name', 'Overig')
-          .single()
+      if (!categoriesError && categories && categories.length > 0) {
+        // Try exact match first
+        let found = categories.find((c) => c.name === prediction.categoryName)
+        if (found) {
+          finalCategoryId = found.id
+        }
+        // Try aliases
+        if (!finalCategoryId) {
+          const aliases = CATEGORY_ALIASES[prediction.categoryName]
+          if (aliases) {
+            for (const alias of aliases) {
+              found = categories.find((c) => c.name === alias)
+              if (found) {
+                finalCategoryId = found.id
+                break
+              }
+            }
+          }
+        }
+        // Fallback: match by normalized name (Groente & Fruit vs Fruit & Groente)
+        if (!finalCategoryId) {
+          found = categories.find(
+            (c) => normalizeCategoryName(c.name) === predictedNormalized
+          )
+          if (found) {
+            finalCategoryId = found.id
+          }
+        }
+      }
 
-        if (overigCategory) {
-          finalCategoryId = overigCategory.id
+      if (!finalCategoryId) {
+        // Fallback: find "Overig" category (from already-fetched list or single query)
+        const overig =
+          categories?.find(
+            (c) => c.name === 'Overig' || normalizeCategoryName(c.name) === 'overig'
+          ) ?? null
+        if (overig) {
+          finalCategoryId = overig.id
+        } else {
+          const { data: overigRow } = await supabase
+            .from('product_categories')
+            .select('id')
+            .eq('household_id', user.household_id)
+            .eq('name', 'Overig')
+            .single()
+          if (overigRow) {
+            finalCategoryId = overigRow.id
+          }
         }
       }
 

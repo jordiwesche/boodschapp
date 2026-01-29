@@ -1,5 +1,7 @@
 'use client'
 
+import { ListPlus, Database } from 'lucide-react'
+
 interface SearchResult {
   id: string
   emoji: string
@@ -15,19 +17,23 @@ interface SearchResult {
 interface InlineSearchDropdownProps {
   results: SearchResult[]
   query: string
+  description: string | null
   isVisible: boolean
   isSearching: boolean
   onSelect: (result: SearchResult, query: string) => void
-  onCreate: (query: string) => void
+  onAddToListOnly: (productName: string, description: string | null) => void
+  onAddToListAndSaveProduct: (productName: string, description: string | null) => void
 }
 
 export default function InlineSearchDropdown({
   results,
   query,
+  description,
   isVisible,
   isSearching,
   onSelect,
-  onCreate,
+  onAddToListOnly,
+  onAddToListAndSaveProduct,
 }: InlineSearchDropdownProps) {
   if (!isVisible || !query || query.trim().length < 2) {
     return null
@@ -42,17 +48,31 @@ export default function InlineSearchDropdown({
   }
 
   if (results.length === 0) {
+    const q = query.trim()
+    const desc = description?.trim() || null
     return (
-      <div className="mb-2 rounded-2xl bg-white p-4 shadow-lg">
+      <div className="mb-2 rounded-2xl bg-white p-4 shadow-lg space-y-2">
         <button
           onMouseDown={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            onCreate(query)
+            onAddToListOnly(q, desc)
           }}
-          className="w-full text-left text-sm font-medium text-blue-600 hover:text-blue-700"
+          className="flex w-full items-center gap-2 text-left text-sm font-medium text-gray-700 hover:text-gray-900"
         >
-          Voeg &quot;{query.trim()}&quot; toe
+          <ListPlus className="h-4 w-4 shrink-0 text-gray-500" />
+          Zet &quot;{q}&quot; op de lijst
+        </button>
+        <button
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onAddToListAndSaveProduct(q, desc)
+          }}
+          className="flex w-full items-center gap-2 text-left text-sm font-medium text-blue-600 hover:text-blue-700"
+        >
+          <Database className="h-4 w-4 shrink-0" />
+          Zet &quot;{q}&quot; op de lijst en voeg toe aan producten
         </button>
       </div>
     )

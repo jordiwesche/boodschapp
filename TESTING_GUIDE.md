@@ -474,6 +474,53 @@ Je kunt ook direct in Supabase Dashboard kijken:
 
 ---
 
+## 🛒 Boodschappenlijst – Product toevoegen (UI-test)
+
+Test op **desktop én mobiel** (na deploy: boodschapp.vercel.app of jouw Vercel-URL).
+
+### 1. Instant zoeken
+- Klik op de **blauwe plus-knop**.
+- Typ een deel van een productnaam (bijv. `ka`).
+- **Verwacht:** Suggesties verschijnen vrijwel direct, zonder lange wachttijd.
+
+### 2. CTA bij “niet gevonden”
+- Typ een product dat niet in de database zit (bijv. `Kado voor Jan`).
+- **Verwacht:** Twee knoppen:
+  - **“Zet ‘Kado voor Jan’ op de lijst”** – alleen op lijst.
+  - **“Zet ‘Kado voor Jan’ op de lijst en voeg toe aan producten”** – lijst + nieuw product in database.
+
+### 3. Veilig toevoegen (geen verkeerde match)
+- Typ **“halfvolle melk”** (als “volle melk” wel bestaat, “halfvolle melk” niet).
+- Druk Enter of klik op een “Voeg toe”-knop.
+- **Verwacht:** “halfvolle melk” wordt als **nieuw product** toegevoegd, niet gekoppeld aan “volle melk”.
+- Typ daarna **“volle melk”** en voeg toe.
+- **Verwacht:** Bestaand product “volle melk” wordt gekozen en toegevoegd.
+
+### 4. Productnaam vs. toelichting
+- Klik op de blauwe plus-knop.
+- **Verwacht:** Focus in het **productnaam**-veld.
+- Typ `Brood` in het productnaamveld.
+- Klik in het kleine **“toelichting”**-veld en typ bijv. `voor ontbijt`.
+- Voeg toe.
+- **Verwacht:** Op de lijst staat “Brood” als productnaam en “voor ontbijt” als toelichting.
+
+### 5. Categorie voor nieuw product
+- Typ **“Appels”** in het productnaamveld en voeg toe.
+- **Verwacht:** “Appels” komt in de categorie **Groente & Fruit**, niet in “Overig”.
+
+### 6. Focus op mobiel
+- Op **mobiel:** klik op de blauwe plus-knop.
+- **Verwacht:** Productnaamveld krijgt direct focus en het toetsenbord opent, zonder extra tik.
+- Voeg een item toe.
+- **Verwacht:** Het nieuwe lege item krijgt weer focus in het productnaamveld.
+
+### 7. Leeg item sluiten
+- Klik op de blauwe plus-knop (leeg item verschijnt).
+- Zonder iets te typen: druk Enter, of klik op de plus of de X.
+- **Verwacht:** Het lege item verdwijnt weer.
+
+---
+
 ## ✅ Volgende Stappen
 
 Na het testen van Fase 1 en 2, kun je doorgaan met:
