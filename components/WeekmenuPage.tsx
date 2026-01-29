@@ -336,7 +336,7 @@ export default function WeekmenuPage() {
               className="border-b border-gray-100 px-4 py-3 last:border-b-0"
             >
               <div className="flex flex-wrap items-start gap-2">
-                <span className="w-8 shrink-0 pt-2 text-sm font-medium text-gray-600">
+                <span className="w-8 shrink-0 pt-[10px] text-sm font-medium text-gray-600">
                   {label}
                 </span>
                 {showViewMode ? (
