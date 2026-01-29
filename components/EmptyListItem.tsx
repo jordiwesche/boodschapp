@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { X, Plus, Check } from 'lucide-react'
+import { useRef, useEffect } from 'react'
+import { X, Check } from 'lucide-react'
 
 interface EmptyListItemProps {
   productName: string
@@ -24,7 +24,6 @@ export default function EmptyListItem({
   autoFocus = true,
   onFocusComplete,
 }: EmptyListItemProps) {
-  const [showAddButton, setShowAddButton] = useState(false)
   const productInputRef = useRef<HTMLInputElement>(null)
 
   const inputCallbackRef = (node: HTMLInputElement | null) => {
@@ -62,10 +61,6 @@ export default function EmptyListItem({
       }
     }
   }, [autoFocus])
-
-  useEffect(() => {
-    setShowAddButton(productName.trim().length > 0)
-  }, [productName])
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -118,20 +113,10 @@ export default function EmptyListItem({
             }
           }}
           placeholder="toelichting"
-          className="w-24 shrink-0 rounded border border-dashed border-gray-300 bg-transparent px-2 py-1 text-sm text-gray-600 placeholder:text-gray-400 focus:border-gray-400 focus:outline-none"
-          style={{ fontSize: '14px' }}
+          className="w-32 shrink-0 rounded bg-transparent px-2 py-1 text-xs text-gray-600 placeholder:text-gray-400 focus:outline-none"
+          style={{ fontSize: '13px' }}
         />
       </form>
-
-      {showAddButton && (
-        <button
-          onClick={() => handleSubmit()}
-          className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white transition-colors hover:bg-blue-700"
-          aria-label="Toevoegen"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
-      )}
 
       <button
         onClick={onCancel}

@@ -806,7 +806,13 @@ export default function ShoppingListPage() {
                     }}
                     description={emptyItemDescription}
                     onDescriptionChange={setEmptyItemDescription}
-                    onAdd={(name, desc) => handleEmptyItemAdd(name, desc)}
+                    onAdd={(name, desc) => {
+                      if (showEmptyItemDropdown && emptyItemSearchResults.length === 0 && name.trim().length >= 2) {
+                        handleAddToListOnly(name.trim(), desc)
+                      } else {
+                        handleEmptyItemAdd(name, desc)
+                      }
+                    }}
                     onCancel={() => {
                       handleCloseEmptyItem()
                       setShouldFocusEmptyItem(false)
