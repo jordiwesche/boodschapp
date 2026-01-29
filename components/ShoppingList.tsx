@@ -28,6 +28,7 @@ interface ShoppingListProps {
   onDelete: (id: string) => void
   onUpdateDescription: (id: string, description: string) => void
   onClearChecked?: () => void
+  children?: React.ReactNode
 }
 
 export default function ShoppingList({
@@ -37,6 +38,7 @@ export default function ShoppingList({
   onDelete,
   onUpdateDescription,
   onClearChecked,
+  children,
 }: ShoppingListProps) {
   const checkedItemsCount = items.filter((item) => item.is_checked).length
   // Separate checked and unchecked items
@@ -171,7 +173,7 @@ export default function ShoppingList({
   })
 
   return (
-    <div className="pb-32">
+    <div className="pb-32 flex flex-col flex-1 min-h-0">
       {/* Unchecked items - grouped by category with headers */}
       {sortedUncheckedCategories.map((categoryGroup, index) => (
         <div key={categoryGroup.category?.id || 'overig'}>
@@ -227,6 +229,8 @@ export default function ShoppingList({
           </button>
         </div>
       )}
+      {/* Klikzone direct onder laatste item (children van parent) */}
+      {children}
     </div>
   )
 }

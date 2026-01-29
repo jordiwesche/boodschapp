@@ -614,12 +614,12 @@ export default function ShoppingListPage() {
       return
     }
 
-    // Optimistic update
+    // Optimistic update – gebruik result.name zodat geen "Onbekend product" of skeleton zichtbaar is
     const tempId = `temp-${Date.now()}`
     const optimisticItem = {
       id: tempId,
       product_id: result.id,
-      product_name: null,
+      product_name: result.name,
       emoji: result.emoji,
       quantity: '1',
       description: annotationText || null,
@@ -980,31 +980,32 @@ export default function ShoppingListPage() {
                 onDelete={handleDelete}
                 onUpdateDescription={handleUpdateDescription}
                 onClearChecked={handleClearChecked}
-              />
-              {/* Klikbare lege zone: open leeg item als gesloten, sluit als open en geen query */}
-              <div
-                className="flex-1 min-h-[20vh]"
-                onClick={() => {
-                  if (isEmptyItemOpen && !emptyItemQuery.trim()) {
-                    handleCloseEmptyItem()
-                  } else if (!isEmptyItemOpen) {
-                    handleOpenEmptyItem()
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
+              >
+                {/* Klikzone direct onder laatste item: open/sluit leeg item */}
+                <div
+                  className="flex-1 min-h-[20vh]"
+                  onClick={() => {
                     if (isEmptyItemOpen && !emptyItemQuery.trim()) {
                       handleCloseEmptyItem()
                     } else if (!isEmptyItemOpen) {
                       handleOpenEmptyItem()
                     }
-                  }
-                }}
-                role="button"
-                tabIndex={0}
-                aria-label="Leeg item openen of sluiten"
-              />
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      if (isEmptyItemOpen && !emptyItemQuery.trim()) {
+                        handleCloseEmptyItem()
+                      } else if (!isEmptyItemOpen) {
+                        handleOpenEmptyItem()
+                      }
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Leeg item openen of sluiten"
+                />
+              </ShoppingList>
             </div>
           )}
         </PullToRefresh>

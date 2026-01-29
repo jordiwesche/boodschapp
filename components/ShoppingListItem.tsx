@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Check, X, Pencil, CornerDownLeft } from 'lucide-react'
+import Skeleton from './Skeleton'
 
 interface ShoppingListItemData {
   id: string
@@ -148,16 +149,20 @@ export default function ShoppingListItem({
       {/* Emoji */}
       <span className="text-lg shrink-0">{item.emoji}</span>
 
-      {/* Product name and description */}
-      <div className="flex-1 min-w-0">
+      {/* Product name and description – bij bewerken geen flex-1 zodat edit veld rechts van naam komt */}
+      <div className={isEditingDescription ? 'shrink-0 min-w-0' : 'flex-1 min-w-0'}>
         <div className="flex items-center gap-2">
-          <span
-            className={`font-medium ${
-              item.is_checked ? 'text-gray-500 line-through' : 'text-gray-900'
-            }`}
-          >
-            {item.product_name || 'Onbekend product'}
-          </span>
+          {item.product_name != null ? (
+            <span
+              className={`font-medium ${
+                item.is_checked ? 'text-gray-500 line-through' : 'text-gray-900'
+              }`}
+            >
+              {item.product_name}
+            </span>
+          ) : (
+            <Skeleton variant="text" className="h-5 w-24" animation="pulse" />
+          )}
           {item.description && !isEditingDescription && (
             <span className="text-sm text-gray-500">{item.description}</span>
           )}
@@ -201,8 +206,8 @@ export default function ShoppingListItem({
         </div>
       )}
 
-      {/* Delete button - only show when not checked */}
-      {!item.is_checked && (
+      {/* Delete button – niet tonen als toelichting bewerkt wordt (extra ruimte) */}
+      {!item.is_checked && !isEditingDescription && (
         <button
           onClick={handleDelete}
           className="shrink-0 p-1 text-gray-400 hover:text-red-500 transition-colors"
