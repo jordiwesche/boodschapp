@@ -325,6 +325,7 @@ export default function WeekmenuPage() {
           const savedText = (day.menu_text ?? '').trim()
           const isEditing = editingDay === day.day_of_week
           const showViewMode = savedText.length > 0 && !isEditing
+          const showEmptyViewMode = savedText.length === 0 && !isEditing
           const hasLink = Boolean(day.link_url?.trim())
           const isUrlOpen = urlDropdownDay === day.day_of_week
           const isPatching = patching === day.day_of_week
@@ -352,6 +353,21 @@ export default function WeekmenuPage() {
                       }}
                       className="shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
                       aria-label="Bewerken"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : showEmptyViewMode ? (
+                  <div className="flex min-h-[2.5rem] min-w-0 flex-1 items-center justify-end rounded-lg border border-gray-200 bg-white px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic('light')
+                        setEditingDay(day.day_of_week)
+                        setLocalText((prev) => ({ ...prev, [day.day_of_week]: '' }))
+                      }}
+                      className="shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                      aria-label="Gerecht toevoegen"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
