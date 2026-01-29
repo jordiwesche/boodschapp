@@ -92,13 +92,29 @@ function isAcceptableMatch(query: string, candidateName: string, score?: number 
   const SCORE_CUTOFF = 0.25
   const OVERLAP_CUTOFF = 0.7
   const overlap = tokenOverlapRatio(query, candidateName)
-
+  let result: boolean
   if (typeof score === 'number') {
-    return score <= SCORE_CUTOFF && overlap >= OVERLAP_CUTOFF
+    result = score <= SCORE_CUTOFF && overlap >= OVERLAP_CUTOFF
+  } else {
+    result = overlap >= 0.85
   }
-
-  // Fallback: only accept if token overlap is very strong
-  return overlap >= 0.85
+  // #region agent log
+  if (query !== candidateName) {
+    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'ShoppingListPage.tsx:isAcceptableMatch',
+        message: 'match check',
+        data: { query, candidateName, q, c, score, overlap, result },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        hypothesisId: 'H1,H3',
+      }),
+    }).catch(() => {})
+  }
+  // #endregion
+  return result
 }
 
 export default function ShoppingListPage() {
@@ -314,6 +330,28 @@ export default function ShoppingListPage() {
         if (Array.isArray(searchData.products) && searchData.products.length > 0) {
           const matchedProduct = searchData.products[0]
           const ok = isAcceptableMatch(productName.trim(), matchedProduct.name, matchedProduct.score)
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              location: 'ShoppingListPage.tsx:handleEmptyItemAdd',
+              message: 'search match check',
+              data: {
+                productName: productName.trim(),
+                firstResultName: matchedProduct.name,
+                firstResultCategoryId: matchedProduct.category?.id ?? null,
+                firstResultScore: matchedProduct.score,
+                isAcceptableMatch: ok,
+                willUseMatch: ok,
+                willCreateNew: !ok,
+              },
+              timestamp: Date.now(),
+              sessionId: 'debug-session',
+              hypothesisId: 'H1,H3',
+            }),
+          }).catch(() => {})
+          // #endregion
           if (ok) {
             productId = matchedProduct.id
             categoryId = matchedProduct.category?.id || null
@@ -346,6 +384,20 @@ export default function ShoppingListPage() {
 
       // Fallback: get category if still missing (shouldn't happen, but safety check)
       if (!categoryId) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'ShoppingListPage.tsx:handleEmptyItemAdd fallback',
+            message: 'categoryId was null, using Overig fallback',
+            data: { productName: productName.trim(), productId },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            hypothesisId: 'H1',
+          }),
+        }).catch(() => {})
+        // #endregion
         const userResponse = await fetch('/api/user/current')
         if (userResponse.ok) {
           const userData = await userResponse.json()
@@ -807,6 +859,34 @@ export default function ShoppingListPage() {
                     description={emptyItemDescription}
                     onDescriptionChange={setEmptyItemDescription}
                     onAdd={(name, desc) => {
+                      // #region agent log
+                      const firstResult = emptyItemSearchResults[0]
+                      const acceptable = firstResult
+                        ? isAcceptableMatch(name.trim(), firstResult.name, firstResult.score)
+                        : null
+                      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          location: 'ShoppingListPage.tsx:onAdd',
+                          message: 'onAdd branch',
+                          data: {
+                            query: name.trim(),
+                            resultsLength: emptyItemSearchResults.length,
+                            firstResultName: firstResult?.name,
+                            firstResultCategoryId: firstResult?.category?.id ?? null,
+                            isAcceptableMatch: acceptable,
+                            willCallListOnly:
+                              showEmptyItemDropdown &&
+                              emptyItemSearchResults.length === 0 &&
+                              name.trim().length >= 2,
+                          },
+                          timestamp: Date.now(),
+                          sessionId: 'debug-session',
+                          hypothesisId: 'H1,H3',
+                        }),
+                      }).catch(() => {})
+                      // #endregion
                       if (showEmptyItemDropdown && emptyItemSearchResults.length === 0 && name.trim().length >= 2) {
                         handleAddToListOnly(name.trim(), desc)
                       } else {
