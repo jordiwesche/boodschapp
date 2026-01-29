@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Link as LinkIcon, CornerDownLeft, X } from 'lucide-react'
+import { Link as LinkIcon, CornerDownLeft, X, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { haptic } from '@/lib/haptics'
 
@@ -11,12 +11,23 @@ interface WeekmenuDayRow {
   day_of_week: number
   menu_text: string | null
   link_url: string | null
+  link_title: string | null
+}
+
+function linkDisplayText(day: WeekmenuDayRow): string {
+  if (day.link_title?.trim()) return day.link_title.trim()
+  try {
+    return new URL(day.link_url!).hostname.replace(/^www\./, '')
+  } catch {
+    return day.link_url ?? ''
+  }
 }
 
 export default function WeekmenuPage() {
   const [days, setDays] = useState<WeekmenuDayRow[]>([])
   const [loading, setLoading] = useState(true)
   const [localText, setLocalText] = useState<Record<number, string>>({})
+  const [editingDay, setEditingDay] = useState<number | null>(null)
   const [urlDropdownDay, setUrlDropdownDay] = useState<number | null>(null)
   const [urlInput, setUrlInput] = useState('')
   const [patching, setPatching] = useState<number | null>(null)
@@ -49,7 +60,6 @@ export default function WeekmenuPage() {
     }
   }, [fetchDays])
 
-  // Realtime: refetch when weekmenu changes for this household
   useEffect(() => {
     const setupRealtime = async () => {
       const userRes = await fetch('/api/user/current')
@@ -96,7 +106,14 @@ export default function WeekmenuPage() {
   }, [fetchDays])
 
   const patchDay = useCallback(
-    async (day_of_week: number, payload: { menu_text?: string | null; link_url?: string | null }) => {
+    async (
+      day_of_week: number,
+      payload: {
+        menu_text?: string | null
+        link_url?: string | null
+        link_title?: string | null
+      }
+    ) => {
       setPatching(day_of_week)
       try {
         const res = await fetch('/api/weekmenu', {
@@ -113,6 +130,7 @@ export default function WeekmenuPage() {
                     ...d,
                     menu_text: updated.menu_text ?? d.menu_text,
                     link_url: updated.link_url ?? d.link_url,
+                    link_title: updated.link_title ?? d.link_title,
                   }
                 : d
             )
@@ -133,6 +151,7 @@ export default function WeekmenuPage() {
       const text = (localText[day_of_week] ?? '').trim()
       haptic('light')
       patchDay(day_of_week, { menu_text: text || null })
+      setEditingDay(null)
     },
     [localText, patchDay]
   )
@@ -150,19 +169,44 @@ export default function WeekmenuPage() {
     const row = days.find((d) => d.day_of_week === day_of_week)
     setUrlInput(row?.link_url ?? '')
     setUrlDropdownDay(day_of_week)
-    setTimeout(() => urlInputRef.current?.focus(), 50)
+    if (!row?.link_url) {
+      setTimeout(() => urlInputRef.current?.focus(), 50)
+    }
   }, [days])
 
   const saveUrl = useCallback(
-    (day_of_week: number) => {
+    async (day_of_week: number) => {
       const value = urlInput.trim() || null
       haptic('light')
-      patchDay(day_of_week, { link_url: value }).then(() => {
-        setUrlDropdownDay(null)
-        setUrlInput('')
-      })
+      let link_title: string | null = null
+      if (value) {
+        try {
+          const titleRes = await fetch(
+            `/api/weekmenu/fetch-title?url=${encodeURIComponent(value)}`
+          )
+          if (titleRes.ok) {
+            const { title } = await titleRes.json()
+            link_title = title || null
+          }
+        } catch {
+          // keep link_title null
+        }
+      }
+      await patchDay(day_of_week, { link_url: value, link_title })
+      setUrlDropdownDay(null)
+      setUrlInput('')
     },
     [urlInput, patchDay]
+  )
+
+  const removeUrl = useCallback(
+    (day_of_week: number) => {
+      haptic('light')
+      patchDay(day_of_week, { link_url: null, link_title: null })
+      setUrlDropdownDay(null)
+      setUrlInput('')
+    },
+    [patchDay]
   )
 
   const goToLink = useCallback((url: string) => {
@@ -194,143 +238,188 @@ export default function WeekmenuPage() {
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
-        <div className="rounded-lg bg-white border border-gray-100 overflow-hidden">
-          {orderedDays.map((day) => {
-            const label = DAY_LABELS[day.day_of_week] ?? `Dag ${day.day_of_week}`
-            const text = localText[day.day_of_week] ?? day.menu_text ?? ''
-            const hasText = text.trim().length > 0
-            const hasLink = Boolean(day.link_url?.trim())
-            const isUrlOpen = urlDropdownDay === day.day_of_week
-            const isPatching = patching === day.day_of_week
+      <div className="rounded-lg border border-gray-100 bg-white overflow-hidden">
+        {orderedDays.map((day) => {
+          const label = DAY_LABELS[day.day_of_week] ?? `Dag ${day.day_of_week}`
+          const text = localText[day.day_of_week] ?? day.menu_text ?? ''
+          const savedText = (day.menu_text ?? '').trim()
+          const isEditing = editingDay === day.day_of_week
+          const showViewMode = savedText.length > 0 && !isEditing
+          const hasLink = Boolean(day.link_url?.trim())
+          const isUrlOpen = urlDropdownDay === day.day_of_week
+          const isPatching = patching === day.day_of_week
 
-            return (
-              <div
-                key={day.day_of_week}
-                className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-3 last:border-b-0"
-              >
+          return (
+            <div
+              key={day.day_of_week}
+              className="border-b border-gray-100 px-4 py-3 last:border-b-0"
+            >
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="w-8 shrink-0 text-sm font-medium text-gray-600">
                   {label}
                 </span>
-                <div className="flex min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                  <input
-                    type="text"
-                    value={text}
-                    onChange={(e) =>
-                      setLocalText((prev) => ({ ...prev, [day.day_of_week]: e.target.value }))
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleSubmit(day.day_of_week)
+                {showViewMode ? (
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <span className="min-w-0 flex-1 font-semibold text-gray-900">
+                      {savedText}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic('light')
+                        setEditingDay(day.day_of_week)
+                        setLocalText((prev) => ({ ...prev, [day.day_of_week]: savedText }))
+                      }}
+                      className="shrink-0 rounded p-1.5 text-blue-600 hover:bg-blue-50"
+                      aria-label="Bewerken"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                    <input
+                      type="text"
+                      value={text}
+                      onChange={(e) =>
+                        setLocalText((prev) => ({
+                          ...prev,
+                          [day.day_of_week]: e.target.value,
+                        }))
                       }
-                    }}
-                    placeholder="Menu of gerecht"
-                    className="min-w-0 flex-1 border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
-                    style={{ fontSize: 16 }}
-                    disabled={isPatching}
-                  />
-                  {hasText && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => handleSubmit(day.day_of_week)}
-                        disabled={isPatching}
-                        className="shrink-0 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
-                        aria-label="Opslaan"
-                      >
-                        <CornerDownLeft className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleClear(day.day_of_week)}
-                        disabled={isPatching}
-                        className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
-                        aria-label="Veld wissen"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-                </div>
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleSubmit(day.day_of_week)
+                        }
+                        if (e.key === 'Escape') {
+                          setEditingDay(null)
+                          setLocalText((prev) => ({
+                            ...prev,
+                            [day.day_of_week]: day.menu_text ?? '',
+                          }))
+                        }
+                      }}
+                      placeholder="Gerecht"
+                      className="min-w-0 flex-1 border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-500 focus:outline-none"
+                      style={{ fontSize: 16 }}
+                      disabled={isPatching}
+                      autoFocus={isEditing}
+                    />
+                    {text.trim().length > 0 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleSubmit(day.day_of_week)}
+                          disabled={isPatching}
+                          className="shrink-0 rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50"
+                          aria-label="Opslaan"
+                        >
+                          <CornerDownLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleClear(day.day_of_week)}
+                          disabled={isPatching}
+                          className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
+                          aria-label="Veld wissen"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
                 <div className="relative shrink-0">
-                  {hasLink ? (
-                    <button
-                      type="button"
-                      onClick={() => goToLink(day.link_url!)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-blue-600 hover:bg-blue-50"
-                      aria-label="Link openen"
-                    >
-                      <LinkIcon className="h-4 w-4" />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => openUrlDropdown(day.day_of_week)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
-                      aria-label="URL toevoegen"
-                    >
-                      <LinkIcon className="h-4 w-4" />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => openUrlDropdown(day.day_of_week)}
+                    className={`flex h-9 w-9 items-center justify-center rounded-full ${
+                      hasLink
+                        ? 'bg-gray-100 text-blue-600 hover:bg-blue-50'
+                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600'
+                    }`}
+                    aria-label={hasLink ? 'URL beheren' : 'URL toevoegen'}
+                  >
+                    <LinkIcon className="h-4 w-4" />
+                  </button>
                   {isUrlOpen && (
                     <div className="absolute right-0 top-full z-10 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
-                      <input
-                        ref={urlInputRef}
-                        type="url"
-                        value={urlInput}
-                        onChange={(e) => setUrlInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault()
-                            saveUrl(day.day_of_week)
-                          }
-                          if (e.key === 'Escape') {
-                            setUrlDropdownDay(null)
-                            setUrlInput('')
-                          }
-                        }}
-                        placeholder="https://..."
-                        className="mb-2 w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
-                      />
-                      <div className="flex flex-wrap items-center justify-end gap-1">
-                        {hasLink && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              patchDay(day.day_of_week, { link_url: null })
-                              setUrlDropdownDay(null)
-                              setUrlInput('')
+                      {hasLink ? (
+                        <>
+                          <div className="mb-2 rounded border border-gray-200 bg-gray-50 px-2 py-1.5 text-sm text-gray-700 break-all">
+                            {day.link_url}
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => removeUrl(day.day_of_week)}
+                              className="rounded px-2 py-1 text-sm text-red-600 hover:bg-red-50"
+                            >
+                              URL wissen
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <input
+                            ref={urlInputRef}
+                            type="url"
+                            value={urlInput}
+                            onChange={(e) => setUrlInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                saveUrl(day.day_of_week)
+                              }
+                              if (e.key === 'Escape') {
+                                setUrlDropdownDay(null)
+                                setUrlInput('')
+                              }
                             }}
-                            className="rounded px-2 py-1 text-sm text-red-600 hover:bg-red-50"
-                          >
-                            Link verwijderen
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setUrlDropdownDay(null)
-                            setUrlInput('')
-                          }}
-                          className="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100"
-                        >
-                          Annuleren
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => saveUrl(day.day_of_week)}
-                          className="rounded bg-blue-600 px-2 py-1 text-sm text-white hover:bg-blue-700"
-                        >
-                          Opslaan
-                        </button>
-                      </div>
+                            placeholder="https://..."
+                            className="mb-2 w-full rounded border border-gray-200 px-2 py-1.5 text-sm text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none"
+                          />
+                          <div className="flex justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUrlDropdownDay(null)
+                                setUrlInput('')
+                              }}
+                              className="rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100"
+                            >
+                              Annuleren
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => saveUrl(day.day_of_week)}
+                              className="rounded bg-blue-600 px-2 py-1 text-sm text-white hover:bg-blue-700"
+                            >
+                              Opslaan
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
-            )
-          })}
-        </div>
+              {hasLink && (
+                <div className="mt-1 pl-10">
+                  <button
+                    type="button"
+                    onClick={() => goToLink(day.link_url!)}
+                    className="text-sm text-blue-600 underline hover:text-blue-700"
+                  >
+                    {linkDisplayText(day)}
+                  </button>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
     </main>
   )
 }

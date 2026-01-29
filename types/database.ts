@@ -77,6 +77,7 @@ export type WeekmenuDay = {
   day_of_week: number
   menu_text: string | null
   link_url: string | null
+  link_title: string | null
   created_at: string
   updated_at: string
 }

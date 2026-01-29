@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
     const { data: rows, error: fetchError } = await supabase
       .from('weekmenu')
-      .select('id, day_of_week, menu_text, link_url, created_at, updated_at')
+      .select('id, day_of_week, menu_text, link_url, link_title, created_at, updated_at')
       .eq('household_id', householdId)
       .order('day_of_week', { ascending: true })
 
@@ -47,11 +47,12 @@ export async function GET(request: NextRequest) {
         day_of_week,
         menu_text: null,
         link_url: null,
+        link_title: null,
       }))
       const { data: inserted, error: insertError } = await supabase
         .from('weekmenu')
         .insert(inserts)
-        .select('id, day_of_week, menu_text, link_url, created_at, updated_at')
+        .select('id, day_of_week, menu_text, link_url, link_title, created_at, updated_at')
 
       if (insertError) {
         return NextResponse.json(
@@ -85,10 +86,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { day_of_week, menu_text, link_url } = body as {
+    const { day_of_week, menu_text, link_url, link_title } = body as {
       day_of_week?: number
       menu_text?: string | null
       link_url?: string | null
+      link_title?: string | null
     }
 
     if (
@@ -118,7 +120,7 @@ export async function PATCH(request: NextRequest) {
 
     const { data: existing } = await supabase
       .from('weekmenu')
-      .select('id, menu_text, link_url')
+      .select('id, menu_text, link_url, link_title')
       .eq('household_id', user.household_id)
       .eq('day_of_week', day_of_week)
       .maybeSingle()
@@ -126,9 +128,11 @@ export async function PATCH(request: NextRequest) {
     const merged = {
       menu_text: existing?.menu_text ?? null,
       link_url: existing?.link_url ?? null,
+      link_title: existing?.link_title ?? null,
     }
     if (body.hasOwnProperty('menu_text')) merged.menu_text = menu_text ?? null
     if (body.hasOwnProperty('link_url')) merged.link_url = link_url ?? null
+    if (body.hasOwnProperty('link_title')) merged.link_title = link_title ?? null
 
     const { data: updated, error: upsertError } = await supabase
       .from('weekmenu')
@@ -138,10 +142,11 @@ export async function PATCH(request: NextRequest) {
           day_of_week,
           menu_text: merged.menu_text,
           link_url: merged.link_url,
+          link_title: merged.link_title,
         },
         { onConflict: 'household_id,day_of_week' }
       )
-      .select('id, day_of_week, menu_text, link_url, updated_at')
+      .select('id, day_of_week, menu_text, link_url, link_title, updated_at')
       .single()
 
     if (upsertError) {
