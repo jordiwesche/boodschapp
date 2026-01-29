@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Check, X, Pencil } from 'lucide-react'
+import { Check, X, Pencil, CornerDownLeft } from 'lucide-react'
 
 interface ShoppingListItemData {
   id: string
@@ -175,20 +175,29 @@ export default function ShoppingListItem({
         </button>
       )}
 
-      {/* Edit description input */}
+      {/* Edit description input – zelfde stijl als leeg item (divider, focus, compact Enter-knop) */}
       {isEditingDescription && (
-        <div className="flex-1 flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="h-5 w-px shrink-0 bg-gray-200 self-center" aria-hidden />
           <input
             type="text"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onBlur={handleSaveDescription}
             onKeyDown={handleKeyDown}
-            placeholder="Toelichting..."
-            className="flex-1 px-2 py-1 text-base text-gray-900 placeholder:text-gray-400 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            style={{ fontSize: '16px' }}
+            placeholder="Toelichting"
+            className="w-28 shrink-0 rounded bg-transparent px-2 py-1 text-gray-600 placeholder:text-gray-400 focus:outline-none placeholder:text-[14px]"
+            style={{ fontSize: '12px' }}
             autoFocus
           />
+          <button
+            type="button"
+            onClick={handleSaveDescription}
+            className="shrink-0 flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors"
+            aria-label="Opslaan"
+          >
+            <CornerDownLeft className="h-4 w-4" strokeWidth={2} />
+          </button>
         </div>
       )}
 

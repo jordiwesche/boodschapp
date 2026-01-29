@@ -113,8 +113,8 @@ export default function EmptyListItem({
               handleSubmit()
             }
           }}
-          placeholder="toelichting"
-          className="w-28 shrink-0 rounded bg-transparent px-2 py-1 text-gray-600 placeholder:text-gray-400 focus:outline-none placeholder:text-[11px]"
+          placeholder="Toelichting"
+          className="w-28 shrink-0 rounded bg-transparent px-2 py-1 text-gray-600 placeholder:text-gray-400 focus:outline-none placeholder:text-[14px]"
           style={{ fontSize: '12px' }}
         />
       </form>
