@@ -358,7 +358,8 @@ export default function WeekmenuPage() {
                     </button>
                   </div>
                 ) : showEmptyViewMode ? (
-                  <div className="flex min-h-[2.5rem] min-w-0 flex-1 items-center justify-end rounded-lg border border-gray-200 bg-white px-3 py-2">
+                  <div className="flex min-h-[2.5rem] min-w-0 flex-1 items-center gap-2 py-2">
+                    <span className="min-w-0 flex-1" />
                     <button
                       type="button"
                       onClick={() => {
