@@ -357,62 +357,61 @@ export default function WeekmenuPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                    <WeekmenuGerechtTextarea
-                      value={text}
-                      onChange={(v) =>
-                        setLocalText((prev) => ({ ...prev, [day.day_of_week]: v }))
-                      }
-                      onSubmit={() => handleSubmit(day.day_of_week)}
-                      onCancel={() => {
-                        setEditingDay(null)
-                        setLocalText((prev) => ({
-                          ...prev,
-                          [day.day_of_week]: day.menu_text ?? '',
-                        }))
-                      }}
-                      placeholder="Gerecht"
-                      disabled={isPatching}
-                      autoFocus={isEditing}
-                    />
-                    {text.trim().length > 0 && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleSubmit(day.day_of_week)}
-                          disabled={isPatching}
-                          className="shrink-0 flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
-                          aria-label="Opslaan"
-                        >
-                          <CornerDownLeft className="h-4 w-4" strokeWidth={2} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleClear(day.day_of_week)}
-                          disabled={isPatching}
-                          className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
-                          aria-label="Veld wissen"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
-                {!showViewMode && (
-                <div className="relative shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => openUrlDropdown(day.day_of_week)}
-                    className={`flex h-9 w-9 items-center justify-center rounded-full ${
-                      hasLink
-                        ? 'bg-gray-100 text-blue-600 hover:bg-blue-50'
-                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600'
-                    }`}
-                    aria-label={hasLink ? 'URL beheren' : 'URL toevoegen'}
-                  >
-                    <LinkIcon className="h-4 w-4" />
-                  </button>
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                      <WeekmenuGerechtTextarea
+                        value={text}
+                        onChange={(v) =>
+                          setLocalText((prev) => ({ ...prev, [day.day_of_week]: v }))
+                        }
+                        onSubmit={() => handleSubmit(day.day_of_week)}
+                        onCancel={() => {
+                          setEditingDay(null)
+                          setLocalText((prev) => ({
+                            ...prev,
+                            [day.day_of_week]: day.menu_text ?? '',
+                          }))
+                        }}
+                        placeholder="Gerecht"
+                        disabled={isPatching}
+                        autoFocus={isEditing}
+                      />
+                      {text.trim().length > 0 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleSubmit(day.day_of_week)}
+                            disabled={isPatching}
+                            className="shrink-0 flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                            aria-label="Opslaan"
+                          >
+                            <CornerDownLeft className="h-4 w-4" strokeWidth={2} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleClear(day.day_of_week)}
+                            disabled={isPatching}
+                            className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
+                            aria-label="Veld wissen"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <div className="relative shrink-0 self-center">
+                      <button
+                        type="button"
+                        onClick={() => openUrlDropdown(day.day_of_week)}
+                        className={`flex h-9 w-9 items-center justify-center rounded-full ${
+                          hasLink
+                            ? 'bg-gray-100 text-blue-600 hover:bg-blue-50'
+                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600'
+                        }`}
+                        aria-label={hasLink ? 'URL beheren' : 'URL toevoegen'}
+                      >
+                        <LinkIcon className="h-4 w-4" />
+                      </button>
                   {isUrlOpen && (
                     <div className="absolute right-0 top-full z-10 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
                       {hasLink ? (
@@ -473,7 +472,8 @@ export default function WeekmenuPage() {
                       )}
                     </div>
                   )}
-                </div>
+                    </div>
+                  </div>
                 )}
               </div>
               {hasLink && (
