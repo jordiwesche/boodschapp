@@ -23,6 +23,61 @@ function linkDisplayText(day: WeekmenuDayRow): string {
   }
 }
 
+function WeekmenuGerechtTextarea({
+  value,
+  onChange,
+  onSubmit,
+  onCancel,
+  placeholder,
+  disabled,
+  autoFocus,
+}: {
+  value: string
+  onChange: (v: string) => void
+  onSubmit: () => void
+  onCancel: () => void
+  placeholder: string
+  disabled: boolean
+  autoFocus: boolean
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+
+  const resize = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.max(24, el.scrollHeight)}px`
+  }, [])
+
+  useEffect(() => {
+    resize()
+  }, [value, resize])
+
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault()
+          onSubmit()
+        } else if (e.key === 'Escape') {
+          e.preventDefault()
+          onCancel()
+        }
+      }}
+      placeholder={placeholder}
+      disabled={disabled}
+      autoFocus={autoFocus}
+      rows={1}
+      className="min-h-[24px] min-w-0 flex-1 resize-none border-0 bg-transparent py-0 text-base text-gray-900 placeholder:text-gray-500 focus:outline-none"
+      style={{ fontSize: 16 }}
+      onInput={resize}
+    />
+  )
+}
+
 export default function WeekmenuPage() {
   const [days, setDays] = useState<WeekmenuDayRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -254,12 +309,12 @@ export default function WeekmenuPage() {
               key={day.day_of_week}
               className="border-b border-gray-100 px-4 py-3 last:border-b-0"
             >
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="w-8 shrink-0 text-sm font-medium text-gray-600">
+              <div className="flex flex-wrap items-start gap-2">
+                <span className="w-8 shrink-0 pt-2 text-sm font-medium text-gray-600">
                   {label}
                 </span>
                 {showViewMode ? (
-                  <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                  <div className="flex min-h-[2.5rem] min-w-0 flex-1 items-center gap-2 py-2">
                     <span className="min-w-0 flex-1 font-semibold text-gray-900">
                       {savedText}
                     </span>
@@ -277,32 +332,21 @@ export default function WeekmenuPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                    <input
-                      type="text"
+                  <div className="flex min-w-0 flex-1 items-end gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                    <WeekmenuGerechtTextarea
                       value={text}
-                      onChange={(e) =>
+                      onChange={(v) =>
+                        setLocalText((prev) => ({ ...prev, [day.day_of_week]: v }))
+                      }
+                      onSubmit={() => handleSubmit(day.day_of_week)}
+                      onCancel={() => {
+                        setEditingDay(null)
                         setLocalText((prev) => ({
                           ...prev,
-                          [day.day_of_week]: e.target.value,
+                          [day.day_of_week]: day.menu_text ?? '',
                         }))
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleSubmit(day.day_of_week)
-                        }
-                        if (e.key === 'Escape') {
-                          setEditingDay(null)
-                          setLocalText((prev) => ({
-                            ...prev,
-                            [day.day_of_week]: day.menu_text ?? '',
-                          }))
-                        }
                       }}
                       placeholder="Gerecht"
-                      className="min-w-0 flex-1 border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-500 focus:outline-none"
-                      style={{ fontSize: 16 }}
                       disabled={isPatching}
                       autoFocus={isEditing}
                     />
