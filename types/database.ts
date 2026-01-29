@@ -70,3 +70,13 @@ export type HouseholdInvitation = {
   created_at: string
   accepted_at: string | null
 }
+
+export type WeekmenuDay = {
+  id: string
+  household_id: string
+  day_of_week: number
+  menu_text: string | null
+  link_url: string | null
+  created_at: string
+  updated_at: string
+}

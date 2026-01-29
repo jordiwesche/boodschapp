@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "migrate": "node scripts/run-migration-cli.js",
+    "migrate:weekmenu": "node scripts/run-weekmenu-migration.js",
     "migrate:check": "supabase db remote commit"
   },
   "dependencies": {

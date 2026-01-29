@@ -16,6 +16,20 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// Load .env.local if present (so SUPABASE_ACCESS_TOKEN can live there)
+const envLocalPath = path.join(__dirname, '../.env.local');
+if (fs.existsSync(envLocalPath)) {
+  const envFile = fs.readFileSync(envLocalPath, 'utf8');
+  envFile.split('\n').forEach((line) => {
+    const match = line.match(/^([^#=]+)=(.*)$/);
+    if (match) {
+      const key = match[1].trim();
+      const value = match[2].trim().replace(/^["']|["']$/g, '');
+      if (key && process.env[key] === undefined) process.env[key] = value;
+    }
+  });
+}
+
 // Check if we're in a CI environment (Vercel)
 const isCI = process.env.CI === 'true' || process.env.VERCEL === '1';
 
