@@ -14,10 +14,13 @@ interface SearchResult {
   } | null
 }
 
+export type MatchLevel = 1 | 2 | 3
+
 interface InlineSearchDropdownProps {
   results: SearchResult[]
   query: string
   description: string | null
+  matchLevel: MatchLevel
   isVisible: boolean
   isSearching: boolean
   onSelect: (result: SearchResult, query: string) => void
@@ -25,10 +28,54 @@ interface InlineSearchDropdownProps {
   onAddToListAndSaveProduct: (productName: string, description: string | null) => void
 }
 
+function ActionButtons({
+  q,
+  desc,
+  onAddToListOnly,
+  onAddToListAndSaveProduct,
+}: {
+  q: string
+  desc: string | null
+  onAddToListOnly: (productName: string, description: string | null) => void
+  onAddToListAndSaveProduct: (productName: string, description: string | null) => void
+}) {
+  return (
+    <div className="space-y-3">
+      <button
+        onMouseDown={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          onAddToListOnly(q, desc)
+        }}
+        className="flex w-full items-center gap-2 text-left text-sm font-medium text-gray-700 hover:text-gray-900 py-3"
+      >
+        <ListPlus className="h-4 w-4 shrink-0 text-gray-500" />
+        <span className="flex-1">Zet &quot;{q}&quot; op de lijst</span>
+        <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
+          <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
+          Enter
+        </span>
+      </button>
+      <button
+        onMouseDown={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          onAddToListAndSaveProduct(q, desc)
+        }}
+        className="flex w-full items-center gap-2 text-left text-sm font-medium text-blue-600 hover:text-blue-700 py-3"
+      >
+        <Database className="h-4 w-4 shrink-0" />
+        Zet &quot;{q}&quot; op de lijst en voeg toe aan producten
+      </button>
+    </div>
+  )
+}
+
 export default function InlineSearchDropdown({
   results,
   query,
   description,
+  matchLevel,
   isVisible,
   isSearching,
   onSelect,
@@ -47,45 +94,30 @@ export default function InlineSearchDropdown({
     )
   }
 
-  if (results.length === 0) {
-    const q = query.trim()
-    const desc = description?.trim() || null
+  const q = query.trim()
+  const desc = description?.trim() || null
+
+  if (matchLevel === 3) {
     return (
-      <div className="mb-2 rounded-2xl bg-white p-4 shadow-lg space-y-3">
-        <button
-          onMouseDown={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            onAddToListOnly(q, desc)
-          }}
-          className="flex w-full items-center gap-2 text-left text-sm font-medium text-gray-700 hover:text-gray-900 py-3"
-        >
-          <ListPlus className="h-4 w-4 shrink-0 text-gray-500" />
-          <span className="flex-1">Zet &quot;{q}&quot; op de lijst</span>
-          <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
-            <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
-            Enter
-          </span>
-        </button>
-        <button
-          onMouseDown={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            onAddToListAndSaveProduct(q, desc)
-          }}
-          className="flex w-full items-center gap-2 text-left text-sm font-medium text-blue-600 hover:text-blue-700 py-3"
-        >
-          <Database className="h-4 w-4 shrink-0" />
-          Zet &quot;{q}&quot; op de lijst en voeg toe aan producten
-        </button>
+      <div className="mb-2 rounded-2xl bg-white p-4 shadow-lg">
+        <ActionButtons
+          q={q}
+          desc={desc}
+          onAddToListOnly={onAddToListOnly}
+          onAddToListAndSaveProduct={onAddToListAndSaveProduct}
+        />
       </div>
     )
   }
 
+  const showResults = matchLevel === 1 || matchLevel === 2
+  const showActionButtons = matchLevel === 2
+
   return (
     <div className="mb-2 rounded-2xl bg-white shadow-lg overflow-hidden">
-      <div className="divide-y divide-gray-100">
-        {results.map((result, index) => {
+      {showResults && results.length > 0 && (
+        <div className="divide-y divide-gray-100">
+          {results.map((result, index) => {
           // Extract annotation from query (everything after product name)
           const productNameLower = result.name.toLowerCase().trim()
           const queryLower = query.toLowerCase().trim()
@@ -146,7 +178,18 @@ export default function InlineSearchDropdown({
             </button>
           )
         })}
-      </div>
+        </div>
+      )}
+      {showActionButtons && (
+        <div className="p-4 border-t border-gray-100">
+          <ActionButtons
+            q={q}
+            desc={desc}
+            onAddToListOnly={onAddToListOnly}
+            onAddToListAndSaveProduct={onAddToListAndSaveProduct}
+          />
+        </div>
+      )}
     </div>
   )
 }

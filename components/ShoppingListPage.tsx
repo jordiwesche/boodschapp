@@ -81,6 +81,40 @@ function tokenOverlapRatio(a: string, b: string): number {
   return overlap / Math.max(aTokens.length, bTokens.length)
 }
 
+/** True if query and name are exact match (normalized) or Dutch singular/plural (banaan/bananen, appel/appels). */
+function isExactOrSingularPluralMatch(query: string, name: string): boolean {
+  const q = normalizeForMatch(query)
+  const c = normalizeForMatch(name)
+  if (q === c) return true
+  if (q.length < 2 || c.length < 2) return false
+  if (q + 's' === c || c + 's' === q) return true
+  if (c.endsWith('en') && c.length >= 4) {
+    const stemC = c.slice(0, -2)
+    if (q === stemC || (q.startsWith(stemC) && q.length === stemC.length + 1)) return true
+  }
+  if (q.endsWith('en') && q.length >= 4) {
+    const stemQ = q.slice(0, -2)
+    if (c === stemQ || (c.startsWith(stemQ) && c.length === stemQ.length + 1)) return true
+  }
+  return false
+}
+
+/** 1 = perfect, 2 = word match / small diff, 3 = no good match. Based on best result only. */
+function getMatchLevel(query: string, results: SearchResult[]): 1 | 2 | 3 {
+  if (!results || results.length === 0) return 3
+  const best = results[0]
+  const score = best.score ?? null
+  const overlap = tokenOverlapRatio(query, best.name)
+
+  if (isExactOrSingularPluralMatch(query, best.name)) return 1
+  if (typeof score === 'number' && score <= 0.1 && overlap === 1) return 1
+
+  if (typeof score === 'number' && score <= 0.35) return 2
+  if (overlap >= 0.5) return 2
+
+  return 3
+}
+
 function isAcceptableMatch(query: string, candidateName: string, score?: number | null): boolean {
   const q = normalizeForMatch(query)
   const c = normalizeForMatch(candidateName)
@@ -902,7 +936,11 @@ export default function ShoppingListPage() {
                       }).catch(() => {})
                       // #endregion
                       const trimmed = name.trim()
-                      if (acceptable) {
+                      const matchLevel =
+                        emptyItemSearchResults.length === 0
+                          ? 3
+                          : getMatchLevel(trimmed, emptyItemSearchResults)
+                      if ((matchLevel === 1 || matchLevel === 2) && firstResult) {
                         handleEmptyItemResultSelect(firstResult, trimmed)
                       } else {
                         handleAddToListOnly(trimmed, desc)
@@ -921,6 +959,11 @@ export default function ShoppingListPage() {
                       results={emptyItemSearchResults}
                       query={emptyItemQuery}
                       description={emptyItemDescription}
+                      matchLevel={
+                        emptyItemSearchResults.length === 0
+                          ? 3
+                          : getMatchLevel(emptyItemQuery, emptyItemSearchResults)
+                      }
                       isVisible={true}
                       isSearching={isSearchingEmptyItem}
                       onSelect={handleEmptyItemResultSelect}
