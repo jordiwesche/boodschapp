@@ -82,7 +82,6 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'kruiden', 'specerijen', 'zout', 'peper', 'paprikapoeder', 'kerrie', 'oregano', 'basilicum', 'peterselie',
       'dille', 'nootmuskaat', 'kaneel', 'gember', 'knoflookpoeder', 'ui poeder', 'taco mix',
       'nasi mix', 'sate', 'ketjap', 'sojasaus', 'worcestersaus', 'tabasco', 'kokosmelk', 'hummus', 'tahin',
-      'pindakaas', 'jam', 'marmelade', 'chocoladepasta', 'chocoladereep', 'chocolade', 'nutella', 'appelstroop', 'honing', 'stroop',
     ],
   },
   {
@@ -95,7 +94,8 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'abrikozen', 'vijgen', 'dadels', 'pruimen', 'noten', 'amandelen', 'cashew', 'walnoten', 'hazelnoten',
       'pistachenoten', 'zonnebloempitten', 'pompoenpitten', 'sesamzaad', 'lijnzaad', 'chiazaden', 'chips',
       'nootjes', 'crackers', 'biscuits', 'snoep', 'winegums', 'drop', 'ontbijtkoek', 'eierkoeken', 'beschuit',
-      'knäckebröd', 'rice cakes','koffie', 'thee', 'koffiebonen',
+      'knäckebröd', 'rice cakes', 'koffie', 'chocola', 'chocolade', 'chocoladereep', 'thee', 'koffiebonen',
+      'pindakaas', 'jam', 'marmelade', 'chocoladepasta', 'nutella', 'appelstroop', 'honing', 'stroop',
     ],
   },
   {

@@ -88,10 +88,18 @@ function isAcceptableMatch(query: string, candidateName: string, score?: number 
   // Exact match always acceptable
   if (q === c) return true
 
-  // Dutch singular/plural: word + "en" (banaan↔bananen) or word + "s" (appel↔appels)
+  // Dutch singular/plural
   if (q.length >= 2 && c.length >= 2) {
-    if (q + 'en' === c || c + 'en' === q) return true
-    if (q + 's' === c || c + 's' === q) return true
+    if (q + 's' === c || c + 's' === q) return true // appel ↔ appels
+    // -en plural: bananen → stem "banan", singular "banaan" (stem + last consonant or vowel)
+    if (c.endsWith('en') && c.length >= 4) {
+      const stemC = c.slice(0, -2)
+      if (q === stemC || (q.startsWith(stemC) && q.length === stemC.length + 1)) return true
+    }
+    if (q.endsWith('en') && q.length >= 4) {
+      const stemQ = q.slice(0, -2)
+      if (c === stemQ || (c.startsWith(stemQ) && c.length === stemQ.length + 1)) return true
+    }
   }
 
   // If we have Fuse score: require both good score and strong token overlap
@@ -894,16 +902,11 @@ export default function ShoppingListPage() {
                       }).catch(() => {})
                       // #endregion
                       const trimmed = name.trim()
-                      const noResults = showEmptyItemDropdown && emptyItemSearchResults.length === 0 && trimmed.length >= 2
-                      const hasResultsButNoMatch =
-                        showEmptyItemDropdown &&
-                        emptyItemSearchResults.length > 0 &&
-                        trimmed.length >= 2 &&
-                        (firstResult ? !isAcceptableMatch(trimmed, firstResult.name, firstResult.score) : true)
-                      if (noResults || hasResultsButNoMatch) {
-                        handleAddToListOnly(trimmed, desc)
+                      const acceptable = firstResult && isAcceptableMatch(trimmed, firstResult.name, firstResult.score)
+                      if (acceptable) {
+                        handleEmptyItemResultSelect(firstResult, trimmed)
                       } else {
-                        handleEmptyItemAdd(name, desc)
+                        handleAddToListOnly(trimmed, desc)
                       }
                     }}
                     onCancel={() => {
