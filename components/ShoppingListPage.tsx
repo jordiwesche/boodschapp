@@ -1,7 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { Search } from 'lucide-react'
 import FloatingAddButton from './FloatingAddButton'
+import { EMOJI_PICKER_LIST } from '@/lib/emoji-picker-list'
 import EmptyListItem from './EmptyListItem'
 import InlineSearchDropdown from './InlineSearchDropdown'
 import ShoppingList from './ShoppingList'
@@ -36,6 +39,102 @@ interface SearchResult {
     name: string
     display_order: number
   } | null
+}
+
+function SaveProductEmojiDropdown({
+  emojiSearchQuery,
+  setEmojiSearchQuery,
+  onSelect,
+  onClose,
+  anchorRef,
+}: {
+  emojiSearchQuery: string
+  setEmojiSearchQuery: (q: string) => void
+  onSelect: (emoji: string) => void
+  onClose: () => void
+  anchorRef: React.RefObject<HTMLButtonElement | null>
+}) {
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 280 })
+
+  useEffect(() => {
+    const anchor = anchorRef.current
+    if (!anchor) return
+    const rect = anchor.getBoundingClientRect()
+    const dropdownHeight = 320
+    const spaceBelow = window.innerHeight - rect.bottom
+    const openAbove = spaceBelow < dropdownHeight && rect.top > dropdownHeight
+    setPosition({
+      top: openAbove ? Math.max(8, rect.top - dropdownHeight - 4) : rect.bottom + 4,
+      left: rect.left,
+      width: Math.max(rect.width, 280),
+    })
+  }, [anchorRef])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (anchorRef.current?.contains(target)) return
+      if (dropdownRef.current?.contains(target)) return
+      onClose()
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [onClose, anchorRef])
+
+  const filtered = emojiSearchQuery
+    ? EMOJI_PICKER_LIST.filter((item) =>
+        item.name.toLowerCase().includes(emojiSearchQuery.toLowerCase())
+      )
+    : EMOJI_PICKER_LIST
+
+  return (
+    <div
+      ref={dropdownRef}
+      className="rounded-md border border-gray-200 bg-white shadow-lg"
+      style={{
+        position: 'fixed',
+        top: position.top,
+        left: position.left,
+        width: position.width,
+        maxHeight: 'min(320px, 50vh)',
+        zIndex: 9999,
+      }}
+    >
+      <div className="border-b border-gray-200 p-2">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={emojiSearchQuery}
+            onChange={(e) => setEmojiSearchQuery(e.target.value)}
+            placeholder="Zoek emoji..."
+            className="w-full rounded-md border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            autoFocus
+          />
+        </div>
+      </div>
+      <div className="max-h-64 overflow-y-auto p-2">
+        {filtered.length > 0 ? (
+          <div className="grid grid-cols-8 gap-1">
+            {filtered.map((item) => (
+              <button
+                key={item.emoji}
+                type="button"
+                onClick={() => onSelect(item.emoji)}
+                className="flex h-9 w-9 items-center justify-center rounded-md text-xl hover:bg-gray-100"
+                title={item.name}
+              >
+                {item.emoji}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="py-6 text-center text-sm text-gray-500">Geen emoji&apos;s gevonden</div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 function normalizeForMatch(input: string): string {
@@ -210,6 +309,9 @@ export default function ShoppingListPage() {
   const [saveProductModalCategories, setSaveProductModalCategories] = useState<{ id: string; name: string; display_order: number }[]>([])
   const [saveProductModalSaving, setSaveProductModalSaving] = useState(false)
   const [saveProductModalError, setSaveProductModalError] = useState<string | null>(null)
+  const [showSaveProductEmojiPicker, setShowSaveProductEmojiPicker] = useState(false)
+  const [saveProductEmojiSearchQuery, setSaveProductEmojiSearchQuery] = useState('')
+  const saveProductEmojiButtonRef = useRef<HTMLButtonElement>(null)
 
   // Helper function to invalidate queries (used by realtime subscription)
   const invalidateQueries = () => {
@@ -325,6 +427,8 @@ export default function ShoppingListPage() {
     setSaveProductModalEmoji('📦')
     setSaveProductModalCategories([])
     setSaveProductModalError(null)
+    setShowSaveProductEmojiPicker(false)
+    setSaveProductEmojiSearchQuery('')
   }
 
   const handleSaveProductModalSave = async () => {
@@ -1049,6 +1153,21 @@ export default function ShoppingListPage() {
     }
   }, [])
 
+  // Enter: open empty item with focus when closed; when open + empty, EmptyListItem closes on Enter
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter') return
+      if (isEmptyItemOpen) return
+      const target = e.target as HTMLElement
+      const tag = target.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      e.preventDefault()
+      handleOpenEmptyItem()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isEmptyItemOpen])
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
       <header className="bg-white shadow">
@@ -1262,17 +1381,37 @@ export default function ShoppingListPage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="save-product-emoji" className="block text-sm font-medium text-gray-700">
+                <label id="save-product-emoji-label" className="block text-sm font-medium text-gray-700">
                   Emoji
                 </label>
-                <input
-                  id="save-product-emoji"
-                  type="text"
-                  value={saveProductModalEmoji}
-                  onChange={(e) => setSaveProductModalEmoji(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-2xl text-center shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="📦"
-                />
+                <div className="relative mt-1">
+                  <button
+                    ref={saveProductEmojiButtonRef}
+                    type="button"
+                    id="save-product-emoji"
+                    aria-haspopup="listbox"
+                    aria-expanded={showSaveProductEmojiPicker}
+                    aria-labelledby="save-product-emoji-label"
+                    onClick={() => setShowSaveProductEmojiPicker((v) => !v)}
+                    className="flex h-12 w-full items-center justify-center rounded-md border border-gray-300 bg-white text-2xl shadow-sm hover:bg-gray-50 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {saveProductModalEmoji || '📦'}
+                  </button>
+                  {showSaveProductEmojiPicker &&
+                    createPortal(
+                      <SaveProductEmojiDropdown
+                        emojiSearchQuery={saveProductEmojiSearchQuery}
+                        setEmojiSearchQuery={setSaveProductEmojiSearchQuery}
+                        onSelect={(emoji) => {
+                          setSaveProductModalEmoji(emoji)
+                          setShowSaveProductEmojiPicker(false)
+                        }}
+                        onClose={() => setShowSaveProductEmojiPicker(false)}
+                        anchorRef={saveProductEmojiButtonRef}
+                      />,
+                      document.body
+                    )}
+                </div>
               </div>
             </div>
             <div className="mt-6 flex gap-3">

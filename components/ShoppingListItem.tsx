@@ -42,26 +42,33 @@ export default function ShoppingListItem({
   const checkboxRef = useRef<HTMLButtonElement>(null)
   const itemRef = useRef<HTMLDivElement>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isChecking, setIsChecking] = useState(false)
+  const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleCheck = async () => {
-    // Animate checkbox with CSS transition
-    if (checkboxRef.current) {
-      checkboxRef.current.style.transition = 'transform 0.15s ease-out, opacity 0.15s ease-out'
-      checkboxRef.current.style.transform = 'scale(1.2)'
-      checkboxRef.current.style.opacity = '0.8'
-      setTimeout(() => {
-        if (checkboxRef.current) {
-          checkboxRef.current.style.transform = 'scale(1)'
-          checkboxRef.current.style.opacity = '1'
-        }
-      }, 150)
+    if (item.is_checked) {
+      if (checkboxRef.current) {
+        checkboxRef.current.style.transition = 'transform 0.15s ease-out, opacity 0.15s ease-out'
+        checkboxRef.current.style.transform = 'scale(1.2)'
+        checkboxRef.current.style.opacity = '0.8'
+        setTimeout(() => {
+          if (checkboxRef.current) {
+            checkboxRef.current.style.transform = 'scale(1)'
+            checkboxRef.current.style.opacity = '1'
+          }
+        }, 150)
+      }
+      onUncheck?.(item.id)
+      return
     }
 
-    if (item.is_checked) {
-      onUncheck?.(item.id)
-    } else {
+    setIsChecking(true)
+    if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current)
+    checkTimeoutRef.current = setTimeout(() => {
+      checkTimeoutRef.current = null
       onCheck(item.id)
-    }
+      setIsChecking(false)
+    }, 1000)
   }
 
   const handleDelete = async () => {
@@ -97,6 +104,15 @@ export default function ShoppingListItem({
     }
   }, [])
 
+  // Cleanup check timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (checkTimeoutRef.current) {
+        clearTimeout(checkTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     setIsEditingDescription(true)
@@ -125,25 +141,29 @@ export default function ShoppingListItem({
     return null
   }
 
+  const showChecked = item.is_checked || isChecking
+
   return (
     <div
       ref={itemRef}
-      className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-opacity ${
-        item.is_checked ? 'bg-transparent' : 'bg-white'
-      }`}
+      className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-1000 ${
+        showChecked ? 'bg-transparent opacity-90' : 'bg-white'
+      } ${isChecking ? 'scale-[0.98]' : ''}`}
     >
-      {/* Checkbox */}
+      {/* Checkbox – show checked state during 1s animation */}
       <button
         ref={checkboxRef}
+        type="button"
         onClick={handleCheck}
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-          item.is_checked
-            ? 'border-green-600 bg-green-600'
+        disabled={isChecking}
+        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+          showChecked
+            ? 'border-green-600 bg-green-600 scale-110'
             : 'border-gray-300 hover:border-green-500'
         }`}
-        aria-label={item.is_checked ? 'Afgevinkt' : 'Afvinken'}
+        aria-label={showChecked ? 'Afgevinkt' : 'Afvinken'}
       >
-        {item.is_checked && <Check className="h-3 w-3 text-white" />}
+        {showChecked && <Check className="h-3 w-3 text-white" />}
       </button>
 
       {/* Emoji */}
@@ -155,7 +175,7 @@ export default function ShoppingListItem({
           {item.product_name != null ? (
             <span
               className={`font-medium ${
-                item.is_checked ? 'text-gray-500 line-through' : 'text-gray-900'
+                showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
               }`}
             >
               {item.product_name}
@@ -164,7 +184,22 @@ export default function ShoppingListItem({
             <Skeleton variant="text" className="h-5 w-24" animation="pulse" />
           )}
           {item.description && !isEditingDescription && (
-            <span className="text-sm text-gray-500">{item.description}</span>
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={handleEditClick}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setIsEditingDescription(true)
+                  setEditValue(item.description || '')
+                }
+              }}
+              className="text-sm text-gray-500 cursor-pointer hover:text-gray-700"
+              aria-label="Toelichting bewerken"
+            >
+              {item.description}
+            </span>
           )}
         </div>
       </div>

@@ -78,28 +78,51 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const includePurchaseCount = searchParams.get('include') === 'purchase_count'
+    let purchaseCountByProductId: Record<string, number> = {}
+
+    if (includePurchaseCount && products && products.length > 0) {
+      const productIds = products.map((p: { id: string }) => p.id)
+      const { data: counts, error: countError } = await supabase
+        .from('purchase_history')
+        .select('product_id')
+        .eq('household_id', user.household_id)
+        .in('product_id', productIds)
+
+      if (!countError && counts) {
+        for (const row of counts) {
+          const id = row.product_id
+          purchaseCountByProductId[id] = (purchaseCountByProductId[id] ?? 0) + 1
+        }
+      }
+    }
+
     // Transform response to flatten category data
-    const transformedProducts = (products || []).map(product => {
+    const transformedProducts = (products || []).map((product: { id: string; product_categories?: unknown[]; [key: string]: unknown }) => {
       const category = Array.isArray(product.product_categories) && product.product_categories.length > 0
         ? product.product_categories[0]
         : null
 
-      return {
+      const out: Record<string, unknown> = {
         id: product.id,
         emoji: product.emoji,
         name: product.name,
         description: product.description,
         category_id: product.category_id,
         category: category ? {
-          id: category.id,
-          name: category.name,
-          display_order: category.display_order,
+          id: (category as { id: string }).id,
+          name: (category as { name: string }).name,
+          display_order: (category as { display_order: number }).display_order,
         } : null,
-      is_basic: product.is_basic,
-      is_popular: product.is_popular,
-      created_at: product.created_at,
-      updated_at: product.updated_at,
+        is_basic: product.is_basic,
+        is_popular: product.is_popular,
+        created_at: product.created_at,
+        updated_at: product.updated_at,
       }
+      if (includePurchaseCount) {
+        out.purchase_count = purchaseCountByProductId[product.id] ?? 0
+      }
+      return out
     })
 
     return NextResponse.json({

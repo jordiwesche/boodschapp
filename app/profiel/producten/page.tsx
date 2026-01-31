@@ -64,7 +64,7 @@ export default function ProfielProductenPage() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/products')
+      const response = await fetch('/api/products?include=purchase_count')
       if (response.ok) {
         const data = await response.json()
         setProducts(data.products || [])

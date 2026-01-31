@@ -2,6 +2,7 @@
 
 import { CheckSquare } from 'lucide-react'
 import ShoppingListItem from './ShoppingListItem'
+import { isFruit } from '@/lib/fruit-groente'
 
 interface ShoppingListItemData {
   id: string
@@ -175,14 +176,27 @@ export default function ShoppingList({
   return (
     <div className="pb-32 flex flex-col flex-1 min-h-0">
       {/* Unchecked items - grouped by category with headers */}
-      {sortedUncheckedCategories.map((categoryGroup, index) => (
+      {sortedUncheckedCategories.map((categoryGroup, index) => {
+        const categoryName = categoryGroup.category?.name || ''
+        const isFruitGroente = categoryName === 'Fruit & Groente'
+        const itemsToRender = isFruitGroente
+          ? (() => {
+              const fruit = categoryGroup.items.filter((item) => isFruit(item.product_name || ''))
+              const groente = categoryGroup.items.filter((item) => !isFruit(item.product_name || ''))
+              const byName = (a: ShoppingListItemData, b: ShoppingListItemData) =>
+                (a.product_name || '').toLowerCase().localeCompare((b.product_name || '').toLowerCase(), 'nl')
+              return [...fruit.sort(byName), ...groente.sort(byName)]
+            })()
+          : categoryGroup.items
+
+        return (
         <div key={categoryGroup.category?.id || 'overig'}>
           {/* Category header */}
           <h2 className={`mb-2 px-4 text-xs font-medium text-gray-500 tracking-wide ${index === 0 ? 'mt-0' : 'mt-4'}`}>
             {categoryGroup.category?.name || 'Overig'}
           </h2>
           {/* Items in this category */}
-          {categoryGroup.items.map((item) => (
+          {itemsToRender.map((item) => (
             <div key={item.id} className="mb-2">
               <ShoppingListItem
                 item={item}
@@ -194,7 +208,8 @@ export default function ShoppingList({
             </div>
           ))}
         </div>
-      ))}
+        );
+      })}
 
       {/* Checked items - all at the bottom, sorted by checked_at */}
       {sortedCheckedItems.length > 0 && (

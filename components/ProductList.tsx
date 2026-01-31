@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { Search } from 'lucide-react'
 import ProductCard from './ProductCard'
 import ProductForm from './ProductForm'
 import FixedActionBar from './FixedActionBar'
@@ -26,6 +27,7 @@ interface Product {
   is_popular: boolean
   created_at: string
   updated_at: string
+  purchase_count?: number
 }
 
 interface ProductListProps {
@@ -34,8 +36,12 @@ interface ProductListProps {
   onRefresh: () => void
 }
 
+type SortOption = 'alfabetisch' | 'koopfrequentie'
+
 export default function ProductList({ products, categories, onRefresh }: ProductListProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortBy, setSortBy] = useState<SortOption>('alfabetisch')
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
@@ -43,9 +49,18 @@ export default function ProductList({ products, categories, onRefresh }: Product
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const filteredProducts = selectedCategory
+  const filteredByCategory = selectedCategory
     ? products.filter((p) => p.category_id === selectedCategory)
     : products
+
+  const filteredProducts = searchQuery.trim()
+    ? filteredByCategory.filter((p) => {
+        const q = searchQuery.toLowerCase().trim()
+        const name = (p.name || '').toLowerCase()
+        const desc = (p.description || '').toLowerCase()
+        return name.includes(q) || desc.includes(q)
+      })
+    : filteredByCategory
 
   // Group products by category and sort by category display_order
   const productsByCategory = filteredProducts.reduce((acc, product) => {
@@ -66,12 +81,21 @@ export default function ProductList({ products, categories, onRefresh }: Product
     return acc
   }, {} as Record<string, { categoryId: string; categoryName: string; categoryOrder: number; products: Product[] }>)
 
-  // Sort categories by display_order, then sort products within each category by name
+  const sortProducts = (a: Product, b: Product) => {
+    if (sortBy === 'koopfrequentie') {
+      const countA = a.purchase_count ?? 0
+      const countB = b.purchase_count ?? 0
+      if (countB !== countA) return countB - countA
+    }
+    return a.name.localeCompare(b.name, 'nl')
+  }
+
+  // Sort categories by display_order, then sort products within each category
   const sortedCategories = Object.values(productsByCategory)
     .sort((a, b) => a.categoryOrder - b.categoryOrder)
     .map(cat => ({
       ...cat,
-      products: cat.products.sort((a, b) => a.name.localeCompare(b.name))
+      products: cat.products.sort(sortProducts)
     }))
 
   const handleAdd = () => {
@@ -211,15 +235,13 @@ export default function ProductList({ products, categories, onRefresh }: Product
       )}
 
       <div className="flex flex-col gap-4">
-        <div className="flex-1">
-          <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700">
-            Filter op categorie
-          </label>
+        <div className="flex flex-row gap-4">
           <select
             id="categoryFilter"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            aria-label="Filter op categorie"
+            className="min-w-0 flex-1 rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           >
             <option value="" className="text-gray-500">Alle categorieën</option>
             {categories.map((category) => (
@@ -228,15 +250,38 @@ export default function ProductList({ products, categories, onRefresh }: Product
               </option>
             ))}
           </select>
+          <select
+            id="sortBy"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            aria-label="Sorteren"
+            className="min-w-0 flex-1 rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="alfabetisch">Alfabetisch</option>
+            <option value="koopfrequentie">Koopfrequentie</option>
+          </select>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <input
+            id="productSearch"
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Product zoeken..."
+            className="block w-full rounded-md border-gray-200 bg-gray-100 py-2 pl-10 pr-3 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:bg-white focus:ring-blue-500"
+          />
         </div>
       </div>
 
       {filteredProducts.length === 0 ? (
         <div className="rounded-lg bg-white p-8 text-center shadow">
           <p className="text-gray-600">
-            {selectedCategory
-              ? 'Geen producten in deze categorie'
-              : 'Nog geen producten. Voeg je eerste product toe!'}
+            {searchQuery.trim()
+              ? 'Geen producten gevonden voor je zoekopdracht'
+              : selectedCategory
+                ? 'Geen producten in deze categorie'
+                : 'Nog geen producten. Voeg je eerste product toe!'}
           </p>
         </div>
       ) : (

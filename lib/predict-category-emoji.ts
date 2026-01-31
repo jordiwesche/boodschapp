@@ -1,4 +1,5 @@
 import { CATEGORY_CONCEPT_PRODUCTS } from '@/data/category-concept-products'
+import { EMOJI_PICKER_LIST } from '@/lib/emoji-picker-list'
 
 interface CategoryPrediction {
   categoryName: string
@@ -25,6 +26,25 @@ const CATEGORY_EMOJI_MAP: Record<string, string> = {
  */
 function getEmojiByName(nameLower: string): string | null {
   if (nameLower.includes('kaas')) return '🧀'
+  return null
+}
+
+/**
+ * Look up emoji from picker list by product name or matched term (exact or singular/plural).
+ * Used so "Peer" / "Peren" preselect 🍐 instead of the category default 🥬.
+ */
+function getEmojiFromPickerList(nameOrTermLower: string): string | null {
+  if (!nameOrTermLower) return null
+  const exact = EMOJI_PICKER_LIST.find(
+    (item) => item.name.toLowerCase() === nameOrTermLower
+  )
+  if (exact) return exact.emoji
+  // Plural → singular: check if nameOrTermLower is picker name + "en" or + "s"
+  const byPlural = EMOJI_PICKER_LIST.find((item) => {
+    const n = item.name.toLowerCase()
+    return nameOrTermLower === n + 'en' || nameOrTermLower === n + 's'
+  })
+  if (byPlural) return byPlural.emoji
   return null
 }
 
@@ -76,17 +96,19 @@ export function predictCategoryAndEmoji(productName: string): CategoryPrediction
           }).catch(() => {})
         } catch (_) {}
         // #endregion
+        const emojiFromName = getEmojiByName(nameLower)
+        const emojiFromPicker = emojiFromName ?? getEmojiFromPickerList(nameLower) ?? getEmojiFromPickerList(termLower)
         return {
           categoryName: concept.categoryName,
-          emoji: getEmojiByName(nameLower) ?? CATEGORY_EMOJI_MAP[concept.categoryName] ?? '📦',
+          emoji: emojiFromPicker ?? CATEGORY_EMOJI_MAP[concept.categoryName] ?? '📦',
         }
       }
     }
   }
 
-  // Default: Overig — still try name-based emoji first
+  // Default: Overig — still try name-based emoji and picker list first
   return {
     categoryName: 'Overig',
-    emoji: getEmojiByName(nameLower) ?? '📦',
+    emoji: getEmojiByName(nameLower) ?? getEmojiFromPickerList(nameLower) ?? '📦',
   }
 }
