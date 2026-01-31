@@ -44,7 +44,6 @@ export default function ProductForm({
   const emojiInputRef = useRef<HTMLInputElement>(null)
   const [emoji, setEmoji] = useState(product?.emoji || '📦')
   const [name, setName] = useState(product?.name || '')
-  const [description, setDescription] = useState(product?.description || '')
   const [categoryId, setCategoryId] = useState(product?.category_id || '')
   const [isBasic, setIsBasic] = useState(product?.is_basic || false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -372,12 +371,13 @@ export default function ProductForm({
     return null
   }
 
-  // Normalize category name to tokens for concept-based matching (e.g. "Fruit & Groente" → ['fruit','groente'])
+  // Normalize category name to tokens for concept-based matching (e.g. "Vers, Vega, Vlees & Vis" → ['vers','vega','vlees','vis'])
   const toCategoryTokens = (name: string): string[] => {
     const stopwords = new Set(['en', 'de', 'het', '&'])
     return name
       .toLowerCase()
-      .split(/[\s&]+/)
+      .split(/[\s&,]+/)
+      .map((t) => t.trim())
       .filter((t) => t.length > 0 && !stopwords.has(t))
       .sort()
   }
@@ -471,14 +471,12 @@ export default function ProductForm({
     if (product) {
       setEmoji(product.emoji || '📦')
       setName(product.name || '')
-      setDescription(product.description || '')
       setCategoryId(product.category_id || '')
       setIsBasic(product.is_basic || false)
     } else {
       // Reset form for new product
       setEmoji('📦')
       setName('')
-      setDescription('')
       setCategoryId('')
       setIsBasic(false)
     }
@@ -538,7 +536,7 @@ export default function ProductForm({
       await onSave({
         emoji: emoji.trim() || '📦',
         name: name.trim(),
-        description: description.trim() || null,
+        description: product?.description?.trim() || null,
         category_id: categoryId,
         is_basic: isBasic,
         is_popular: false, // Will be calculated automatically later
@@ -609,20 +607,6 @@ export default function ProductForm({
           required
           className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
           placeholder="Bijv. Melk"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-          Hoeveelheid / toelichting
-        </label>
-        <textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={2}
-          className="mt-1 block w-full rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:ring-blue-500"
-          placeholder='Bijv. "2x" of "500gr" of "Kruidvat"'
         />
       </div>
 

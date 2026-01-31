@@ -1,27 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { predictCategoryAndEmoji } from '@/lib/predict-category-emoji'
-
-/** Normalize category name for matching (lowercase, &/en unified, no extra spaces) */
-function normalizeCategoryName(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/\s*&\s*/g, ' en ')
-    .replace(/\s+/g, ' ')
-}
-
-/** Aliases for predicted category names so we find DB categories with different wording */
-const CATEGORY_ALIASES: Record<string, string[]> = {
-  'Groente & Fruit': ['Groente & Fruit', 'Fruit & Groente', 'Groente en Fruit', 'Fruit en Groente'],
-  'Vlees & Vis': ['Vlees & Vis', 'Vlees en Vis'],
-  'Brood & Bakkerij': ['Brood & Bakkerij', 'Brood en Bakkerij'],
-  'Droge Kruidenierswaren': ['Droge Kruidenierswaren', 'Kruidenierswaren'],
-  'Houdbare Producten': ['Houdbare Producten', 'Houdbare waren', 'Conserven'],
-  'Persoonlijke Verzorging': ['Persoonlijke Verzorging', 'Verzorging'],
-  'Huishoudelijke Artikelen': ['Huishoudelijke Artikelen', 'Huishoud'],
-  'Overig': ['Overig'],
-}
+import { normalizeCategoryName, CATEGORY_ALIASES } from '@/lib/category-aliases'
 
 // POST /api/products/create - Create a new product
 export async function POST(request: NextRequest) {

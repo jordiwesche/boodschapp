@@ -3,10 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build --webpack",
     "build:with-migration": "npm run migrate && npm run build",
     "start": "next start",
+    "deploy": "vercel --prod --yes",
     "lint": "eslint",
     "migrate": "node scripts/run-migration-cli.js",
     "migrate:weekmenu": "node scripts/run-weekmenu-migration.js",

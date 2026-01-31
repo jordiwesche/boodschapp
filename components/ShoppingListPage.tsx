@@ -22,6 +22,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useScrollRestore } from '@/lib/hooks/use-scroll-restore'
 import { haptic } from '@/lib/haptics'
 import { formatTimeAgo } from '@/lib/format-time-ago'
+import { predictCategoryAndEmoji } from '@/lib/predict-category-emoji'
+import { findCategoryIdByPredictedName } from '@/lib/category-aliases'
 
 interface SearchResult {
   id: string
@@ -190,11 +192,23 @@ export default function ShoppingListPage() {
   const searchAbortRef = useRef<AbortController | null>(null)
   const searchCacheRef = useRef<Map<string, SearchResult[]>>(new Map())
   const searchDebounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const emptyItemContainerRef = useRef<HTMLDivElement>(null)
+  const emptyItemJustClosedRef = useRef(false)
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<{ userName: string; updatedAt: string } | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const { clearScroll } = useScrollRestore(scrollContainerRef)
+
+  // Save Product modal (actie 3: add to list + save new product)
+  const [saveProductModalOpen, setSaveProductModalOpen] = useState(false)
+  const [saveProductModalName, setSaveProductModalName] = useState('')
+  const [saveProductModalDescription, setSaveProductModalDescription] = useState<string | null>(null)
+  const [saveProductModalCategoryId, setSaveProductModalCategoryId] = useState('')
+  const [saveProductModalEmoji, setSaveProductModalEmoji] = useState('📦')
+  const [saveProductModalCategories, setSaveProductModalCategories] = useState<{ id: string; name: string; display_order: number }[]>([])
+  const [saveProductModalSaving, setSaveProductModalSaving] = useState(false)
+  const [saveProductModalError, setSaveProductModalError] = useState<string | null>(null)
 
   // Helper function to invalidate queries (used by realtime subscription)
   const invalidateQueries = () => {
@@ -266,6 +280,163 @@ export default function ShoppingListPage() {
       searchDebounceTimerRef.current = null
     }
   }
+
+  // Open Save Product modal (actie 3) – pre-fill name, category, emoji from prediction (not search)
+  const handleOpenSaveProductModal = async (productName: string, description: string | null) => {
+    if (!productName.trim()) return
+    haptic('light')
+    const name = productName.trim()
+    const prediction = predictCategoryAndEmoji(name)
+    const predictedCategoryName = prediction.categoryName
+    const predictedEmoji = prediction.emoji
+
+    setSaveProductModalName(name)
+    setSaveProductModalDescription(description)
+    setSaveProductModalCategoryId('')
+    setSaveProductModalEmoji(predictedEmoji)
+    setSaveProductModalError(null)
+    setSaveProductModalOpen(true)
+
+    try {
+      const res = await fetch('/api/categories')
+      if (res.ok) {
+        const data = await res.json()
+        const categories = data.categories || []
+        setSaveProductModalCategories(categories)
+        const matchedId = findCategoryIdByPredictedName(predictedCategoryName, categories)
+        if (matchedId) {
+          setSaveProductModalCategoryId(matchedId)
+        } else if (categories.length > 0) {
+          const overig = categories.find((c: { name: string }) => c.name === 'Overig')
+          if (overig) setSaveProductModalCategoryId(overig.id)
+        }
+      }
+    } catch {
+      setSaveProductModalError('Kon categorieën niet laden.')
+    }
+  }
+
+  const handleCloseSaveProductModal = () => {
+    setSaveProductModalOpen(false)
+    setSaveProductModalName('')
+    setSaveProductModalDescription(null)
+    setSaveProductModalCategoryId('')
+    setSaveProductModalEmoji('📦')
+    setSaveProductModalCategories([])
+    setSaveProductModalError(null)
+  }
+
+  const handleSaveProductModalSave = async () => {
+    const name = saveProductModalName.trim()
+    if (!name) {
+      setSaveProductModalError('Naam is verplicht')
+      return
+    }
+    let categoryId = saveProductModalCategoryId
+    if (!categoryId && saveProductModalCategories.length > 0) {
+      const overig = saveProductModalCategories.find((c: { name: string }) => c.name === 'Overig')
+      if (overig) categoryId = overig.id
+    }
+    if (!categoryId) {
+      setSaveProductModalError('Selecteer een categorie')
+      return
+    }
+
+    setSaveProductModalSaving(true)
+    setSaveProductModalError(null)
+
+    const tempId = `temp-${Date.now()}`
+    const optimisticItem = {
+      id: tempId,
+      product_id: null,
+      product_name: name,
+      emoji: saveProductModalEmoji || '📦',
+      quantity: '1',
+      description: saveProductModalDescription,
+      category_id: categoryId,
+      category: saveProductModalCategories.find((c: { id: string }) => c.id === categoryId) ?? null,
+      is_checked: false,
+      checked_at: null,
+      created_at: new Date().toISOString(),
+    }
+    queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => [optimisticItem, ...old])
+
+    setEmptyItemQuery('')
+    setEmptyItemDescription('')
+    setEmptyItemSearchResults([])
+    setShowEmptyItemDropdown(false)
+
+    try {
+      const createRes = await fetch('/api/products/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          category_id: categoryId,
+          emoji: saveProductModalEmoji?.trim() || '📦',
+        }),
+      })
+      if (!createRes.ok) {
+        const errData = await createRes.json().catch(() => ({}))
+        throw new Error(errData.error || 'Kon product niet aanmaken')
+      }
+      const createData = await createRes.json()
+      const productId = createData.product?.id
+      if (!productId) throw new Error('Geen product-id teruggekregen')
+
+      const addRes = await fetch('/api/shopping-list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: productId,
+          category_id: categoryId,
+          quantity: '1',
+          description: saveProductModalDescription,
+        }),
+      })
+      if (!addRes.ok) {
+        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+          old.filter((item: { id: string }) => item.id !== tempId)
+        )
+        throw new Error('Kon item niet aan de lijst toevoegen')
+      }
+      const addData = await addRes.json()
+      queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => {
+        const filtered = old.filter((item: { id: string }) => item.id !== tempId)
+        return [addData.item, ...filtered]
+      })
+      handleCloseSaveProductModal()
+      setShouldFocusEmptyItem(true)
+      setEmptyItemKey((prev) => prev + 1)
+    } catch (err) {
+      queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+        old.filter((item: { id: string }) => item.id !== tempId)
+      )
+      setSaveProductModalError(err instanceof Error ? err.message : 'Er is een fout opgetreden')
+    } finally {
+      setSaveProductModalSaving(false)
+    }
+  }
+
+  // Close entire empty item when clicking/tapping outside empty item + dropdown
+  useEffect(() => {
+    if (!showEmptyItemDropdown) return
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      const el = emptyItemContainerRef.current
+      if (!el) return
+      const target = e.target as Node
+      if (!el.contains(target)) {
+        emptyItemJustClosedRef.current = true
+        handleCloseEmptyItem()
+      }
+    }
+    document.addEventListener('mousedown', handlePointerDown, true)
+    document.addEventListener('touchstart', handlePointerDown, true)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown, true)
+      document.removeEventListener('touchstart', handlePointerDown, true)
+    }
+  }, [showEmptyItemDropdown])
 
   // Search handler for empty item (near-instant)
   const handleEmptyItemSearch = async (query: string) => {
@@ -497,8 +668,8 @@ export default function ShoppingListPage() {
         })
 
         // Keep empty item open and force remount for focus
+        setShouldFocusEmptyItem(true)
         setEmptyItemKey((prev) => prev + 1)
-        // Focus will be handled by EmptyListItem's autoFocus prop
       } else {
         // Error: remove optimistic item
         queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
@@ -575,6 +746,7 @@ export default function ShoppingListPage() {
           const filtered = old.filter((item) => item.id !== tempId)
           return [addData.item, ...filtered]
         })
+        setShouldFocusEmptyItem(true)
         setEmptyItemKey((prev) => prev + 1)
       } else {
         queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
@@ -662,8 +834,8 @@ export default function ShoppingListPage() {
           return [data.item, ...filtered]
         })
         // Keep empty item open and force remount for focus
+        setShouldFocusEmptyItem(true)
         setEmptyItemKey((prev) => prev + 1)
-        // Focus will be handled by EmptyListItem's autoFocus prop
       } else {
         // Remove optimistic item on error
         queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
@@ -894,9 +1066,9 @@ export default function ShoppingListPage() {
             <ShoppingListSkeleton />
           ) : (
             <div className="flex flex-1 flex-col min-h-0">
-              {/* Empty item at top */}
+              {/* Empty item at top + dropdown (wrapper for click-outside) */}
               {isEmptyItemOpen && (
-                <>
+                <div ref={emptyItemContainerRef}>
                   <EmptyListItem
                     key={emptyItemKey}
                     productName={emptyItemQuery}
@@ -968,10 +1140,10 @@ export default function ShoppingListPage() {
                       isSearching={isSearchingEmptyItem}
                       onSelect={handleEmptyItemResultSelect}
                       onAddToListOnly={handleAddToListOnly}
-                      onAddToListAndSaveProduct={handleEmptyItemAdd}
+                      onAddToListAndSaveProduct={handleOpenSaveProductModal}
                     />
                   )}
-                </>
+                </div>
               )}
               <ShoppingList
                 items={items}
@@ -985,6 +1157,10 @@ export default function ShoppingListPage() {
                 <div
                   className="flex-1 min-h-[20vh]"
                   onClick={() => {
+                    if (emptyItemJustClosedRef.current) {
+                      emptyItemJustClosedRef.current = false
+                      return
+                    }
                     if (isEmptyItemOpen && !emptyItemQuery.trim()) {
                       handleCloseEmptyItem()
                     } else if (!isEmptyItemOpen) {
@@ -1019,6 +1195,94 @@ export default function ShoppingListPage() {
         <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 transform">
           <div className="mx-auto max-w-md rounded-lg bg-red-50 border border-red-200 px-4 py-3 shadow-lg">
             <p className="text-sm font-medium text-red-800">{errorMessage}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Save Product modal (actie 3: add to list + save new product) */}
+      {saveProductModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => e.target === e.currentTarget && handleCloseSaveProductModal()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="save-product-modal-title"
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="save-product-modal-title" className="text-lg font-semibold text-gray-900 mb-4">
+              Nieuw product opslaan
+            </h2>
+            {saveProductModalError && (
+              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+                {saveProductModalError}
+              </div>
+            )}
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="save-product-name" className="block text-sm font-medium text-gray-700">
+                  Naam
+                </label>
+                <input
+                  id="save-product-name"
+                  type="text"
+                  value={saveProductModalName}
+                  onChange={(e) => setSaveProductModalName(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Bijv. Melk"
+                />
+              </div>
+              <div>
+                <label htmlFor="save-product-category" className="block text-sm font-medium text-gray-700">
+                  Categorie
+                </label>
+                <select
+                  id="save-product-category"
+                  value={saveProductModalCategoryId}
+                  onChange={(e) => setSaveProductModalCategoryId(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Selecteer categorie</option>
+                  {saveProductModalCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="save-product-emoji" className="block text-sm font-medium text-gray-700">
+                  Emoji
+                </label>
+                <input
+                  id="save-product-emoji"
+                  type="text"
+                  value={saveProductModalEmoji}
+                  onChange={(e) => setSaveProductModalEmoji(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-2xl text-center shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="📦"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={handleCloseSaveProductModal}
+                className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Sluiten
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveProductModalSave}
+                disabled={saveProductModalSaving}
+                className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                {saveProductModalSaving ? 'Opslaan...' : 'Opslaan'}
+              </button>
+            </div>
           </div>
         </div>
       )}

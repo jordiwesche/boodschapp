@@ -5,19 +5,27 @@ interface CategoryPrediction {
   emoji: string
 }
 
-// Emoji mapping per categorie
+// Emoji mapping per categorie (keys = exact DB category names)
 const CATEGORY_EMOJI_MAP: Record<string, string> = {
-  'Groente & Fruit': '🥬',
-  'Vlees & Vis': '🥩',
-  'Zuivel': '🥛',
+  'Fruit & Groente': '🥬',
+  'Vers, Vega, Vlees & Vis': '🥩',
+  'Pasta, Oosters & Wereld': '🍝',
   'Brood & Bakkerij': '🍞',
+  'Zuivel': '🥛',
+  'Droog & Houdbaar': '🥫',
   'Dranken': '🥤',
-  'Droge Kruidenierswaren': '🍝',
+  'Huishouden & Verzorging': '🧴',
   'Diepvries': '🧊',
-  'Houdbare Producten': '🥫',
-  'Persoonlijke Verzorging': '🧴',
-  'Huishoudelijke Artikelen': '🧹',
   'Overig': '📦',
+}
+
+/**
+ * Emoji by product name: if the name matches a pattern, return that emoji.
+ * Checked first; falls back to category emoji when null.
+ */
+function getEmojiByName(nameLower: string): string | null {
+  if (nameLower.includes('kaas')) return '🧀'
+  return null
 }
 
 /** Escape special regex chars so term can be used in RegExp */
@@ -43,43 +51,24 @@ export function predictCategoryAndEmoji(productName: string): CategoryPrediction
     // Check if any product term matches
     for (const term of concept.productTerms) {
       const termLower = term.toLowerCase()
-      // Direct match, whole-word containment, or singular/plural
+      // Exact match, term as whole word in name, or singular/plural. No substring: we do not match
+      // when the product name is a substring of a longer term (e.g. "sap" in "sinaasappel"), so
+      // the correct concept (e.g. Dranken with term "sap") wins over earlier concepts.
       const matches =
         nameLower === termLower ||
         nameContainsWord(nameLower, termLower) ||
-        (termLower.length >= nameLower.length && termLower.includes(nameLower)) ||
         (nameLower.endsWith('s') && nameLower.slice(0, -1) === termLower) ||
         (termLower.endsWith('s') && termLower.slice(0, -1) === nameLower)
       if (matches) {
         // #region agent log
         try {
-          let categoryNameLog = 'Overig'
-          if (concept.canonicalTokens.includes('fruit') || concept.canonicalTokens.includes('groente')) {
-            categoryNameLog = 'Groente & Fruit'
-          } else if (concept.canonicalTokens.includes('vlees') || concept.canonicalTokens.includes('vis')) {
-            categoryNameLog = 'Vlees & Vis'
-          } else if (concept.canonicalTokens.includes('zuivel')) {
-            categoryNameLog = 'Zuivel'
-          } else if (concept.canonicalTokens.includes('bakkerij') || concept.canonicalTokens.includes('brood')) {
-            categoryNameLog = 'Brood & Bakkerij'
-          } else if (concept.canonicalTokens.includes('dranken')) {
-            categoryNameLog = 'Dranken'
-          } else if (concept.canonicalTokens.includes('pasta') || concept.canonicalTokens.includes('oosters')) {
-            categoryNameLog = 'Droge Kruidenierswaren'
-          } else if (concept.canonicalTokens.includes('diepvries')) {
-            categoryNameLog = 'Diepvries'
-          } else if (concept.canonicalTokens.includes('droog') || concept.canonicalTokens.includes('houdbaar')) {
-            categoryNameLog = 'Houdbare Producten'
-          } else if (concept.canonicalTokens.includes('huishouden') || concept.canonicalTokens.includes('verzorging')) {
-            categoryNameLog = 'Persoonlijke Verzorging / Huishoudelijk'
-          }
           fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               location: 'lib/predict-category-emoji.ts:match',
               message: 'concept term matched',
-              data: { productName: nameLower, matchedTerm: termLower, categoryName: categoryNameLog },
+              data: { productName: nameLower, matchedTerm: termLower, categoryName: concept.categoryName },
               timestamp: Date.now(),
               sessionId: 'debug-session',
               hypothesisId: 'H2',
@@ -87,45 +76,17 @@ export function predictCategoryAndEmoji(productName: string): CategoryPrediction
           }).catch(() => {})
         } catch (_) {}
         // #endregion
-        // Determine category name from canonical tokens
-        let categoryName = 'Overig'
-        if (concept.canonicalTokens.includes('fruit') || concept.canonicalTokens.includes('groente')) {
-          categoryName = 'Groente & Fruit'
-        } else if (concept.canonicalTokens.includes('vlees') || concept.canonicalTokens.includes('vis')) {
-          categoryName = 'Vlees & Vis'
-        } else if (concept.canonicalTokens.includes('zuivel')) {
-          categoryName = 'Zuivel'
-        } else if (concept.canonicalTokens.includes('bakkerij') || concept.canonicalTokens.includes('brood')) {
-          categoryName = 'Brood & Bakkerij'
-        } else if (concept.canonicalTokens.includes('dranken')) {
-          categoryName = 'Dranken'
-        } else if (concept.canonicalTokens.includes('pasta') || concept.canonicalTokens.includes('oosters')) {
-          categoryName = 'Droge Kruidenierswaren'
-        } else if (concept.canonicalTokens.includes('diepvries')) {
-          categoryName = 'Diepvries'
-        } else if (concept.canonicalTokens.includes('droog') || concept.canonicalTokens.includes('houdbaar')) {
-          categoryName = 'Houdbare Producten'
-        } else if (concept.canonicalTokens.includes('huishouden') || concept.canonicalTokens.includes('verzorging')) {
-          // Check if it's personal care or household
-          if (nameLower.includes('shampoo') || nameLower.includes('zeep') || nameLower.includes('deodorant') || 
-              nameLower.includes('tandpasta') || nameLower.includes('parfum')) {
-            categoryName = 'Persoonlijke Verzorging'
-          } else {
-            categoryName = 'Huishoudelijke Artikelen'
-          }
-        }
-
         return {
-          categoryName,
-          emoji: CATEGORY_EMOJI_MAP[categoryName] || '📦',
+          categoryName: concept.categoryName,
+          emoji: getEmojiByName(nameLower) ?? CATEGORY_EMOJI_MAP[concept.categoryName] ?? '📦',
         }
       }
     }
   }
 
-  // Default: Overig
+  // Default: Overig — still try name-based emoji first
   return {
     categoryName: 'Overig',
-    emoji: '📦',
+    emoji: getEmojiByName(nameLower) ?? '📦',
   }
 }

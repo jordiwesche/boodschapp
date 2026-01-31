@@ -1,20 +1,23 @@
 /**
  * Seed product-term lists per token pattern (canonicalTokens).
- * Used only to enrich terms for API categories whose tokenized names match.
+ * categoryName = exact name as in DB (product_categories.name).
+ * canonicalTokens = words that match tokenized category name (for matching DB categories to this seed).
  *
  * Source of truth: API categories (/api/categories) and products (/api/products).
  * - We build active concepts purely from your DB categories (including renamed/custom).
  * - Per category: terms = this seed (if tokens match) + product names in that category from API.
- * - Custom categories get terms only from products in that category.
  */
 
 export type CategoryConcept = {
+  /** Exact category name as in DB (product_categories.name) */
+  categoryName: string
   canonicalTokens: string[]
   productTerms: string[]
 }
 
 export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
   {
+    categoryName: 'Fruit & Groente',
     canonicalTokens: ['fruit', 'groente'],
     productTerms: [
       'appel', 'peer', 'banaan', 'sinaasappel', 'citroen', 'limoen', 'grapefruit', 'mandarijn', 'clementine',
@@ -25,10 +28,15 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'wortel', 'pastinaak', 'bleekselderij', 'prei', 'ui', 'knoflook', 'radijs', 'rode biet', 'pompoen',
       'sperziebonen', 'prinsessenbonen', 'slabonen', 'snijbonen', 'doperwten', 'sugarsnaps', 'maïs', 'mais',
       'champignons', 'oesterzwam', 'groente', 'fruit', 'bessen', 'aardbei', 'framboos', 'braam', 'blauwe bes',
+      'veldsla', 'waterkers', 'ijsbergsla', 'romainesla', 'paksoi', 'venkel', 'radicchio', 'postelein',
+      'shiitake', 'portobello', 'knolselderij', 'koolrabi', 'raapsteeltjes', 'spitskool', 'savooiekool',
+      'romanesco', 'palmkool', 'snijbiet', 'lente-ui', 'sjalot', 'zoete aardappel', 'passievrucht', 'lychee',
+      'physalis', 'cactusvijg', 'papaja', 'guave',
     ],
   },
   {
-    canonicalTokens: ['vlees', 'vis', 'vega', 'vers'],
+    categoryName: 'Vers, Vega, Vlees & Vis',
+    canonicalTokens: ['vers', 'vega', 'vlees', 'vis'],
     productTerms: [
       'vlees', 'kip', 'kalkoen', 'vis', 'zalm', 'forel', 'kabeljauw', 'tilapia', 'pangasius', 'tonijn',
       'haring', 'makreel', 'sardines', 'ansjovis', 'garnalen', 'mosselen', 'krab', 'rundvlees', 'varkensvlees',
@@ -36,20 +44,30 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'braadworst', 'rollade', 'kipfilet', 'kippenpoot', 'drumstick', 'eend', 'konijn', 'kalkoenfilet',
       'zalmfilet', 'tonijnsteak', 'sashimi', 'sushi', 'kibbeling', 'lekkerbek', 'gerookte zalm', 'gravad lax',
       'gezouten haring', 'bokking', 'sprot', 'sardine', 'scampi', 'gamba', 'inktvis', 'octopus', 'kreeft',
+      'kaas', 'gouda', 'brie', 'camembert', 'geitenkaas', 'feta', 'mozzarella', 'parmezaan', 'cheddar',
+      'gruyère', 'smeerkaas', 'hüttenkäse', 'roomkaas', 'verse kaas', 'oude kaas', 'jonge kaas', 'belegen kaas',
+      'blauwe kaas', 'schimmelkaas', 'geraspte kaas', 'plakken kaas', 'cottage cheese', 'ricotta', 'mascarpone',
+      'filet americain', 'carpaccio', 'ossenworst', 'leverworst', 'metworst', 'grillworst', 'shoarmavlees',
+      'kebab', 'falafel', 'tofu', 'tempeh', 'seitan', 'vegetarische schnitzel', 'vegaburger', 'tonijnsalade',
+      'zalmsalade', 'huzarensalade', 'eiersalade', 'sandwichspread', 'boterhamworst', 'ontbijtspek', 'bacon',
+      'kipdij', 'kippenborst', 'kalkoenrollade', 'lamskotelet', 'lamsrack', 'rosbief', 'tartaar', 'gehaktbal',
+      'slavink', 'verse worst', 'schol', 'tong', 'zeebaars', 'zeewolf', 'coquilles', 'oesters', 'surimi',
     ],
   },
   {
+    categoryName: 'Zuivel',
     canonicalTokens: ['zuivel'],
     productTerms: [
       'melk', 'karnemelk', 'yoghurt', 'kwark', 'vla', 'pudding', 'room', 'slagroom', 'zure room', 'crème fraîche',
-      'boter', 'margarine', 'kaas', 'gouda', 'brie', 'camembert', 'geitenkaas', 'feta', 'mozzarella', 'parmezaan',
-      'cheddar', 'gruyère', 'smeerkaas', 'hüttenkäse', 'eieren', 'roomkaas', 'crème fraiche',
-      'biogarde', 'skyr', 'kefir', 'chocomel', 'vla', 'pap', 'griesmeel', 'chocolademelk', 'vruchtenyoghurt',
-      'natuuryoghurt', 'griekse yoghurt', 'verse kaas', 'oude kaas', 'jonge kaas', 'belegen kaas', 'blauwe kaas',
-      'schimmelkaas', 'geraspte kaas', 'plakken kaas', 'cottage cheese', 'ricotta', 'mascarpone',
+      'boter', 'margarine', 'eieren', 'crème fraiche', 'biogarde', 'skyr', 'kefir', 'chocomel', 'vla', 'pap',
+      'griesmeel', 'chocolademelk', 'vruchtenyoghurt', 'natuuryoghurt', 'griekse yoghurt',
+      'halfvolle melk', 'volle melk', 'magere melk', 'lactosevrije melk', 'havermelk', 'sojamelk', 'amandelmelk',
+      'koffiemelk', 'kookroom', 'koffieroom', 'vanillekwark', 'drinkyoghurt', 'yoghurtdrank', 'plattekaas',
+      'vruchtenkwark', 'bakboter', 'roomboter', 'vla naturel', 'pudding vanille',
     ],
   },
   {
+    categoryName: 'Brood & Bakkerij',
     canonicalTokens: ['bakkerij', 'brood'],
     productTerms: [
       'brood', 'bruin brood', 'volkoren', 'stokbrood', 'baguette', 'ciabatta', 'croissant', 'pain au chocolat',
@@ -59,10 +77,15 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'donut', 'appeltaart', 'slagroomtaart', 'kwarktaart', 'cheesecake', 'tiramisu', 'macaron', 'meringue',
       'scones', 'pumpernickel', 'roggebrood', 'zuurdesem', 'tigerbrood', 'melkwit', 'tijgerbrood', 'bolletje',
       'kadetje', 'vloerbrood', 'casinobrood',
+      'wit brood', 'volkorenbrood', 'meergranenbrood', 'speltbrood', 'zuurdesembrood', 'pistolets',
+      'kaiserbroodje', 'sesambroodje', 'notenbrood', 'rozijnenbrood', 'knoflookbrood', 'toast',
+      'bitterkoekje', 'lange vinger', 'bokkenpoot', 'mergpijp', 'kaneelrol', 'appelflap', 'saucijzenbroodje',
+      'worstenbroodje', 'kaasbroodje', 'chocoladecroissant',
     ],
   },
   {
-    canonicalTokens: ['dranken'],
+    categoryName: 'Dranken',
+    canonicalTokens: ['dranken', 'frisdrank', 'sap'],
     productTerms: [
       'water', 'mineraalwater', 'spa', 'bronwater', 'sap', 'appelsap', 'sinaasappelsap',
       'multivitamine', 'frisdrank', 'cola', 'fanta', 'sprite', 'ice tea', 'limonade', 'smoothie', 'fruitsap',
@@ -71,10 +94,15 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'cranberrysap', 'perensap', 'druivensap', 'tomatensap', 'rode wijn', 'witte wijn', 'rosé', 'radler',
       'pils', 'speciaalbier', '0.0 bier', 'alcoholvrij', 'koffiebonen', 'theezakjes', 'verse muntthee',
       'kruidenthee', 'groene thee', 'zwarte thee',
+      'bruiswater', 'smaakwater', 'multivitaminesap', 'frisdrank citrus', 'frisdrank sinas', 'ice tea perzik',
+      'sportdrank', 'energiedrank', 'espresso', 'cappuccino', 'rooibos', 'kamillethee', 'warme chocomel',
+      'verse jus', 'fruitsmoothie', 'groentesmoothie', 'witbier', 'alcoholvrij bier', 'advocaat', 'sinas',
+      'cassis', 'vruchtensap mix',
     ],
   },
   {
-    canonicalTokens: ['pasta', 'oosters'],
+    categoryName: 'Pasta, Oosters & Wereld',
+    canonicalTokens: ['pasta', 'oosters', 'wereld'],
     productTerms: [
       'pasta', 'spaghetti', 'penne', 'macaroni', 'lasagne', 'fusilli', 'tagliatelle', 'noedels', 'rijst',
       'zilvervliesrijst', 'basmati', 'jasmijnrijst', 'couscous', 'bulgur', 'quinoa', 'olie', 'olijfolie',
@@ -82,9 +110,15 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'kruiden', 'specerijen', 'zout', 'peper', 'paprikapoeder', 'kerrie', 'oregano', 'basilicum', 'peterselie',
       'dille', 'nootmuskaat', 'kaneel', 'gember', 'knoflookpoeder', 'ui poeder', 'taco mix',
       'nasi mix', 'sate', 'ketjap', 'sojasaus', 'worcestersaus', 'tabasco', 'kokosmelk', 'hummus', 'tahin',
+      'linguine', 'farfalle', 'orecchiette', 'gnocchi', 'risotto', 'sushirijst', 'pandan rijst', 'mie',
+      'rijstvellen', 'tortilla', 'naan', 'harissa', 'sambal', 'currypasta', 'tomatenpuree', 'passata',
+      'pesto', 'tapenade', 'groentebouillon', 'kippenbouillon', 'runderbouillon', 'soepgroenten', 'kruidenmix',
+      'verse kruiden', 'laurier', 'tijm', 'rozemarijn', 'cayenne', 'chilivlokken', 'vanille', 'kruidnagel',
+      'kardemom', 'steranijs',
     ],
   },
   {
+    categoryName: 'Droog & Houdbaar',
     canonicalTokens: ['droog', 'houdbaar'],
     productTerms: [
       'meel', 'bloem', 'maizena', 'paneermeel', 'broodkruimels', 'suiker', 'basterdsuiker', 'poedersuiker',
@@ -96,9 +130,16 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'nootjes', 'crackers', 'biscuits', 'snoep', 'winegums', 'drop', 'ontbijtkoek', 'eierkoeken', 'beschuit',
       'knäckebröd', 'rice cakes', 'koffie', 'chocola', 'chocolade', 'chocoladereep', 'thee', 'koffiebonen',
       'pindakaas', 'jam', 'marmelade', 'chocoladepasta', 'nutella', 'appelstroop', 'honing', 'stroop',
+      'brinta', 'rijstwafels', 'zeezout', 'keukenzout', 'vanillesuiker', 'zelfrijzend bakmeel', 'bakpoeder',
+      'gist', 'custardpoeder', 'vlapoeder', 'soep in blik', 'bonen in blik', 'mais in blik', 'doperwten blik',
+      'worteltjes blik', 'rode kool pot', 'augurken', 'zilveruitjes', 'olijven', 'capers', 'pastasaus',
+      'curry in blik', 'tomatenblokjes', 'gepelde tomaten', 'linzen', 'falafel mix', 'tortilla chips',
+      'studentenhaver', 'zuurtjes', 'hagelslag', 'vlokken', 'koffiepads', 'koffiecups',       'limonadesiroop',
+      'ranja', 'beschuit light',
     ],
   },
   {
+    categoryName: 'Diepvries',
     canonicalTokens: ['diepvries'],
     productTerms: [
       'diepvries', 'diepvriesgroente', 'diepvriesfruit', 'ijs', 'softijs', 'sorbet', 'magnum', 'cornetto',
@@ -108,10 +149,14 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'kibbeling', 'ijsklontjes', 'fruitmix', 'bessen', 'frambozen', 'bramen', 'groentemix', 'wokgroente',
       'tuinboon', 'spinazie a la crème', 'aardappelpartjes', 'ovenfriet', 'zoete aardappelfriet',
       'pizzadeeg', 'bladerdeeg', 'croissantdeeg', 'cake', 'brownie', 'wafels', 'pannenkoeken',
+      'diepvriesgroente mix', 'diepvrieserwten', 'diepvrieswortel', 'diepvriesspinazie', 'diepvriesboontjes',
+      'diepvriesaardbeien', 'diepvriesbessen', 'diepvriesfrites', 'frikandellen', 'nasibal', 'bamibal',
+      'pizza margherita', 'pizza pepperoni', 'ijsjes', 'waterijs', 'roomijs', 'wafels diepvries',
+      'pannenkoeken diepvries', 'kruimeldeeg',
     ],
   },
-
   {
+    categoryName: 'Huishouden & Verzorging',
     canonicalTokens: ['huishouden', 'verzorging'],
     productTerms: [
       'shampoo', 'conditioner', 'zeep', 'douchegel', 'handzeep', 'bodylotion', 'bodycrème', 'deodorant',
@@ -127,6 +172,8 @@ export const CATEGORY_CONCEPT_PRODUCTS: CategoryConcept[] = [
       'strijkmiddel', 'vlekkenmiddel', 'ontkalker', 'ovenreiniger', 'wc reiniger',
       'ramenreiniger', 'vloerzeep', 'aanrechtspray', 'ontstopper', 'kaarsen', 'aansteker',
       'lucifers', 'batterijen', 'ledlamp', 'glazenreiniger', 'bloemenvoeding', 'potgrond',
+      'wc papier', 'vochtige doekjes', 'vaatwasblokjes', 'vaatwaspod', 'wasmiddel poeder', 'wasmiddel vloeibaar',
+      'wascapsules', 'afvalzakken', 'vaatwasmiddel', 'waspoeder', 'vuilniszak', 'diepvrieszak', 'broodtrommel',
     ],
   },
 
