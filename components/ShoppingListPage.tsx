@@ -194,6 +194,7 @@ export default function ShoppingListPage() {
   const searchDebounceTimerRef = useRef<NodeJS.Timeout | null>(null)
   const emptyItemContainerRef = useRef<HTMLDivElement>(null)
   const emptyItemJustClosedRef = useRef(false)
+  const emptyItemJustAddedRef = useRef(false)
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<{ userName: string; updatedAt: string } | null>(null)
@@ -406,6 +407,7 @@ export default function ShoppingListPage() {
         return [addData.item, ...filtered]
       })
       handleCloseSaveProductModal()
+      emptyItemJustAddedRef.current = true
       setShouldFocusEmptyItem(true)
       setEmptyItemKey((prev) => prev + 1)
     } catch (err) {
@@ -668,6 +670,7 @@ export default function ShoppingListPage() {
         })
 
         // Keep empty item open and force remount for focus
+        emptyItemJustAddedRef.current = true
         setShouldFocusEmptyItem(true)
         setEmptyItemKey((prev) => prev + 1)
       } else {
@@ -746,6 +749,7 @@ export default function ShoppingListPage() {
           const filtered = old.filter((item) => item.id !== tempId)
           return [addData.item, ...filtered]
         })
+        emptyItemJustAddedRef.current = true
         setShouldFocusEmptyItem(true)
         setEmptyItemKey((prev) => prev + 1)
       } else {
@@ -834,6 +838,7 @@ export default function ShoppingListPage() {
           return [data.item, ...filtered]
         })
         // Keep empty item open and force remount for focus
+        emptyItemJustAddedRef.current = true
         setShouldFocusEmptyItem(true)
         setEmptyItemKey((prev) => prev + 1)
       } else {
@@ -1159,6 +1164,10 @@ export default function ShoppingListPage() {
                   onClick={() => {
                     if (emptyItemJustClosedRef.current) {
                       emptyItemJustClosedRef.current = false
+                      return
+                    }
+                    if (emptyItemJustAddedRef.current) {
+                      emptyItemJustAddedRef.current = false
                       return
                     }
                     if (isEmptyItemOpen && !emptyItemQuery.trim()) {
