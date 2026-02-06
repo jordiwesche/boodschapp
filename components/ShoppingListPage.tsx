@@ -1168,6 +1168,19 @@ export default function ShoppingListPage() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isEmptyItemOpen])
 
+  // Lock body scroll when Save Product modal is open (prevents background scroll + pull-to-refresh on mobile)
+  useEffect(() => {
+    if (!saveProductModalOpen) return
+    const prevOverflow = document.body.style.overflow
+    const prevTouchAction = document.body.style.touchAction
+    document.body.style.overflow = 'hidden'
+    document.body.style.touchAction = 'none'
+    return () => {
+      document.body.style.overflow = prevOverflow
+      document.body.style.touchAction = prevTouchAction
+    }
+  }, [saveProductModalOpen])
+
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
       <header className="bg-white shadow">
@@ -1185,14 +1198,18 @@ export default function ShoppingListPage() {
         ref={scrollContainerRef}
         className="mx-auto w-full max-w-7xl flex-1 flex flex-col min-h-0 px-4 py-8 sm:px-6 lg:px-8"
       >
-        <PullToRefresh onRefresh={handleRefresh} scrollContainerRef={scrollContainerRef}>
+        <PullToRefresh
+          onRefresh={handleRefresh}
+          scrollContainerRef={scrollContainerRef}
+          disabled={saveProductModalOpen}
+        >
           {isLoadingItems ? (
             <ShoppingListSkeleton />
           ) : (
             <div className="flex flex-1 flex-col min-h-0">
               {/* Empty item at top + dropdown (wrapper for click-outside) */}
               {isEmptyItemOpen && (
-                <div ref={emptyItemContainerRef}>
+                <div ref={emptyItemContainerRef} className="mt-4">
                   <EmptyListItem
                     key={emptyItemKey}
                     productName={emptyItemQuery}
@@ -1330,7 +1347,8 @@ export default function ShoppingListPage() {
       {/* Save Product modal (actie 3: add to list + save new product) */}
       {saveProductModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overscroll-contain"
+          style={{ overflow: 'auto' }}
           onClick={(e) => e.target === e.currentTarget && handleCloseSaveProductModal()}
           role="dialog"
           aria-modal="true"

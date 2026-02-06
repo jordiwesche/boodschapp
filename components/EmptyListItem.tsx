@@ -25,6 +25,7 @@ export default function EmptyListItem({
   onFocusComplete,
 }: EmptyListItemProps) {
   const productInputRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const inputCallbackRef = (node: HTMLInputElement | null) => {
     productInputRef.current = node
@@ -83,19 +84,28 @@ export default function EmptyListItem({
     }
   }
 
+  const handleProductBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (productName.trim()) return
+    const next = e.relatedTarget as Node | null
+    if (formRef.current && next && formRef.current.contains(next)) return
+    onCancel()
+  }
+
   return (
     <div className="mb-2 flex items-center gap-3 rounded-2xl bg-white px-4 py-3">
       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-gray-300">
         <Check className="h-3 w-3 text-transparent" />
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-1 items-center gap-2 min-w-0">
+      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-1 items-center gap-2 min-w-0">
         <input
           ref={inputCallbackRef}
           type="text"
           value={productName}
           onChange={(e) => onProductNameChange(e.target.value)}
           onKeyDown={handleProductKeyDown}
+          onBlur={handleProductBlur}
+          enterKeyHint="done"
           placeholder="Product / item"
           className="min-w-0 flex-1 border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
           style={{ fontSize: '16px' }}
