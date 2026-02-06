@@ -1037,45 +1037,23 @@ export default function ShoppingListPage() {
     }
   }, [queryClient])
 
-  const purchaseHistoryTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
-
   const handleCheck = async (id: string) => {
     haptic('light')
     try {
-      const existingTimer = purchaseHistoryTimersRef.current.get(id)
-      if (existingTimer) {
-        clearTimeout(existingTimer)
-        purchaseHistoryTimersRef.current.delete(id)
-      }
-
       const result = await checkItemMutation.mutateAsync(id)
-      
-      const checkedAt = result?.item?.checked_at || new Date().toISOString()
-      const checkedAtTime = new Date(checkedAt).getTime()
-      const now = Date.now()
-      const delay = 30000 - (now - checkedAtTime)
-      const timerDelay = Math.max(delay, 0)
-      
-      const timer = setTimeout(async () => {
+      if (result?.item?.product_id) {
         try {
-          const checkResponse = await fetch(`/api/shopping-list/record-purchase/${id}`, {
-            method: 'POST',
-          })
-          
-          if (checkResponse.ok) {
-            const result = await checkResponse.json()
-            if (result.success) {
+          const res = await fetch(`/api/shopping-list/record-purchase/${id}`, { method: 'POST' })
+          if (res.ok) {
+            const data = await res.json()
+            if (data.success) {
               queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
             }
           }
-        } catch (error) {
-          console.error(`Error recording purchase history for item ${id}:`, error)
-        } finally {
-          purchaseHistoryTimersRef.current.delete(id)
+        } catch (err) {
+          console.error('Error recording purchase history for item', id, err)
         }
-      }, timerDelay)
-
-      purchaseHistoryTimersRef.current.set(id, timer)
+      }
     } catch (error) {
       setErrorMessage('Kon item niet afvinken. Probeer het opnieuw.')
       setTimeout(() => setErrorMessage(null), 5000)
@@ -1086,9 +1064,10 @@ export default function ShoppingListPage() {
   const handleUncheck = async (id: string) => {
     haptic('light')
     try {
-      const timer = purchaseHistoryTimersRef.current.get(id)
-      if (timer) {
-        clearTimeout(timer)
+      try {
+        await fetch(`/api/shopping-list/cancel-purchase/${id}`, { method: 'POST' })
+      } catch {
+        // ignore; uncheck regardless
       }
       await uncheckItemMutation.mutateAsync(id)
     } catch (error) {
@@ -1142,16 +1121,6 @@ export default function ShoppingListPage() {
       console.error('Error clearing checked items:', error)
     }
   }
-
-  // Cleanup purchase history timers on unmount
-  useEffect(() => {
-    return () => {
-      purchaseHistoryTimersRef.current.forEach((timer) => {
-        clearTimeout(timer)
-      })
-      purchaseHistoryTimersRef.current.clear()
-    }
-  }, [])
 
   // Enter: open empty item with focus when closed; when open + empty, EmptyListItem closes on Enter
   useEffect(() => {

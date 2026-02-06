@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Search } from 'lucide-react'
 import ProductCard from './ProductCard'
 import ProductForm from './ProductForm'
 import FixedActionBar from './FixedActionBar'
+import { formatDayLabel, daySortKey } from '@/lib/format-day-label'
 
 interface Category {
   id: string
@@ -28,6 +29,7 @@ interface Product {
   created_at: string
   updated_at: string
   purchase_count?: number
+  last_purchased_at?: string | null
 }
 
 interface ProductListProps {
@@ -36,12 +38,12 @@ interface ProductListProps {
   onRefresh: () => void
 }
 
-type SortOption = 'alfabetisch' | 'koopfrequentie'
+type SortOption = 'alfabetisch' | 'koopfrequentie' | 'laatst_gekocht' | 'categorie'
 
 export default function ProductList({ products, categories, onRefresh }: ProductListProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState<SortOption>('alfabetisch')
+  const [sortBy, setSortBy] = useState<SortOption>('koopfrequentie')
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
@@ -62,41 +64,66 @@ export default function ProductList({ products, categories, onRefresh }: Product
       })
     : filteredByCategory
 
-  // Group products by category and sort by category display_order
-  const productsByCategory = filteredProducts.reduce((acc, product) => {
-    const categoryId = product.category_id
-    const category = categories.find(cat => cat.id === categoryId)
-    const categoryName = category?.name || 'Onbekend'
-    const categoryOrder = category?.display_order ?? 9999
-    
-    if (!acc[categoryId]) {
-      acc[categoryId] = {
-        categoryId,
-        categoryName,
-        categoryOrder,
-        products: []
-      }
-    }
-    acc[categoryId].products.push(product)
-    return acc
-  }, {} as Record<string, { categoryId: string; categoryName: string; categoryOrder: number; products: Product[] }>)
+  type Section = { label: string; products: Product[] }
 
-  const sortProducts = (a: Product, b: Product) => {
+  const sections = useMemo((): Section[] => {
+    if (sortBy === 'alfabetisch') {
+      const sorted = [...filteredProducts].sort((a, b) => a.name.localeCompare(b.name, 'nl'))
+      return [{ label: '', products: sorted }]
+    }
     if (sortBy === 'koopfrequentie') {
-      const countA = a.purchase_count ?? 0
-      const countB = b.purchase_count ?? 0
-      if (countB !== countA) return countB - countA
+      const sorted = [...filteredProducts].sort((a, b) => {
+        const cA = a.purchase_count ?? 0
+        const cB = b.purchase_count ?? 0
+        if (cB !== cA) return cB - cA
+        return a.name.localeCompare(b.name, 'nl')
+      })
+      return [{ label: '', products: sorted }]
     }
-    return a.name.localeCompare(b.name, 'nl')
-  }
-
-  // Sort categories by display_order, then sort products within each category
-  const sortedCategories = Object.values(productsByCategory)
-    .sort((a, b) => a.categoryOrder - b.categoryOrder)
-    .map(cat => ({
-      ...cat,
-      products: cat.products.sort(sortProducts)
-    }))
+    if (sortBy === 'laatst_gekocht') {
+      const withDate: Product[] = []
+      const noDate: Product[] = []
+      for (const p of filteredProducts) {
+        if (p.last_purchased_at) withDate.push(p)
+        else noDate.push(p)
+      }
+      withDate.sort((a, b) => {
+        const tA = new Date(a.last_purchased_at!).getTime()
+        const tB = new Date(b.last_purchased_at!).getTime()
+        return tB - tA
+      })
+      const byDay = new Map<string, Product[]>()
+      for (const p of withDate) {
+        const label = formatDayLabel(p.last_purchased_at!)
+        if (!byDay.has(label)) byDay.set(label, [])
+        byDay.get(label)!.push(p)
+      }
+      const dayLabels = Array.from(byDay.keys()).sort(
+        (a, b) => daySortKey(byDay.get(a)![0].last_purchased_at!).localeCompare(daySortKey(byDay.get(b)![0].last_purchased_at!))
+      )
+      const result: Section[] = dayLabels.map((label) => ({ label, products: byDay.get(label)! }))
+      if (noDate.length) result.push({ label: '', products: noDate.sort((a, b) => a.name.localeCompare(b.name, 'nl')) })
+      return result
+    }
+    if (sortBy === 'categorie') {
+      const byCat = filteredProducts.reduce((acc, product) => {
+        const categoryId = product.category_id
+        const category = categories.find((c) => c.id === categoryId)
+        const categoryName = category?.name || 'Onbekend'
+        const categoryOrder = category?.display_order ?? 9999
+        if (!acc[categoryId]) acc[categoryId] = { categoryName, categoryOrder, products: [] }
+        acc[categoryId].products.push(product)
+        return acc
+      }, {} as Record<string, { categoryName: string; categoryOrder: number; products: Product[] }>)
+      return Object.values(byCat)
+        .sort((a, b) => a.categoryOrder - b.categoryOrder)
+        .map((g) => ({
+          label: g.categoryName,
+          products: g.products.sort((a, b) => a.name.localeCompare(b.name, 'nl')),
+        }))
+    }
+    return [{ label: '', products: filteredProducts }]
+  }, [sortBy, filteredProducts, categories])
 
   const handleAdd = () => {
     setEditingProduct(null)
@@ -259,6 +286,8 @@ export default function ProductList({ products, categories, onRefresh }: Product
           >
             <option value="alfabetisch">Alfabetisch</option>
             <option value="koopfrequentie">Koopfrequentie</option>
+            <option value="laatst_gekocht">Laatst gekocht</option>
+            <option value="categorie">Categorie</option>
           </select>
         </div>
         <div className="relative">
@@ -286,13 +315,13 @@ export default function ProductList({ products, categories, onRefresh }: Product
         </div>
       ) : (
         <div className="space-y-6">
-          {sortedCategories.map((categoryGroup) => (
-            <div key={categoryGroup.categoryId}>
-              <h3 className="mb-3 text-sm font-medium text-gray-500">
-                {categoryGroup.categoryName}
-              </h3>
+          {sections.map((section, idx) => (
+            <div key={section.label || `flat-${idx}`}>
+              {section.label ? (
+                <h3 className="mb-3 text-sm font-medium text-gray-500">{section.label}</h3>
+              ) : null}
               <div className="space-y-3">
-                {categoryGroup.products.map((product) => (
+                {section.products.map((product) => (
                   <ProductCard
                     key={product.id}
                     product={product}

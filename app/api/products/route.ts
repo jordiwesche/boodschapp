@@ -80,19 +80,27 @@ export async function GET(request: NextRequest) {
 
     const includePurchaseCount = searchParams.get('include') === 'purchase_count'
     let purchaseCountByProductId: Record<string, number> = {}
+    let lastPurchasedAtByProductId: Record<string, string> = {}
 
     if (includePurchaseCount && products && products.length > 0) {
       const productIds = products.map((p: { id: string }) => p.id)
-      const { data: counts, error: countError } = await supabase
+      const { data: rows, error: histError } = await supabase
         .from('purchase_history')
-        .select('product_id')
+        .select('product_id, purchased_at')
         .eq('household_id', user.household_id)
         .in('product_id', productIds)
 
-      if (!countError && counts) {
-        for (const row of counts) {
+      if (!histError && rows) {
+        for (const row of rows) {
           const id = row.product_id
           purchaseCountByProductId[id] = (purchaseCountByProductId[id] ?? 0) + 1
+          const at = row.purchased_at
+          if (at) {
+            const existing = lastPurchasedAtByProductId[id]
+            if (!existing || at > existing) {
+              lastPurchasedAtByProductId[id] = at
+            }
+          }
         }
       }
     }
@@ -121,6 +129,7 @@ export async function GET(request: NextRequest) {
       }
       if (includePurchaseCount) {
         out.purchase_count = purchaseCountByProductId[product.id] ?? 0
+        out.last_purchased_at = lastPurchasedAtByProductId[product.id] ?? null
       }
       return out
     })
