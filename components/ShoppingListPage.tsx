@@ -1209,7 +1209,7 @@ export default function ShoppingListPage() {
             <div className="flex flex-1 flex-col min-h-0">
               {/* Empty item at top + dropdown (wrapper for click-outside) */}
               {isEmptyItemOpen && (
-                <div ref={emptyItemContainerRef} className="mt-4">
+                <div ref={emptyItemContainerRef} className="mb-4">
                   <EmptyListItem
                     key={emptyItemKey}
                     productName={emptyItemQuery}
