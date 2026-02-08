@@ -24,10 +24,13 @@ export const metadata: Metadata = {
   title: "Boodschapp - Slimme Boodschappen App",
   description: "Samen boodschappen doen met je huishouden",
   manifest: "/manifest.json",
-  themeColor: "#3b82f6",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f9fafb" },
+    { media: "(prefers-color-scheme: dark)", color: "#f9fafb" },
+  ],
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Boodschapp",
   },
   other: {
@@ -41,6 +44,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

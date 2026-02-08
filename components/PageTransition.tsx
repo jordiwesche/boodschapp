@@ -43,7 +43,8 @@ export default function PageTransition({ children }: PageTransitionProps) {
       ref={containerRef} 
       style={{ 
         opacity: 1,
-        minHeight: '100vh'
+        minHeight: '100vh',
+        background: 'var(--background, #f9fafb)',
       }}
     >
       {children}
