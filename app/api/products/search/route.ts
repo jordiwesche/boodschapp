@@ -69,15 +69,32 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch categories for household so we can attach category when join is empty (e.g. FK set but relation not populated)
+    // Purchase counts for ranking (same product name match → higher count first)
+    const productIds = (products || []).map((p: { id: string }) => p.id)
+    let purchaseCountByProductId: Record<string, number> = {}
+    if (productIds.length > 0) {
+      const { data: rows } = await supabase
+        .from('purchase_history')
+        .select('product_id')
+        .eq('household_id', user.household_id)
+        .in('product_id', productIds)
+      if (rows) {
+        for (const row of rows) {
+          const id = row.product_id
+          purchaseCountByProductId[id] = (purchaseCountByProductId[id] ?? 0) + 1
+        }
+      }
+    }
+
+    // Fetch categories for household so we can attach category when join is empty
     const { data: categories } = await supabase
       .from('product_categories')
       .select('id, name, display_order')
       .eq('household_id', user.household_id)
     const categoryById = new Map((categories || []).map((c) => [c.id, c]))
 
-    // Transform to Product type
-    const transformedProducts: Product[] = (products || []).map((product) => {
+    // Transform to Product type with purchase_count for sort
+    const transformedProducts: (Product & { purchase_count?: number })[] = (products || []).map((product) => {
       const category = Array.isArray(product.product_categories) &&
         product.product_categories.length > 0
         ? product.product_categories[0]
@@ -94,34 +111,15 @@ export async function GET(request: NextRequest) {
         is_popular: product.is_popular,
         created_at: product.created_at,
         updated_at: product.updated_at,
+        purchase_count: purchaseCountByProductId[product.id] ?? 0,
       }
     })
 
-    // Perform fuzzy search
-    // Extract just the product name part (before any quantity/annotation/description)
-    // This allows searching "Bananen 12x" or "Bananen voor ontbijt" and still finding "Bananen"
     const queryTrimmed = query.trim()
-    
-    // Use annotation parser to extract product name (handles descriptions, quantities, etc.)
+    // Use product part for search: "4 appels" → search "appels" so we find "Appels" (leading number = description)
     const parsed = parseProductInput(queryTrimmed)
-    const productName = parsed.productName || queryTrimmed
-    
-    // If parser found a product name, use that for search
-    // Otherwise, try to extract product name by removing common patterns
-    let searchQuery = productName
-    if (searchQuery === queryTrimmed) {
-      // Parser didn't extract a product name, try manual extraction
-      const quantityPattern = /\s+\d+[xX]?\s*$/
-      if (quantityPattern.test(searchQuery)) {
-        // Remove quantity suffix for search
-        searchQuery = searchQuery.replace(quantityPattern, '').trim()
-      }
-      // Also try removing parentheses content
-      searchQuery = searchQuery.replace(/\s*\([^)]*\)\s*$/, '').trim()
-    }
-    
-    // Use the extracted product name for search (ignores descriptions/annotations)
-    const searchResults = searchProductsWithScores(transformedProducts, searchQuery || queryTrimmed)
+    const searchQuery = parsed.productName || queryTrimmed
+    const searchResults = searchProductsWithScores(transformedProducts, searchQuery)
 
     // Transform response with category info (use join when present, else lookup by product.category_id)
     const resultsWithCategory = searchResults.map(({ product, score }) => {

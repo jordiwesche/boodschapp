@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Link as LinkIcon, CornerDownLeft, X, Pencil, ExternalLink } from 'lucide-react'
+import { Link as LinkIcon, CornerDownLeft, X, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { haptic } from '@/lib/haptics'
 
@@ -112,6 +112,18 @@ export default function WeekmenuPage() {
   const [urlInput, setUrlInput] = useState('')
   const [patching, setPatching] = useState<number | null>(null)
   const urlInputRef = useRef<HTMLInputElement>(null)
+  const urlDropdownWrapperRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (urlDropdownDay === null) return
+    const handleMouseDown = (e: MouseEvent) => {
+      if (urlDropdownWrapperRef.current?.contains(e.target as Node)) return
+      setUrlDropdownDay(null)
+      setUrlInput('')
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [urlDropdownDay])
 
   const fetchDays = useCallback(async () => {
     const res = await fetch('/api/weekmenu')
@@ -301,9 +313,19 @@ export default function WeekmenuPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-1 items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
-      </div>
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
+        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+          {DAY_LABELS.map((label, i) => (
+            <div
+              key={i}
+              className="border-b border-gray-200 px-4 py-3 last:border-b-0 flex items-center gap-2"
+            >
+              <span className="w-8 shrink-0 text-sm font-medium text-gray-400">{label}</span>
+              <div className="h-6 flex-1 max-w-[200px] rounded bg-gray-100 animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </main>
     )
   }
 
@@ -318,7 +340,7 @@ export default function WeekmenuPage() {
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
-      <div className="rounded-lg border border-gray-100 bg-white overflow-hidden">
+      <div className="rounded-lg border border-gray-200 bg-white overflow-visible">
         {orderedDays.map((day) => {
           const label = DAY_LABELS[day.day_of_week] ?? `Dag ${day.day_of_week}`
           const text = localText[day.day_of_week] ?? day.menu_text ?? ''
@@ -333,49 +355,38 @@ export default function WeekmenuPage() {
           return (
             <div
               key={day.day_of_week}
-              className="border-b border-gray-100 px-4 py-3 last:border-b-0"
+              className="border-b border-gray-200 px-4 py-3 last:border-b-0"
             >
               <div className="flex flex-wrap items-start gap-2">
                 <span className="w-8 shrink-0 pt-[10px] text-sm font-medium text-gray-600">
                   {label}
                 </span>
                 {showViewMode ? (
-                  <div className="flex min-h-[2.5rem] min-w-0 flex-1 items-center gap-2 py-2">
-                    <span className="min-w-0 flex-1 font-semibold text-gray-900">
-                      {savedText}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        haptic('light')
-                        setEditingDay(day.day_of_week)
-                        setLocalText((prev) => ({ ...prev, [day.day_of_week]: savedText }))
-                      }}
-                      className="shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                      aria-label="Bewerken"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      haptic('light')
+                      setEditingDay(day.day_of_week)
+                      setLocalText((prev) => ({ ...prev, [day.day_of_week]: savedText }))
+                    }}
+                    className="flex min-h-[2.5rem] min-w-0 flex-1 items-center py-2 text-left font-semibold text-gray-900"
+                  >
+                    {savedText}
+                  </button>
                 ) : showEmptyViewMode ? (
-                  <div className="flex min-h-[2.5rem] min-w-0 flex-1 items-center gap-2 py-2">
-                    <span className="min-w-0 flex-1" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        haptic('light')
-                        setEditingDay(day.day_of_week)
-                        setLocalText((prev) => ({ ...prev, [day.day_of_week]: '' }))
-                      }}
-                      className="shrink-0 p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                      aria-label="Gerecht toevoegen"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      haptic('light')
+                      setEditingDay(day.day_of_week)
+                      setLocalText((prev) => ({ ...prev, [day.day_of_week]: '' }))
+                    }}
+                    className="flex min-h-[2.5rem] min-w-0 flex-1 items-center py-2 text-left"
+                    aria-label="Gerecht toevoegen"
+                  />
                 ) : (
                   <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <div className="flex min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2">
                       <WeekmenuGerechtTextarea
                         value={text}
                         onChange={(v) =>
@@ -394,29 +405,30 @@ export default function WeekmenuPage() {
                         autoFocus={isEditing}
                       />
                       {text.trim().length > 0 && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleSubmit(day.day_of_week)}
-                            disabled={isPatching}
-                            className="shrink-0 flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
-                            aria-label="Opslaan"
-                          >
-                            <CornerDownLeft className="h-4 w-4" strokeWidth={2} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleClear(day.day_of_week)}
-                            disabled={isPatching}
-                            className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
-                            aria-label="Veld wissen"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </>
+                        <button
+                          type="button"
+                          onClick={() => handleClear(day.day_of_week)}
+                          disabled={isPatching}
+                          className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
+                          aria-label="Veld wissen"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => handleSubmit(day.day_of_week)}
+                        disabled={isPatching}
+                        className="shrink-0 flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                        aria-label="Opslaan"
+                      >
+                        <CornerDownLeft className="h-4 w-4" strokeWidth={2} />
+                      </button>
                     </div>
-                    <div className="relative shrink-0 self-center">
+                    <div
+                      ref={isUrlOpen ? urlDropdownWrapperRef : undefined}
+                      className="relative shrink-0 self-center"
+                    >
                       <button
                         type="button"
                         onClick={() => openUrlDropdown(day.day_of_week)}
@@ -430,7 +442,7 @@ export default function WeekmenuPage() {
                         <LinkIcon className="h-4 w-4" />
                       </button>
                   {isUrlOpen && (
-                    <div className="absolute right-0 top-full z-10 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+                    <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
                       {hasLink ? (
                         <>
                           <div className="mb-2 rounded border border-gray-200 bg-gray-50 px-2 py-1.5 text-sm text-gray-700 break-all">

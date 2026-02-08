@@ -1,13 +1,5 @@
-import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/lib/db'
-import ShoppingListPage from '@/components/ShoppingListPage'
+import AppShell from '@/components/AppShell'
 
-export default async function HomePage() {
-  const user = await getCurrentUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
-  return <ShoppingListPage />
+export default function HomePage() {
+  return <AppShell initialTab="lijst" />
 }

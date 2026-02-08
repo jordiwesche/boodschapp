@@ -20,6 +20,8 @@ interface InlineSearchDropdownProps {
   results: SearchResult[]
   query: string
   description: string | null
+  /** Parsed from query (e.g. "4" from "4 appels") so result shows as "Appels" with description "4" */
+  queryAnnotation?: string | null
   matchLevel: MatchLevel
   isVisible: boolean
   isSearching: boolean
@@ -79,6 +81,7 @@ export default function InlineSearchDropdown({
   results,
   query,
   description,
+  queryAnnotation,
   matchLevel,
   isVisible,
   isSearching,
@@ -123,16 +126,21 @@ export default function InlineSearchDropdown({
       {showResults && results.length > 0 && (
         <div className="divide-y divide-gray-100">
           {results.map((result, index) => {
-          // Extract annotation from query (everything after product name)
-          const productNameLower = result.name.toLowerCase().trim()
-          const queryLower = query.toLowerCase().trim()
-          let annotationText = ''
-          
-          if (queryLower.startsWith(productNameLower)) {
-            annotationText = query.substring(result.name.length).trim()
+          // Effective description shown in list = toelichting field, or query remainder (e.g. "ongebrande" from "ongebrande hazelnoten" + product "Hazelnoten")
+          const productName = result.name.trim()
+          const productNameLower = productName.toLowerCase()
+          const queryTrimmed = query.trim()
+          const queryLower = queryTrimmed.toLowerCase()
+          let effectiveDesc = description?.trim() || queryAnnotation?.trim() || ''
+          const idx = queryLower.indexOf(productNameLower)
+          if (idx !== -1) {
+            const before = queryTrimmed.slice(0, idx)
+            const after = queryTrimmed.slice(idx + productName.length)
+            const remainder = `${before} ${after}`.replace(/\s+/g, ' ').trim()
+            if (remainder) effectiveDesc = remainder
+          } else if (!effectiveDesc && queryLower.startsWith(productNameLower)) {
+            effectiveDesc = queryTrimmed.substring(result.name.length).trim()
           }
-
-          const showToelichting = index === 0 && description?.trim()
 
           return (
             <button
@@ -151,19 +159,9 @@ export default function InlineSearchDropdown({
                     <p className="font-medium text-gray-900">
                       {result.name}
                     </p>
-                    {result.description && (
+                    {(effectiveDesc || result.description) && (
                       <span className="text-xs text-gray-500 whitespace-nowrap">
-                        {result.description}
-                      </span>
-                    )}
-                    {showToelichting && (
-                      <span className="text-xs text-gray-500 whitespace-nowrap">
-                        {description!.trim()}
-                      </span>
-                    )}
-                    {annotationText && !showToelichting && (
-                      <span className="text-xs text-gray-500 whitespace-nowrap">
-                        {annotationText}
+                        {effectiveDesc || result.description}
                       </span>
                     )}
                   </div>

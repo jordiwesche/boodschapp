@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCurrentUser } from '@/lib/db'
-
 export default function ProfielNaamPage() {
   const router = useRouter()
   const [firstName, setFirstName] = useState('')

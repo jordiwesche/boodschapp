@@ -4,7 +4,7 @@ import "./globals.css";
 import NavigationWrapper from "@/components/NavigationWrapper";
 import Providers from "@/components/Providers";
 import PageTransition from "@/components/PageTransition";
-import ResourceHints from "@/components/ResourceHints";
+import SplashScreen from "@/components/SplashScreen";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,11 +50,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="nl">
+      <head>
+        <link rel="preconnect" href="https://medmrhmuhghcozfydxov.supabase.co" />
+        <link rel="dns-prefetch" href="https://medmrhmuhghcozfydxov.supabase.co" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ResourceHints />
         <Providers>
+          <SplashScreen />
           <PageTransition>
             {children}
           </PageTransition>

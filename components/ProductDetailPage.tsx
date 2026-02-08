@@ -31,6 +31,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [resetting, setResetting] = useState(false)
+  const [showResetConfirmModal, setShowResetConfirmModal] = useState(false)
 
   useEffect(() => {
     fetchProductData()
@@ -67,14 +68,6 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
   }
 
   const handleReset = async () => {
-    const confirmed = confirm(
-      'Weet je zeker dat je de koophistorie wilt resetten? De frequentie wordt vanaf nu opnieuw berekend.'
-    )
-
-    if (!confirmed) {
-      return
-    }
-
     setResetting(true)
     try {
       const response = await fetch(`/api/products/${productId}/purchase-history`, {
@@ -83,14 +76,17 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
 
       if (response.ok) {
         setPurchaseHistory([])
+        setShowResetConfirmModal(false)
         alert('Koophistorie is gereset. De frequentie wordt vanaf nu opnieuw berekend.')
       } else {
         const errorData = await response.json().catch(() => ({}))
         console.error('Error resetting purchase history:', errorData)
+        setShowResetConfirmModal(false)
         alert('Er is een fout opgetreden bij het resetten van de koophistorie.')
       }
     } catch (err) {
       console.error('Error resetting purchase history:', err)
+      setShowResetConfirmModal(false)
       alert('Er is een fout opgetreden bij het resetten van de koophistorie.')
     } finally {
       setResetting(false)
@@ -230,18 +226,6 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
               </p>
             </div>
           </div>
-          {totalPurchases > 0 && (
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={handleReset}
-                disabled={resetting}
-                className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
-              >
-                <RotateCcw className="h-4 w-4" />
-                <span>{resetting ? 'Resetten...' : 'Reset koophistorie'}</span>
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Purchase History List */}
@@ -274,7 +258,50 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
             </div>
           )}
         </div>
+
+        {/* Reset koophistorie – midden onderaan */}
+        {totalPurchases > 0 && (
+          <div className="mt-8 flex justify-center">
+            <button
+              onClick={() => setShowResetConfirmModal(true)}
+              disabled={resetting}
+              className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span>{resetting ? 'Resetten...' : 'Reset koophistorie'}</span>
+            </button>
+          </div>
+        )}
       </main>
+
+      {/* Modal: bevestiging reset koophistorie */}
+      {showResetConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => setShowResetConfirmModal(false)} />
+          <div className="relative rounded-lg bg-white p-4 shadow-lg max-w-sm w-full">
+            <p className="text-gray-900">
+              Weet je zeker dat je de koophistorie wilt resetten? De frequentie wordt vanaf nu opnieuw berekend.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirmModal(false)}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              >
+                Annuleren
+              </button>
+              <button
+                type="button"
+                onClick={() => handleReset()}
+                disabled={resetting}
+                className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+              >
+                {resetting ? 'Resetten...' : 'Resetten'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

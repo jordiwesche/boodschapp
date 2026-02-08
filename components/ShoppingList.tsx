@@ -1,8 +1,25 @@
 'use client'
 
-import { CheckSquare } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import ShoppingListItem from './ShoppingListItem'
 import { isFruit } from '@/lib/fruit-groente'
+
+/** Description is exactly a weekday or abbreviation (case-insensitive) → item goes in "Later" section */
+const LATER_DAY_NAMES = new Set([
+  'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag',
+  'ma', 'di', 'wo', 'do', 'vr', 'za', 'zo',
+])
+const LATER_DAY_ORDER: Record<string, number> = {
+  maandag: 0, ma: 0, dinsdag: 1, di: 1, woensdag: 2, wo: 2, donderdag: 3, do: 3,
+  vrijdag: 4, vr: 4, zaterdag: 5, za: 5, zondag: 6, zo: 6,
+}
+
+function isLaterItem(item: { description: string | null }): boolean {
+  const d = item.description?.trim().toLowerCase()
+  if (!d) return false
+  return LATER_DAY_NAMES.has(d)
+}
 
 interface ShoppingListItemData {
   id: string
@@ -42,8 +59,12 @@ export default function ShoppingList({
   children,
 }: ShoppingListProps) {
   const checkedItemsCount = items.filter((item) => item.is_checked).length
-  // Separate checked and unchecked items
+  const [checkedSectionOpen, setCheckedSectionOpen] = useState(false)
+  const [showClearCheckedModal, setShowClearCheckedModal] = useState(false)
+  // Separate checked and unchecked items; unchecked split into normal vs "Later" (description = weekday)
   const uncheckedItems = items.filter((item) => !item.is_checked)
+  const laterUncheckedItems = uncheckedItems.filter(isLaterItem)
+  const normalUncheckedItems = uncheckedItems.filter((item) => !isLaterItem(item))
   const checkedItems = items.filter((item) => item.is_checked)
 
   // Group all items by category
@@ -129,8 +150,8 @@ export default function ShoppingList({
     )
   }
 
-  // Sort unchecked items by category display_order, then alphabetically
-  const sortedUncheckedItems = uncheckedItems.sort((a, b) => {
+  // Sort normal unchecked items by category display_order, then alphabetically
+  const sortedNormalUnchecked = [...normalUncheckedItems].sort((a, b) => {
     const orderA = a.category?.display_order ?? 999
     const orderB = b.category?.display_order ?? 999
     if (orderA !== orderB) {
@@ -141,8 +162,20 @@ export default function ShoppingList({
     return nameA.localeCompare(nameB, 'nl')
   })
 
+  // Sort "Later" items by day (maandag first) then by product name
+  const sortedLaterUnchecked = [...laterUncheckedItems].sort((a, b) => {
+    const dayA = (a.description?.trim().toLowerCase() ?? '')
+    const dayB = (b.description?.trim().toLowerCase() ?? '')
+    const orderA = LATER_DAY_ORDER[dayA] ?? 99
+    const orderB = LATER_DAY_ORDER[dayB] ?? 99
+    if (orderA !== orderB) return orderA - orderB
+    const nameA = (a.product_name || '').toLowerCase()
+    const nameB = (b.product_name || '').toLowerCase()
+    return nameA.localeCompare(nameB, 'nl')
+  })
+
   // Sort checked items by checked_at (most recent first), then alphabetically
-  const sortedCheckedItems = checkedItems.sort((a, b) => {
+  const sortedCheckedItems = [...checkedItems].sort((a, b) => {
     if (a.checked_at && b.checked_at) {
       return new Date(b.checked_at).getTime() - new Date(a.checked_at).getTime()
     }
@@ -153,8 +186,8 @@ export default function ShoppingList({
     return nameA.localeCompare(nameB, 'nl')
   })
 
-  // Group unchecked items by category for displaying category headers
-  const uncheckedByCategory = sortedUncheckedItems.reduce((acc, item) => {
+  // Group normal unchecked items by category for displaying category headers (later items go in separate section)
+  const uncheckedByCategory = sortedNormalUnchecked.reduce((acc, item) => {
     const categoryId = item.category?.id || 'overig'
     if (!acc[categoryId]) {
       acc[categoryId] = {
@@ -197,7 +230,7 @@ export default function ShoppingList({
           </h2>
           {/* Items in this category */}
           {itemsToRender.map((item) => (
-            <div key={item.id} className="mb-2">
+            <div key={item.id} className="mb-2" data-shopping-list-item>
               <ShoppingListItem
                 item={item}
                 onCheck={onCheck}
@@ -211,14 +244,14 @@ export default function ShoppingList({
         );
       })}
 
-      {/* Checked items - all at the bottom, sorted by checked_at */}
-      {sortedCheckedItems.length > 0 && (
-        <>
+      {/* Later: unchecked items whose description is a weekday (maandag–zondag), below Overig, above Afgevinkt */}
+      {sortedLaterUnchecked.length > 0 && (
+        <div>
           <h2 className="mb-2 mt-4 px-4 text-xs font-medium text-gray-500 tracking-wide">
-            Afgevinkt
+            Later
           </h2>
-          {sortedCheckedItems.map((item) => (
-            <div key={item.id} className="mb-2">
+          {sortedLaterUnchecked.map((item) => (
+            <div key={item.id} className="mb-2" data-shopping-list-item>
               <ShoppingListItem
                 item={item}
                 onCheck={onCheck}
@@ -228,22 +261,83 @@ export default function ShoppingList({
               />
             </div>
           ))}
-        </>
-      )}
-
-      {/* Clear checked items button - centered below checked items */}
-      {checkedItemsCount > 0 && onClearChecked && (
-        <div className="mt-10 flex justify-center">
-          <button
-            onClick={onClearChecked}
-            className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors"
-            aria-label="Wis alle afgevinkte items"
-          >
-            <CheckSquare className="h-4 w-4" />
-            <span>Wis afgevinkte items ({checkedItemsCount})</span>
-          </button>
         </div>
       )}
+
+      {/* Checked items - accordion */}
+      {checkedItemsCount > 0 && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between gap-2 px-4 py-2">
+            <button
+              type="button"
+              onClick={() => setCheckedSectionOpen((open) => !open)}
+              className="flex min-w-0 flex-1 items-center gap-1 text-left text-xs font-medium text-gray-500 tracking-wide"
+              aria-expanded={checkedSectionOpen}
+            >
+              {checkedSectionOpen ? (
+                <ChevronDown className="h-4 w-4 shrink-0" />
+              ) : (
+                <ChevronRight className="h-4 w-4 shrink-0" />
+              )}
+              <span>Afgevinkt ({checkedItemsCount})</span>
+            </button>
+            {onClearChecked && (
+              <button
+                type="button"
+                onClick={() => setShowClearCheckedModal(true)}
+                className="shrink-0 text-xs font-medium text-gray-500 hover:text-gray-700"
+                aria-label="Wis alle afgevinkte items"
+              >
+                Wissen
+              </button>
+            )}
+          </div>
+          {checkedSectionOpen &&
+            sortedCheckedItems.map((item) => (
+              <div key={item.id} className="mb-2">
+                <ShoppingListItem
+                  item={item}
+                  onCheck={onCheck}
+                  onUncheck={onUncheck}
+                  onDelete={onDelete}
+                  onUpdateDescription={onUpdateDescription}
+                />
+              </div>
+            ))}
+        </div>
+      )}
+
+      {/* Modal: bevestiging wissen afgevinkte items */}
+      {showClearCheckedModal && onClearChecked && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => setShowClearCheckedModal(false)} />
+          <div className="relative rounded-lg bg-white p-4 shadow-lg max-w-sm w-full">
+            <p className="text-gray-900">
+              Weet je zeker dat je alle {checkedItemsCount} afgevinkte item{checkedItemsCount !== 1 ? 's' : ''} wilt wissen?
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowClearCheckedModal(false)}
+                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              >
+                Annuleren
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClearChecked()
+                  setShowClearCheckedModal(false)
+                }}
+                className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
+              >
+                Wissen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Klikzone direct onder laatste item (children van parent) */}
       {children}
     </div>

@@ -62,7 +62,15 @@ export function parseProductInput(input: string): {
       }
     }
   } else {
-    // No parentheses, check for quantity patterns
+    // Leading number/quantity: "4 appels" → productName "appels", annotation "4"
+    const leadingQtyMatch = trimmed.match(/^(\d+[xX]?)\s+(.+)$/)
+    if (leadingQtyMatch && leadingQtyMatch[2]?.trim()) {
+      productName = leadingQtyMatch[2].trim()
+      annotationText = leadingQtyMatch[1].trim()
+    }
+
+    if (!annotationText) {
+    // No leading quantity, check for quantity patterns (at end of string)
     for (const pattern of quantityPatterns) {
       const match = trimmed.match(new RegExp(`(.+?)\\s+(${pattern.source})`, 'i'))
       if (match && match[1] && match[2]) {
@@ -110,6 +118,7 @@ export function parseProductInput(input: string): {
         productName = words[0]
         annotationText = words[1]
       }
+    }
     }
   }
 

@@ -61,7 +61,7 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
   return (
     <div 
       onClick={() => onEdit(product)}
-      className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm transition-shadow hover:shadow-md"
+      className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2"
     >
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">

@@ -88,6 +88,17 @@ export default function EmptyListItem({
     if (productName.trim()) return
     const next = e.relatedTarget as Node | null
     if (formRef.current && next && formRef.current.contains(next)) return
+    // Don’t close empty item when focus moved to a list item (e.g. delete button) – that click should delete the item
+    if (next && (next as Element).closest?.('[data-shopping-list-item]')) return
+    // When relatedTarget is null (e.g. some mobile browsers), defer and check activeElement so we don’t close on list-item click
+    if (!next) {
+      requestAnimationFrame(() => {
+        const active = document.activeElement as Element | null
+        if (active?.closest?.('[data-shopping-list-item]')) return
+        onCancel()
+      })
+      return
+    }
     onCancel()
   }
 

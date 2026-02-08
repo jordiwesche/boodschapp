@@ -27,6 +27,7 @@ import { haptic } from '@/lib/haptics'
 import { formatTimeAgo } from '@/lib/format-time-ago'
 import { predictCategoryAndEmoji } from '@/lib/predict-category-emoji'
 import { findCategoryIdByPredictedName } from '@/lib/category-aliases'
+import { parseProductInput } from '@/lib/annotation-parser'
 
 interface SearchResult {
   id: string
@@ -182,12 +183,34 @@ function tokenOverlapRatio(a: string, b: string): number {
   return overlap / Math.max(aTokens.length, bTokens.length)
 }
 
+/** Known Dutch singular ↔ plural pairs (normalized lower case). Checked first so e.g. banaan ↔ bananen always matches. */
+const DUTCH_SINGULAR_PLURAL_PAIRS: [string, string][] = [
+  ['banaan', 'bananen'],
+  ['appel', 'appels'],
+  ['peer', 'peren'],
+  ['sinaasappel', 'sinaasappelen'],
+  ['citroen', 'citroenen'],
+  ['tomaat', 'tomaten'],
+  ['aardappel', 'aardappelen'],
+  ['ui', 'uien'],
+  ['komkommer', 'komkommers'],
+]
+
+function isKnownSingularPluralPair(q: string, c: string): boolean {
+  if (q === c) return true
+  for (const [a, b] of DUTCH_SINGULAR_PLURAL_PAIRS) {
+    if ((q === a && c === b) || (q === b && c === a)) return true
+  }
+  return false
+}
+
 /** True if query and name are exact match (normalized) or Dutch singular/plural (banaan/bananen, appel/appels). */
 function isExactOrSingularPluralMatch(query: string, name: string): boolean {
   const q = normalizeForMatch(query)
   const c = normalizeForMatch(name)
   if (q === c) return true
   if (q.length < 2 || c.length < 2) return false
+  if (isKnownSingularPluralPair(q, c)) return true
   if (q + 's' === c || c + 's' === q) return true
   if (c.endsWith('en') && c.length >= 4) {
     const stemC = c.slice(0, -2)
@@ -223,10 +246,11 @@ function isAcceptableMatch(query: string, candidateName: string, score?: number 
   // Exact match always acceptable
   if (q === c) return true
 
-  // Dutch singular/plural
+  // Dutch singular/plural: first known pairs (banaan ↔ bananen etc.), then -s/-en rules
   if (q.length >= 2 && c.length >= 2) {
+    if (isKnownSingularPluralPair(q, c)) return true
     if (q + 's' === c || c + 's' === q) return true // appel ↔ appels
-    // -en plural: bananen → stem "banan", singular "banaan" (stem + last consonant or vowel)
+    // -en plural: bananen → stem "banan", singular "banaan" (stem + one char)
     if (c.endsWith('en') && c.length >= 4) {
       const stemC = c.slice(0, -2)
       if (q === stemC || (q.startsWith(stemC) && q.length === stemC.length + 1)) return true
@@ -384,17 +408,19 @@ export default function ShoppingListPage() {
     }
   }
 
-  // Open Save Product modal (actie 3) – pre-fill name, category, emoji from prediction (not search)
+  // Open Save Product modal (actie 3) – pre-fill name, category, emoji; parse e.g. "4 appels" → name "appels", description "4"
   const handleOpenSaveProductModal = async (productName: string, description: string | null) => {
     if (!productName.trim()) return
     haptic('light')
-    const name = productName.trim()
+    const parsed = parseProductInput(productName.trim())
+    const name = parsed.productName || productName.trim()
+    const effectiveDesc = description?.trim() || (parsed.annotation?.fullText ?? null)
     const prediction = predictCategoryAndEmoji(name)
     const predictedCategoryName = prediction.categoryName
     const predictedEmoji = prediction.emoji
 
     setSaveProductModalName(name)
-    setSaveProductModalDescription(description)
+    setSaveProductModalDescription(effectiveDesc)
     setSaveProductModalCategoryId('')
     setSaveProductModalEmoji(predictedEmoji)
     setSaveProductModalError(null)
@@ -531,6 +557,8 @@ export default function ShoppingListPage() {
       const el = emptyItemContainerRef.current
       if (!el) return
       const target = e.target as Node
+      // Don't close when clicking on a list item (e.g. delete button) – that should delete the item, not close empty row
+      if ((target as Element).closest?.('[data-shopping-list-item]')) return
       if (!el.contains(target)) {
         emptyItemJustClosedRef.current = true
         handleCloseEmptyItem()
@@ -803,7 +831,9 @@ export default function ShoppingListPage() {
       return
     }
     haptic('light')
-    const name = productName.trim()
+    const parsed = parseProductInput(productName.trim())
+    const name = parsed.productName || productName.trim()
+    const effectiveDesc = description?.trim() || (parsed.annotation?.fullText ?? null) || null
     const tempId = `temp-${Date.now()}`
     const optimisticItem = {
       id: tempId,
@@ -811,7 +841,7 @@ export default function ShoppingListPage() {
       product_name: name,
       emoji: '📦',
       quantity: '1',
-      description: description,
+      description: effectiveDesc,
       category_id: '',
       category: null,
       is_checked: false,
@@ -844,7 +874,7 @@ export default function ShoppingListPage() {
           product_name: name,
           category_id: overigCategory.id,
           quantity: '1',
-          description: description,
+          description: effectiveDesc,
         }),
       })
       if (addResponse.ok) {
@@ -873,10 +903,28 @@ export default function ShoppingListPage() {
     }
   }
 
-  // Handle search result select from dropdown (query = product name; description from toelichting field)
-  const handleEmptyItemResultSelect = async (result: SearchResult, _query: string) => {
+  // Handle search result select from dropdown: keep description from toelichting, result, parsed query, or query remainder (e.g. "ongebrande hazelnoten" → product Hazelnoten, description "ongebrande")
+  const handleEmptyItemResultSelect = async (result: SearchResult, query: string) => {
     haptic('light')
-    const annotationText = emptyItemDescription.trim() || null
+    const fromToelichting = emptyItemDescription.trim() || null
+    const fromResult = result.description?.trim() || null
+    const parsed = parseProductInput(query.trim())
+    const fromParsedQuery = parsed.annotation?.fullText?.trim() || null
+    const q = query.trim()
+    const productName = result.name.trim()
+    const productLower = productName.toLowerCase()
+    const qLower = q.toLowerCase()
+    let queryRemainder: string | null = null
+    const idx = qLower.indexOf(productLower)
+    if (idx !== -1) {
+      const before = q.slice(0, idx)
+      const after = q.slice(idx + productName.length)
+      queryRemainder = `${before} ${after}`.replace(/\s+/g, ' ').trim() || null
+    }
+    if (!queryRemainder && qLower.endsWith(productLower) && q.length > productName.length) {
+      queryRemainder = q.slice(0, q.length - productName.length).trim() || null
+    }
+    const effectiveDescription = fromToelichting || fromResult || fromParsedQuery || queryRemainder
 
     // Get category
     let categoryId = result.category?.id
@@ -902,7 +950,7 @@ export default function ShoppingListPage() {
       product_name: result.name,
       emoji: result.emoji,
       quantity: '1',
-      description: annotationText || null,
+      description: effectiveDescription || null,
       category_id: categoryId,
       category: result.category,
       is_checked: false,
@@ -925,7 +973,7 @@ export default function ShoppingListPage() {
         product_id: result.id,
         category_id: categoryId,
         quantity: '1',
-        description: annotationText,
+        description: effectiveDescription,
       }
 
       const response = await fetch('/api/shopping-list', {
@@ -1241,6 +1289,7 @@ export default function ShoppingListPage() {
                       results={emptyItemSearchResults}
                       query={emptyItemQuery}
                       description={emptyItemDescription}
+                      queryAnnotation={parseProductInput(emptyItemQuery).annotation?.fullText ?? null}
                       matchLevel={
                         emptyItemSearchResults.length === 0
                           ? 3

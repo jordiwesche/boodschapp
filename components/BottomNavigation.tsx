@@ -5,12 +5,19 @@ import { ShoppingCart, Calendar, User } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { haptic } from '@/lib/haptics'
 
-export default function BottomNavigation() {
+type TabPath = '/' | '/weekmenu' | '/profiel'
+
+export default function BottomNavigation({
+  onTabChange,
+}: {
+  /** When set, tab click calls this instead of router.push (instant tab switch). */
+  onTabChange?: (path: TabPath) => void
+}) {
   const pathname = usePathname()
   const router = useRouter()
   const prevPathnameRef = useRef(pathname)
 
-  const navItems = [
+  const navItems: { label: string; icon: typeof ShoppingCart; path: TabPath }[] = [
     {
       label: 'Lijst',
       icon: ShoppingCart,
@@ -66,12 +73,13 @@ export default function BottomNavigation() {
               key={item.path}
               onClick={() => {
                 haptic('light')
-                router.push(item.path)
+                if (onTabChange) {
+                  onTabChange(item.path)
+                } else {
+                  router.push(item.path)
+                }
               }}
-              onMouseEnter={() => {
-                // Prefetch route on hover
-                router.prefetch(item.path)
-              }}
+              onMouseEnter={() => router.prefetch(item.path)}
               data-nav-active={active}
               className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 rounded-lg px-3 py-2 transition-colors ${
                 active
