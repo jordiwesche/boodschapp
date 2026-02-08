@@ -314,6 +314,7 @@ export default function ShoppingListPage() {
   const [emptyItemQuery, setEmptyItemQuery] = useState('')
   const [emptyItemDescription, setEmptyItemDescription] = useState('')
   const [emptyItemSearchResults, setEmptyItemSearchResults] = useState<SearchResult[]>([])
+  const [highlightedResultIndex, setHighlightedResultIndex] = useState(0)
   const [isSearchingEmptyItem, setIsSearchingEmptyItem] = useState(false)
   const [showEmptyItemDropdown, setShowEmptyItemDropdown] = useState(false)
   const [emptyItemKey, setEmptyItemKey] = useState(0) // Key to force remount for focus
@@ -396,6 +397,11 @@ export default function ShoppingListPage() {
       }
     })
   }
+
+  // Reset highlighted index when search results change
+  useEffect(() => {
+    setHighlightedResultIndex(0)
+  }, [emptyItemSearchResults])
 
   const handleCloseEmptyItem = () => {
     setIsEmptyItemOpen(false)
@@ -1005,6 +1011,45 @@ export default function ShoppingListPage() {
     }
   }
 
+  // Arrow-key navigation for search results and action buttons (desktop)
+  const handleEmptyItemProductKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const matchLevel =
+      emptyItemSearchResults.length === 0 ? 3 : getMatchLevel(emptyItemQuery, emptyItemSearchResults)
+    const totalItems =
+      matchLevel === 3 ? 2 : matchLevel === 2 ? emptyItemSearchResults.length + 2 : emptyItemSearchResults.length
+    const canNavigate = showEmptyItemDropdown && emptyItemQuery.trim().length >= 2 && totalItems > 0
+    if (!canNavigate) return false
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlightedResultIndex((prev) => (prev + 1) % totalItems)
+      return true
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlightedResultIndex((prev) => (prev - 1 + totalItems) % totalItems)
+      return true
+    }
+    if (e.key === 'Enter') {
+      const idx = highlightedResultIndex
+      if (idx < 0 || idx >= totalItems) return false
+      e.preventDefault()
+      if (matchLevel === 3) {
+        if (idx === 0) handleAddToListOnly(emptyItemQuery.trim(), emptyItemDescription.trim() || null)
+        else handleOpenSaveProductModal(emptyItemQuery.trim(), emptyItemDescription.trim() || null)
+      } else if (matchLevel === 2) {
+        const n = emptyItemSearchResults.length
+        if (idx < n) handleEmptyItemResultSelect(emptyItemSearchResults[idx], emptyItemQuery.trim())
+        else if (idx === n) handleAddToListOnly(emptyItemQuery.trim(), emptyItemDescription.trim() || null)
+        else handleOpenSaveProductModal(emptyItemQuery.trim(), emptyItemDescription.trim() || null)
+      } else {
+        handleEmptyItemResultSelect(emptyItemSearchResults[idx], emptyItemQuery.trim())
+      }
+      return true
+    }
+    return false
+  }
+
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
@@ -1276,6 +1321,7 @@ export default function ShoppingListPage() {
                     }}
                     autoFocus={shouldFocusEmptyItem}
                     onFocusComplete={() => setShouldFocusEmptyItem(false)}
+                    onProductKeyDown={handleEmptyItemProductKeyDown}
                   />
                   {/* Inline search dropdown */}
                   {showEmptyItemDropdown && emptyItemQuery.trim().length >= 2 && (
@@ -1291,6 +1337,7 @@ export default function ShoppingListPage() {
                       }
                       isVisible={true}
                       isSearching={isSearchingEmptyItem}
+                      highlightedIndex={highlightedResultIndex}
                       onSelect={handleEmptyItemResultSelect}
                       onAddToListOnly={handleAddToListOnly}
                       onAddToListAndSaveProduct={handleOpenSaveProductModal}

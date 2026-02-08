@@ -12,6 +12,8 @@ interface EmptyListItemProps {
   onCancel: () => void
   autoFocus?: boolean
   onFocusComplete?: () => void
+  /** When returns true, default key handling (Enter, Escape) is skipped */
+  onProductKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => boolean | void
 }
 
 export default function EmptyListItem({
@@ -23,6 +25,7 @@ export default function EmptyListItem({
   onCancel,
   autoFocus = true,
   onFocusComplete,
+  onProductKeyDown,
 }: EmptyListItemProps) {
   const productInputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -75,6 +78,7 @@ export default function EmptyListItem({
   }
 
   const handleProductKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (onProductKeyDown?.(e)) return
     if (e.key === 'Enter') {
       e.preventDefault()
       handleSubmit()

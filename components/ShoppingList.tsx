@@ -233,9 +233,9 @@ export default function ShoppingList({
           : categoryGroup.items
 
         return (
-        <div key={categoryGroup.category?.id || 'overig'}>
+        <div key={categoryGroup.category?.id || 'overig'} className="mb-2">
           {/* Category header */}
-          <h2 className={`mb-2 px-4 text-xs font-medium text-gray-500 tracking-wide ${index === 0 ? 'mt-0' : 'mt-2'}`}>
+          <h2 className={`mb-3 px-4 text-xs font-medium text-gray-500 tracking-wide ${index === 0 ? 'mt-0' : 'mt-2'}`}>
             {categoryGroup.category?.name || 'Overig'}
           </h2>
           {/* Items in this category */}
@@ -257,7 +257,7 @@ export default function ShoppingList({
       {/* Checked items - accordion */}
       {checkedItemsCount > 0 && (
         <div className="mb-4 border-b border-gray-200">
-          <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-200 pl-4 pr-4 pt-6 pb-6">
+          <div className="mt-4 mb-0 flex items-center justify-between gap-2 border-t border-gray-200 pl-4 pr-4 pt-6 pb-6">
             <button
               type="button"
               onClick={() => setCheckedSectionOpen((open) => !open)}
@@ -300,7 +300,7 @@ export default function ShoppingList({
       {/* Later: unchecked items whose description contains a standalone day token (ma/di/wo/do/vr/za/zo or (wo)) or "later", below Afgevinkt */}
       {sortedLaterUnchecked.length > 0 && (
         <div className="mt-2">
-          <h2 className="mb-2 px-4 text-xs font-medium text-gray-500 tracking-wide flex items-center gap-1.5">
+          <h2 className="mb-3 px-4 text-xs font-medium text-gray-500 tracking-wide flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" />
             Later
           </h2>

@@ -26,6 +26,8 @@ interface InlineSearchDropdownProps {
   matchLevel: MatchLevel
   isVisible: boolean
   isSearching: boolean
+  /** Index of result highlighted by keyboard navigation (arrow keys) */
+  highlightedIndex?: number
   onSelect: (result: SearchResult, query: string) => void
   onAddToListOnly: (productName: string, description: string | null) => void
   onAddToListAndSaveProduct: (productName: string, description: string | null) => void
@@ -34,29 +36,41 @@ interface InlineSearchDropdownProps {
 function ActionButtons({
   q,
   desc,
-  showEnterOnFirstButton,
+  addToListOnlyIndex,
+  addAndSaveIndex,
+  highlightedIndex,
   onAddToListOnly,
   onAddToListAndSaveProduct,
 }: {
   q: string
   desc: string | null
-  showEnterOnFirstButton?: boolean
+  /** Index of "Zet op lijst" in the full dropdown item list */
+  addToListOnlyIndex: number
+  /** Index of "Zet op lijst en voeg toe" in the full dropdown item list */
+  addAndSaveIndex: number
+  highlightedIndex: number
   onAddToListOnly: (productName: string, description: string | null) => void
   onAddToListAndSaveProduct: (productName: string, description: string | null) => void
 }) {
+  const isAddToListHighlighted = highlightedIndex === addToListOnlyIndex
+  const isAddAndSaveHighlighted = highlightedIndex === addAndSaveIndex
+  const highlightClasses = 'bg-blue-50 hover:bg-blue-100'
+  const defaultClasses = 'hover:bg-gray-50'
   return (
-    <div className="space-y-3">
+    <div className="divide-y divide-gray-100">
       <button
         onMouseDown={(e) => {
           e.preventDefault()
           e.stopPropagation()
           onAddToListOnly(q, desc)
         }}
-        className="flex w-full items-center gap-2 text-left text-sm font-medium text-gray-700 hover:text-gray-900 py-3"
+        className={`flex w-full items-center gap-2 text-left text-sm font-medium text-gray-900 py-3 px-4 transition-colors ${
+          isAddToListHighlighted ? highlightClasses : defaultClasses
+        }`}
       >
         <ListPlus className="h-4 w-4 shrink-0 text-gray-500" />
         <span className="flex-1">Zet &quot;{q}&quot; op de lijst</span>
-        {showEnterOnFirstButton !== false && (
+        {isAddToListHighlighted && (
           <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
             <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
             Enter
@@ -69,10 +83,18 @@ function ActionButtons({
           e.stopPropagation()
           onAddToListAndSaveProduct(q, desc)
         }}
-        className="flex w-full items-center gap-2 text-left text-sm font-medium text-blue-600 hover:text-blue-700 py-3"
+        className={`flex w-full items-center gap-2 text-left text-sm font-medium py-3 px-4 transition-colors ${
+          isAddAndSaveHighlighted ? `${highlightClasses} text-blue-700` : `${defaultClasses} text-blue-600 hover:text-blue-700`
+        }`}
       >
-        <Database className="h-4 w-4 shrink-0" />
-        Zet &quot;{q}&quot; op de lijst en voeg toe aan producten
+        <Database className="h-4 w-4 shrink-0 text-gray-500" />
+        <span className="flex-1">Zet &quot;{q}&quot; op de lijst en voeg toe aan producten</span>
+        {isAddAndSaveHighlighted && (
+          <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
+            <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
+            Enter
+          </span>
+        )}
       </button>
     </div>
   )
@@ -86,6 +108,7 @@ export default function InlineSearchDropdown({
   matchLevel,
   isVisible,
   isSearching,
+  highlightedIndex = 0,
   onSelect,
   onAddToListOnly,
   onAddToListAndSaveProduct,
@@ -107,11 +130,13 @@ export default function InlineSearchDropdown({
 
   if (matchLevel === 3) {
     return (
-      <div className="mb-2 rounded-2xl bg-white p-4 shadow-lg">
+      <div className="mb-2 rounded-2xl bg-white shadow-lg overflow-hidden">
         <ActionButtons
           q={q}
           desc={desc}
-          showEnterOnFirstButton={true}
+          addToListOnlyIndex={0}
+          addAndSaveIndex={1}
+          highlightedIndex={highlightedIndex}
           onAddToListOnly={onAddToListOnly}
           onAddToListAndSaveProduct={onAddToListAndSaveProduct}
         />
@@ -138,7 +163,9 @@ export default function InlineSearchDropdown({
                 e.stopPropagation()
                 onSelect(result, query)
               }}
-              className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+              className={`w-full px-4 py-3 text-left transition-colors ${
+                index === highlightedIndex ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'
+              }`}
             >
               <div className="flex items-center gap-3 w-full">
                 <span className="text-lg shrink-0">{result.emoji}</span>
@@ -159,7 +186,7 @@ export default function InlineSearchDropdown({
                     </p>
                   )}
                 </div>
-                {index === 0 && (
+                {index === highlightedIndex && (
                   <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
                     <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
                     Enter
@@ -172,11 +199,13 @@ export default function InlineSearchDropdown({
         </div>
       )}
       {showActionButtons && (
-        <div className="p-4 border-t border-gray-100">
+        <div className="border-t border-gray-100">
           <ActionButtons
             q={q}
             desc={desc}
-            showEnterOnFirstButton={false}
+            addToListOnlyIndex={results.length}
+            addAndSaveIndex={results.length + 1}
+            highlightedIndex={highlightedIndex}
             onAddToListOnly={onAddToListOnly}
             onAddToListAndSaveProduct={onAddToListAndSaveProduct}
           />
