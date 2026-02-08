@@ -176,8 +176,8 @@ export default function ShoppingList({
   const sortedLaterUnchecked = [...laterUncheckedItems].sort((a, b) => {
     const dayA = getLaterDayFromDescription(a.description)
     const dayB = getLaterDayFromDescription(b.description)
-    const orderA = (dayA && LATER_DAY_ORDER[dayA]) ?? 99
-    const orderB = (dayB && LATER_DAY_ORDER[dayB]) ?? 99
+    const orderA = Number((dayA && LATER_DAY_ORDER[dayA]) ?? 99)
+    const orderB = Number((dayB && LATER_DAY_ORDER[dayB]) ?? 99)
     if (orderA !== orderB) return orderA - orderB
     const nameA = (a.product_name || '').toLowerCase()
     const nameB = (b.product_name || '').toLowerCase()
