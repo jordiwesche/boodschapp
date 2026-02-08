@@ -25,8 +25,8 @@ export const metadata: Metadata = {
   description: "Samen boodschappen doen met je huishouden",
   manifest: "/manifest.json",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f9fafb" },
-    { media: "(prefers-color-scheme: dark)", color: "#f9fafb" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#ffffff" },
   ],
   appleWebApp: {
     capable: true,
