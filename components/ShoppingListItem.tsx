@@ -167,6 +167,10 @@ export default function ShoppingListItem({
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (showSubmenu) {
+      setShowSubmenu(false)
+      return
+    }
     if (longPressJustTriggeredRef.current) {
       longPressJustTriggeredRef.current = false
       return
@@ -211,6 +215,14 @@ export default function ShoppingListItem({
         }`}
         style={{ WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
         onContextMenu={(e) => e.preventDefault()}
+        onClick={(e) => {
+          if (!showSubmenu) return
+          const target = e.target as Node
+          if (checkboxRef.current?.contains(target) || submenuRef.current?.contains(target)) return
+          e.preventDefault()
+          e.stopPropagation()
+          setShowSubmenu(false)
+        }}
         onTouchStart={(e) => startLongPress(e.touches[0].clientY)}
         onTouchMove={handleTouchMove}
         onTouchEnd={clearLongPress}
