@@ -63,6 +63,32 @@ function queryTokens(query: string): string[] {
     .filter((t) => t.length > 0)
 }
 
+/**
+ * Returns the part of the query that is not the product name (description).
+ * E.g. "2 grote zakken spinazie" + "Spinazie" → "2 grote zakken"
+ * Handles product name or its singular/plural form anywhere in the query.
+ */
+export function getQueryRemainderAsDescription(query: string, productName: string): string | null {
+  const q = query.trim()
+  const name = productName.trim()
+  if (!q || !name) return null
+  const qLower = q.toLowerCase()
+  const nameLower = name.toLowerCase()
+  // Try exact product name first
+  let idx = qLower.indexOf(nameLower)
+  let removeLength = name.length
+  if (idx === -1 && DUTCH_SINGULAR_PLURAL[nameLower]) {
+    const alt = DUTCH_SINGULAR_PLURAL[nameLower]
+    idx = qLower.indexOf(alt)
+    if (idx !== -1) removeLength = alt.length
+  }
+  if (idx === -1) return null
+  const before = q.slice(0, idx)
+  const after = q.slice(idx + removeLength)
+  const remainder = `${before} ${after}`.replace(/\s+/g, ' ').trim()
+  return remainder || null
+}
+
 /** Searchable text: name + description, normalized */
 function searchableText(product: Product): string {
   const name = normalizeForTokens(product.name || '')
@@ -112,8 +138,13 @@ export function searchProductsWithScores(
 
     if (wordsMatched === 0) continue
 
-    // First query word must match product name; otherwise push to end of results
-    const firstWordInName = firstToken ? tokenMatchesName(firstToken, nameNorm) : true
+    // No penalty when: first word matches product name, OR query contains product name (e.g. "2 grote zakken spinazie" → Spinazie)
+    const queryNorm = normalizeForTokens(trimmed)
+    const nameOrPluralInQuery =
+      nameNorm.length >= 2 &&
+      (queryNorm.includes(nameNorm) ||
+        (DUTCH_SINGULAR_PLURAL[nameNorm] && queryNorm.includes(DUTCH_SINGULAR_PLURAL[nameNorm])))
+    const firstWordInName = firstToken ? (tokenMatchesName(firstToken, nameNorm) || nameOrPluralInQuery) : true
     const penalty = firstWordInName ? 0 : FIRST_WORD_NOT_IN_NAME_PENALTY
 
     // Score: lower = better. Prefer more tokens matched, then all in name.

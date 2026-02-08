@@ -4,13 +4,42 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import LogoutButton from './LogoutButton'
 
+type ProfileCache = {
+  user: { first_name: string } | null
+  householdName: string
+}
+
+let profileCache: ProfileCache | null = null
+
+export async function prefetchProfile(): Promise<void> {
+  try {
+    const [userRes, householdRes] = await Promise.all([
+      fetch('/api/user/current'),
+      fetch('/api/household/current'),
+    ])
+    const user = userRes.ok ? await userRes.json() : null
+    const householdName = householdRes.ok
+      ? (await householdRes.json()).name || 'Geen huishouden'
+      : 'Geen huishouden'
+    profileCache = { user, householdName }
+  } catch {
+    // ignore
+  }
+}
+
 export default function ProfielTabContent() {
-  const [user, setUser] = useState<{ first_name: string } | null>(null)
-  const [householdName, setHouseholdName] = useState<string>('Laden...')
+  const [user, setUser] = useState<{ first_name: string } | null>(() => profileCache?.user ?? null)
+  const [householdName, setHouseholdName] = useState<string>(
+    () => profileCache?.householdName ?? 'Laden...'
+  )
 
   useEffect(() => {
-    let cancelled = false
+    if (profileCache) {
+      setUser(profileCache.user)
+      setHouseholdName(profileCache.householdName)
+    }
 
+    let cancelled = false
     async function load() {
       try {
         const [userRes, householdRes] = await Promise.all([
@@ -18,16 +47,18 @@ export default function ProfielTabContent() {
           fetch('/api/household/current'),
         ])
         if (cancelled) return
+        let userData: { first_name: string } | null = null
+        let name = 'Geen huishouden'
         if (userRes.ok) {
-          const data = await userRes.json()
-          setUser(data)
+          userData = await userRes.json()
+          setUser(userData)
         }
         if (householdRes.ok) {
           const data = await householdRes.json()
-          setHouseholdName(data.name || 'Geen huishouden')
-        } else {
-          setHouseholdName('Geen huishouden')
+          name = data.name || 'Geen huishouden'
         }
+        setHouseholdName(name)
+        profileCache = { user: userData ?? profileCache?.user ?? null, householdName: name }
       } catch {
         if (!cancelled) setHouseholdName('Geen huishouden')
       }

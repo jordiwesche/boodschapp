@@ -14,6 +14,22 @@ interface WeekmenuDayRow {
   link_title: string | null
 }
 
+/** Cache van het laatst geladen weekmenu: direct tonen bij opnieuw openen, geen skeleton. */
+let weekmenuCache: WeekmenuDayRow[] | null = null
+
+/** Prefetch weekmenu (bv. bij app-load) zodat de pagina direct data heeft. */
+export async function prefetchWeekmenu(): Promise<void> {
+  try {
+    const res = await fetch('/api/weekmenu')
+    if (!res.ok) return
+    const data = await res.json()
+    const list = (data.days ?? []) as WeekmenuDayRow[]
+    if (list.length) weekmenuCache = list
+  } catch {
+    // ignore
+  }
+}
+
 function linkDisplayText(day: WeekmenuDayRow): string {
   if (day.link_title?.trim()) return day.link_title.trim()
   try {
@@ -130,6 +146,7 @@ export default function WeekmenuPage() {
     if (!res.ok) return
     const data = await res.json()
     const list = (data.days ?? []) as WeekmenuDayRow[]
+    weekmenuCache = list
     setDays(list)
     setLocalText((prev) => {
       const next = { ...prev }
@@ -141,6 +158,17 @@ export default function WeekmenuPage() {
   }, [])
 
   useEffect(() => {
+    if (weekmenuCache?.length) {
+      setDays(weekmenuCache)
+      setLocalText((prev) => {
+        const next = { ...prev }
+        weekmenuCache!.forEach((d) => {
+          next[d.day_of_week] = d.menu_text ?? ''
+        })
+        return next
+      })
+      setLoading(false)
+    }
     let cancelled = false
     const run = async () => {
       await fetchDays()

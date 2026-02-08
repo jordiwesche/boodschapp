@@ -1,24 +1,34 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock } from 'lucide-react'
 import ShoppingListItem from './ShoppingListItem'
 import { isFruit } from '@/lib/fruit-groente'
 
-/** Description is exactly a weekday or abbreviation (case-insensitive) → item goes in "Later" section */
-const LATER_DAY_NAMES = new Set([
-  'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag',
-  'ma', 'di', 'wo', 'do', 'vr', 'za', 'zo',
-])
+/** Day tokens or "later" (standalone or in parentheses) in description → item goes in "Later" section. Not inside a word (e.g. "woord" does not match "wo"). */
 const LATER_DAY_ORDER: Record<string, number> = {
   maandag: 0, ma: 0, dinsdag: 1, di: 1, woensdag: 2, wo: 2, donderdag: 3, do: 3,
   vrijdag: 4, vr: 4, zaterdag: 5, za: 5, zondag: 6, zo: 6,
+  later: 99, // no specific day → sort at end of Later section
+}
+// Match standalone token: at start, after whitespace, or inside ( ). "later" + day names (longer first so "ma" doesn't match inside "maandag").
+const LATER_DAY_PATTERN = /(?:^|[\s(])(later|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag|ma|di|wo|do|vr|za|zo)(?:$|[\s)])/i
+
+function hasLaterDayToken(description: string | null): boolean {
+  const d = description?.trim()
+  if (!d) return false
+  return LATER_DAY_PATTERN.test(d)
+}
+
+function getLaterDayFromDescription(description: string | null): string | null {
+  const d = description?.trim()
+  if (!d) return null
+  const m = d.match(LATER_DAY_PATTERN)
+  return m ? m[1].toLowerCase() : null
 }
 
 function isLaterItem(item: { description: string | null }): boolean {
-  const d = item.description?.trim().toLowerCase()
-  if (!d) return false
-  return LATER_DAY_NAMES.has(d)
+  return hasLaterDayToken(item.description)
 }
 
 interface ShoppingListItemData {
@@ -162,12 +172,12 @@ export default function ShoppingList({
     return nameA.localeCompare(nameB, 'nl')
   })
 
-  // Sort "Later" items by day (maandag first) then by product name
+  // Sort "Later" items by day token in description (ma first) then by product name
   const sortedLaterUnchecked = [...laterUncheckedItems].sort((a, b) => {
-    const dayA = (a.description?.trim().toLowerCase() ?? '')
-    const dayB = (b.description?.trim().toLowerCase() ?? '')
-    const orderA = LATER_DAY_ORDER[dayA] ?? 99
-    const orderB = LATER_DAY_ORDER[dayB] ?? 99
+    const dayA = getLaterDayFromDescription(a.description)
+    const dayB = getLaterDayFromDescription(b.description)
+    const orderA = (dayA && LATER_DAY_ORDER[dayA]) ?? 99
+    const orderB = (dayB && LATER_DAY_ORDER[dayB]) ?? 99
     if (orderA !== orderB) return orderA - orderB
     const nameA = (a.product_name || '').toLowerCase()
     const nameB = (b.product_name || '').toLowerCase()
@@ -225,7 +235,7 @@ export default function ShoppingList({
         return (
         <div key={categoryGroup.category?.id || 'overig'}>
           {/* Category header */}
-          <h2 className={`mb-2 px-4 text-xs font-medium text-gray-500 tracking-wide ${index === 0 ? 'mt-0' : 'mt-4'}`}>
+          <h2 className={`mb-2 px-4 text-xs font-medium text-gray-500 tracking-wide ${index === 0 ? 'mt-0' : 'mt-2'}`}>
             {categoryGroup.category?.name || 'Overig'}
           </h2>
           {/* Items in this category */}
@@ -244,30 +254,10 @@ export default function ShoppingList({
         );
       })}
 
-      {/* Later: unchecked items whose description is a weekday (maandag–zondag), below Overig, above Afgevinkt */}
-      {sortedLaterUnchecked.length > 0 && (
-        <div>
-          <h2 className="mb-2 mt-4 px-4 text-xs font-medium text-gray-500 tracking-wide">
-            Later
-          </h2>
-          {sortedLaterUnchecked.map((item) => (
-            <div key={item.id} className="mb-2" data-shopping-list-item>
-              <ShoppingListItem
-                item={item}
-                onCheck={onCheck}
-                onUncheck={onUncheck}
-                onDelete={onDelete}
-                onUpdateDescription={onUpdateDescription}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Checked items - accordion */}
       {checkedItemsCount > 0 && (
-        <div className="mt-4">
-          <div className="flex items-center justify-between gap-2 px-4 py-2">
+        <div className="mb-4 border-b border-gray-200">
+          <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-200 pl-4 pr-4 pt-6 pb-6">
             <button
               type="button"
               onClick={() => setCheckedSectionOpen((open) => !open)}
@@ -304,6 +294,27 @@ export default function ShoppingList({
                 />
               </div>
             ))}
+        </div>
+      )}
+
+      {/* Later: unchecked items whose description contains a standalone day token (ma/di/wo/do/vr/za/zo or (wo)) or "later", below Afgevinkt */}
+      {sortedLaterUnchecked.length > 0 && (
+        <div className="mt-2">
+          <h2 className="mb-2 px-4 text-xs font-medium text-gray-500 tracking-wide flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+            Later
+          </h2>
+          {sortedLaterUnchecked.map((item) => (
+            <div key={item.id} className="mb-2" data-shopping-list-item>
+              <ShoppingListItem
+                item={item}
+                onCheck={onCheck}
+                onUncheck={onUncheck}
+                onDelete={onDelete}
+                onUpdateDescription={onUpdateDescription}
+              />
+            </div>
+          ))}
         </div>
       )}
 

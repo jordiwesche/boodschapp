@@ -28,6 +28,7 @@ import { formatTimeAgo } from '@/lib/format-time-ago'
 import { predictCategoryAndEmoji } from '@/lib/predict-category-emoji'
 import { findCategoryIdByPredictedName } from '@/lib/category-aliases'
 import { parseProductInput } from '@/lib/annotation-parser'
+import { getQueryRemainderAsDescription } from '@/lib/search'
 
 interface SearchResult {
   id: string
@@ -235,6 +236,11 @@ function getMatchLevel(query: string, results: SearchResult[]): 1 | 2 | 3 {
 
   if (typeof score === 'number' && score <= 0.35) return 2
   if (overlap >= 0.5) return 2
+
+  // Query contains product name (e.g. "grote zak spinazie" → Spinazie): show results
+  const qNorm = normalizeForMatch(query)
+  const nameNorm = normalizeForMatch(best.name)
+  if (nameNorm.length >= 2 && qNorm.includes(nameNorm)) return 2
 
   return 3
 }
@@ -910,21 +916,9 @@ export default function ShoppingListPage() {
     const fromResult = result.description?.trim() || null
     const parsed = parseProductInput(query.trim())
     const fromParsedQuery = parsed.annotation?.fullText?.trim() || null
-    const q = query.trim()
-    const productName = result.name.trim()
-    const productLower = productName.toLowerCase()
-    const qLower = q.toLowerCase()
-    let queryRemainder: string | null = null
-    const idx = qLower.indexOf(productLower)
-    if (idx !== -1) {
-      const before = q.slice(0, idx)
-      const after = q.slice(idx + productName.length)
-      queryRemainder = `${before} ${after}`.replace(/\s+/g, ' ').trim() || null
-    }
-    if (!queryRemainder && qLower.endsWith(productLower) && q.length > productName.length) {
-      queryRemainder = q.slice(0, q.length - productName.length).trim() || null
-    }
-    const effectiveDescription = fromToelichting || fromResult || fromParsedQuery || queryRemainder
+    const queryRemainder = getQueryRemainderAsDescription(query.trim(), result.name)
+    // Prefer query remainder (all words around product name) over annotation parser so e.g. "2 liter halfvolle melk" → "2 liter"
+    const effectiveDescription = fromToelichting || fromResult || queryRemainder || fromParsedQuery
 
     // Get category
     let categoryId = result.category?.id

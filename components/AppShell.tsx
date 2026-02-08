@@ -7,6 +7,8 @@ import BottomNavigation from './BottomNavigation'
 import ShoppingListPage from './ShoppingListPage'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/hooks/use-shopping-list'
+import { prefetchWeekmenu } from '@/components/WeekmenuPage'
+import { prefetchProfile } from '@/components/ProfielTabContent'
 
 const WeekmenuPage = dynamic(() => import('@/components/WeekmenuPage'), {
   loading: () => (
@@ -49,9 +51,11 @@ export default function AppShell({ initialTab }: { initialTab: TabId }) {
     if (tab) setActiveTab(tab)
   }, [pathname])
 
-  // Prefetch shopping list on mount so Lijst tab has data ready
+  // Prefetch data on mount so tabs have content ready when opened
   useEffect(() => {
     queryClient.prefetchQuery({ queryKey: queryKeys.shoppingListItems })
+    prefetchWeekmenu()
+    prefetchProfile()
   }, [queryClient])
 
   const handleTabChange = (path: '/' | '/weekmenu' | '/profiel') => {

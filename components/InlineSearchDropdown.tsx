@@ -1,6 +1,7 @@
 'use client'
 
 import { ListPlus, Database, CornerDownLeft } from 'lucide-react'
+import { getQueryRemainderAsDescription } from '@/lib/search'
 
 interface SearchResult {
   id: string
@@ -126,21 +127,8 @@ export default function InlineSearchDropdown({
       {showResults && results.length > 0 && (
         <div className="divide-y divide-gray-100">
           {results.map((result, index) => {
-          // Effective description shown in list = toelichting field, or query remainder (e.g. "ongebrande" from "ongebrande hazelnoten" + product "Hazelnoten")
-          const productName = result.name.trim()
-          const productNameLower = productName.toLowerCase()
-          const queryTrimmed = query.trim()
-          const queryLower = queryTrimmed.toLowerCase()
-          let effectiveDesc = description?.trim() || queryAnnotation?.trim() || ''
-          const idx = queryLower.indexOf(productNameLower)
-          if (idx !== -1) {
-            const before = queryTrimmed.slice(0, idx)
-            const after = queryTrimmed.slice(idx + productName.length)
-            const remainder = `${before} ${after}`.replace(/\s+/g, ' ').trim()
-            if (remainder) effectiveDesc = remainder
-          } else if (!effectiveDesc && queryLower.startsWith(productNameLower)) {
-            effectiveDesc = queryTrimmed.substring(result.name.length).trim()
-          }
+          const remainderDesc = getQueryRemainderAsDescription(query.trim(), result.name)
+          const effectiveDesc = description?.trim() || queryAnnotation?.trim() || remainderDesc || ''
 
           return (
             <button
