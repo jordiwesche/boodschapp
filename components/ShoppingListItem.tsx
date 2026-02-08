@@ -204,11 +204,13 @@ export default function ShoppingListItem({
       {/* Row */}
       <div
         ref={itemRef}
-        className={`relative flex items-center gap-3 px-4 py-3 rounded-2xl transition-transform duration-150 ${
+        className={`relative flex select-none items-center gap-3 px-4 py-3 rounded-2xl transition-transform duration-150 ${
           showChecked ? 'bg-transparent opacity-90' : 'bg-white'
         } ${isChecking ? 'scale-[0.98]' : ''} ${
           isPressing ? 'scale-[0.99]' : pressActive ? 'scale-[0.97]' : ''
         }`}
+        style={{ WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
+        onContextMenu={(e) => e.preventDefault()}
         onTouchStart={(e) => startLongPress(e.touches[0].clientY)}
         onTouchMove={handleTouchMove}
         onTouchEnd={clearLongPress}
@@ -298,7 +300,8 @@ export default function ShoppingListItem({
       {showSubmenu && !item.is_checked && !isEditingDescription && (
         <div
           ref={submenuRef}
-          className="absolute right-2 top-1/2 z-10 min-w-0 -translate-y-1/2 overflow-hidden rounded-lg bg-white py-1.5 shadow-lg ring-1 ring-black/5 animate-slide-down"
+          className="absolute right-2 top-1/2 z-10 min-w-0 -translate-y-1/2 select-none overflow-hidden rounded-lg bg-white py-1.5 shadow-lg ring-1 ring-black/5 animate-slide-down"
+          style={{ WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
         >
           <button
             type="button"
