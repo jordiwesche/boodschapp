@@ -13,6 +13,7 @@ import PullToRefresh from './PullToRefresh'
 import { createClient } from '@/lib/supabase/client'
 import {
   useShoppingListItems,
+  useExpectedProducts,
   useCheckItem,
   useUncheckItem,
   useDeleteItem,
@@ -299,6 +300,7 @@ function isAcceptableMatch(query: string, candidateName: string, score?: number 
 export default function ShoppingListPage() {
   // Use TanStack Query hooks for data fetching
   const { data: items = [], isLoading: isLoadingItems, refetch: refetchItems } = useShoppingListItems()
+  const { data: expectedProducts = [] } = useExpectedProducts()
   const queryClient = useQueryClient()
 
   // Mutations
@@ -1239,7 +1241,7 @@ export default function ShoppingListPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
-      <header className="bg-white shadow">
+      <header className="bg-transparent">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900">Boodschappen</h1>
           {lastUpdate && (
@@ -1347,11 +1349,28 @@ export default function ShoppingListPage() {
               )}
               <ShoppingList
                 items={items}
+                expectedProducts={expectedProducts}
                 onCheck={handleCheck}
                 onUncheck={handleUncheck}
                 onDelete={handleDelete}
                 onUpdateDescription={handleUpdateDescription}
                 onClearChecked={handleClearChecked}
+                onAddExpectedToMain={async (product) => {
+                  haptic('light')
+                  try {
+                    await addItemMutation.mutateAsync({
+                      product_id: product.id,
+                      category_id: product.category_id,
+                      quantity: '1',
+                      from_verwacht: true,
+                      expected_days: product.days_until_expected,
+                    })
+                  } catch (error) {
+                    setErrorMessage('Kon item niet toevoegen. Probeer het opnieuw.')
+                    setTimeout(() => setErrorMessage(null), 5000)
+                    console.error('Error adding expected product:', error)
+                  }
+                }}
               >
                 {/* Klikzone direct onder laatste item: open/sluit leeg item */}
                 <div

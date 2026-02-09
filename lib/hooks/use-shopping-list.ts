@@ -28,10 +28,20 @@ export interface Suggestion {
   suggestion_type: 'basic' | 'predicted'
 }
 
+export interface ExpectedProduct {
+  id: string
+  name: string
+  emoji: string
+  category_id: string
+  category: { id: string; name: string; display_order: number } | null
+  days_until_expected: number
+}
+
 // Query keys
 export const queryKeys = {
   shoppingListItems: ['shopping-list-items'] as const,
   suggestions: ['suggestions'] as const,
+  expectedProducts: ['expected-products'] as const,
 }
 
 // Fetch functions
@@ -53,6 +63,15 @@ async function fetchSuggestions(): Promise<Suggestion[]> {
   return data.suggestions || []
 }
 
+async function fetchExpectedProducts(): Promise<ExpectedProduct[]> {
+  const response = await fetch('/api/products/expected')
+  if (!response.ok) {
+    return []
+  }
+  const data = await response.json()
+  return data.expected || []
+}
+
 // Hooks
 export function useShoppingListItems() {
   return useQuery({
@@ -67,6 +86,14 @@ export function useSuggestions() {
     queryKey: queryKeys.suggestions,
     queryFn: fetchSuggestions,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export function useExpectedProducts() {
+  return useQuery({
+    queryKey: queryKeys.expectedProducts,
+    queryFn: fetchExpectedProducts,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   })
 }
 
@@ -267,6 +294,8 @@ export function useAddItem() {
       quantity?: string
       category_id: string
       description?: string | null
+      from_verwacht?: boolean
+      expected_days?: number
     }) => {
       const response = await fetch('/api/shopping-list', {
         method: 'POST',
@@ -334,6 +363,7 @@ export function useAddItem() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.shoppingListItems })
       queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
+      queryClient.invalidateQueries({ queryKey: queryKeys.expectedProducts })
     },
   })
 }

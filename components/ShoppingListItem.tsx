@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Check, Trash2, CornerDownLeft } from 'lucide-react'
+import { Check, Trash2, CornerDownLeft, Plus } from 'lucide-react'
 import Skeleton from './Skeleton'
 
 const LONG_PRESS_MS = 600
@@ -30,6 +30,9 @@ interface ShoppingListItemProps {
   onUncheck?: (id: string) => void
   onDelete: (id: string) => void
   onUpdateDescription: (id: string, description: string) => void
+  /** Show "move to main list" up arrow (Binnenkort → Hoofdlijst) */
+  showMoveToMain?: boolean
+  onMoveToMain?: () => void
 }
 
 export default function ShoppingListItem({
@@ -38,6 +41,8 @@ export default function ShoppingListItem({
   onUncheck,
   onDelete,
   onUpdateDescription,
+  showMoveToMain = false,
+  onMoveToMain,
 }: ShoppingListItemProps) {
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [editValue, setEditValue] = useState(item.description || '')
@@ -204,11 +209,11 @@ export default function ShoppingListItem({
   const showChecked = item.is_checked || isChecking
 
   return (
-    <div className="relative rounded-2xl" data-shopping-list-item>
+    <div className="relative" data-shopping-list-item>
       {/* Row */}
       <div
         ref={itemRef}
-        className={`relative flex select-none items-center gap-3 px-4 py-3 rounded-2xl transition-transform duration-150 ${
+        className={`relative flex select-none items-center gap-3 py-3 transition-transform duration-150 ${
           showChecked ? 'bg-transparent opacity-90' : 'bg-white'
         } ${isChecking ? 'scale-[0.98]' : ''} ${
           isPressing ? 'scale-[0.99]' : pressActive ? 'scale-[0.97]' : ''
@@ -305,6 +310,21 @@ export default function ShoppingListItem({
               <CornerDownLeft className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
+        )}
+
+        {showMoveToMain && onMoveToMain && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onMoveToMain()
+            }}
+            className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            aria-label="Verplaats naar hoofdlijst"
+          >
+            <Plus className="h-5 w-5" strokeWidth={2} />
+          </button>
         )}
       </div>
 

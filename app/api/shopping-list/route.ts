@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { product_id, product_name, quantity, category_id, description } = body
+    const { product_id, product_name, quantity, category_id, description, from_verwacht, expected_days } = body
 
     // Validation
     if (!category_id) {
@@ -245,19 +245,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create shopping list item
+    // Create shopping list item (optionally track Verwacht add for algorithm analysis)
+    const insertPayload: Record<string, unknown> = {
+      household_id: user.household_id,
+      product_id: product_id || null,
+      product_name: product_name?.trim() || null,
+      quantity: quantity || '1',
+      description: description?.trim() || null,
+      category_id: category_id,
+      is_checked: false,
+      added_by: userId,
+    }
+    if (from_verwacht === true && typeof expected_days === 'number' && expected_days >= 0) {
+      insertPayload.added_from_verwacht_at = new Date().toISOString()
+      insertPayload.verwacht_expected_days_at_add = Math.min(32767, Math.floor(expected_days))
+    }
     const { data: item, error: itemError } = await supabase
       .from('shopping_list_items')
-      .insert({
-        household_id: user.household_id,
-        product_id: product_id || null,
-        product_name: product_name?.trim() || null,
-        quantity: quantity || '1',
-        description: description?.trim() || null,
-        category_id: category_id,
-        is_checked: false,
-        added_by: userId,
-      })
+      .insert(insertPayload)
       .select(`
         id,
         product_id,

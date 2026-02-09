@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Clock } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock, Zap, Plus } from 'lucide-react'
 import ShoppingListItem from './ShoppingListItem'
 import { isFruit } from '@/lib/fruit-groente'
 
@@ -31,6 +31,14 @@ function isLaterItem(item: { description: string | null }): boolean {
   return hasLaterDayToken(item.description)
 }
 
+/** Remove day/later token from description; if token was in parens e.g. "(wo)", remove parens too. */
+function stripLaterTokenFromDescription(description: string | null): string | null {
+  const d = description?.trim()
+  if (!d) return null
+  const cleaned = d.replace(LATER_DAY_PATTERN, '').replace(/\s+/g, ' ').trim()
+  return cleaned === '' ? null : cleaned
+}
+
 interface ShoppingListItemData {
   id: string
   product_id: string | null
@@ -49,23 +57,36 @@ interface ShoppingListItemData {
   created_at: string
 }
 
+export interface ExpectedProduct {
+  id: string
+  name: string
+  emoji: string
+  category_id: string
+  category: { id: string; name: string; display_order: number } | null
+  days_until_expected: number
+}
+
 interface ShoppingListProps {
   items: ShoppingListItemData[]
+  expectedProducts?: ExpectedProduct[]
   onCheck: (id: string) => void
   onUncheck?: (id: string) => void
   onDelete: (id: string) => void
   onUpdateDescription: (id: string, description: string) => void
   onClearChecked?: () => void
+  onAddExpectedToMain?: (product: ExpectedProduct) => void
   children?: React.ReactNode
 }
 
 export default function ShoppingList({
   items,
+  expectedProducts = [],
   onCheck,
   onUncheck,
   onDelete,
   onUpdateDescription,
   onClearChecked,
+  onAddExpectedToMain,
   children,
 }: ShoppingListProps) {
   const checkedItemsCount = items.filter((item) => item.is_checked).length
@@ -153,7 +174,7 @@ export default function ShoppingList({
   if (allSortedCategories.length === 0) {
     return (
       <div className="pb-32">
-        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
+        <div className="bg-white rounded-[16px] p-8 text-center">
           <p className="text-gray-500">Je boodschappenlijst is leeg</p>
         </div>
       </div>
@@ -216,52 +237,62 @@ export default function ShoppingList({
     return orderA - orderB
   })
 
+  const cardClass = 'bg-white rounded-[16px] p-4'
+
   return (
-    <div className="pb-32 flex flex-col flex-1 min-h-0">
-      {/* Unchecked items - grouped by category with headers */}
-      {sortedUncheckedCategories.map((categoryGroup, index) => {
-        const categoryName = categoryGroup.category?.name || ''
-        const isFruitGroente = categoryName === 'Fruit & Groente'
-        const itemsToRender = isFruitGroente
-          ? (() => {
-              const fruit = categoryGroup.items.filter((item) => isFruit(item.product_name || ''))
-              const groente = categoryGroup.items.filter((item) => !isFruit(item.product_name || ''))
-              const byName = (a: ShoppingListItemData, b: ShoppingListItemData) =>
-                (a.product_name || '').toLowerCase().localeCompare((b.product_name || '').toLowerCase(), 'nl')
-              return [...fruit.sort(byName), ...groente.sort(byName)]
-            })()
-          : categoryGroup.items
+    <div className="pb-32 flex flex-col flex-1 min-h-0 gap-4">
+      {/* 1. Urgent: alle categoriesecties (Fruit & Groente t/m Overig) */}
+      {sortedUncheckedCategories.length > 0 && (
+        <div className={cardClass}>
+          {sortedUncheckedCategories.map((categoryGroup, index) => {
+            const categoryName = categoryGroup.category?.name || ''
+            const isFruitGroente = categoryName === 'Fruit & Groente'
+            const itemsToRender = isFruitGroente
+              ? (() => {
+                  const fruit = categoryGroup.items.filter((item) => isFruit(item.product_name || ''))
+                  const groente = categoryGroup.items.filter((item) => !isFruit(item.product_name || ''))
+                  const byName = (a: ShoppingListItemData, b: ShoppingListItemData) =>
+                    (a.product_name || '').toLowerCase().localeCompare((b.product_name || '').toLowerCase(), 'nl')
+                  return [...fruit.sort(byName), ...groente.sort(byName)]
+                })()
+              : categoryGroup.items
 
-        return (
-        <div key={categoryGroup.category?.id || 'overig'} className="mb-2">
-          {/* Category header */}
-          <h2 className={`mb-3 px-4 text-xs font-medium text-gray-500 tracking-wide ${index === 0 ? 'mt-0' : 'mt-2'}`}>
-            {categoryGroup.category?.name || 'Overig'}
-          </h2>
-          {/* Items in this category */}
-          {itemsToRender.map((item) => (
-            <div key={item.id} className="mb-2" data-shopping-list-item>
-              <ShoppingListItem
-                item={item}
-                onCheck={onCheck}
-                onUncheck={onUncheck}
-                onDelete={onDelete}
-                onUpdateDescription={onUpdateDescription}
-              />
-            </div>
-          ))}
+            return (
+              <div key={categoryGroup.category?.id || 'overig'} className={index === 0 ? '' : 'mt-4'}>
+                <h2 className="mb-2 text-sm font-medium text-gray-500 tracking-wide">
+                  {categoryGroup.category?.name || 'Overig'}
+                </h2>
+                <div>
+                  {itemsToRender.map((item, itemIndex) => (
+                    <div
+                      key={item.id}
+                      className={itemIndex === itemsToRender.length - 1 ? '' : 'border-b border-gray-200'}
+                      data-shopping-list-item
+                    >
+                      <ShoppingListItem
+                        item={item}
+                        onCheck={onCheck}
+                        onUncheck={onUncheck}
+                        onDelete={onDelete}
+                        onUpdateDescription={onUpdateDescription}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
         </div>
-        );
-      })}
+      )}
 
-      {/* Checked items - accordion */}
+      {/* 2. Afgevinkt */}
       {checkedItemsCount > 0 && (
-        <div className="mb-4 border-b border-gray-200">
-          <div className="mt-4 mb-0 flex items-center justify-between gap-2 border-t border-gray-200 pl-4 pr-4 pt-6 pb-6">
+        <div className={cardClass}>
+          <div className="flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={() => setCheckedSectionOpen((open) => !open)}
-              className="flex min-w-0 flex-1 items-center gap-1 text-left text-xs font-medium text-gray-500 tracking-wide"
+              className="flex min-w-0 flex-1 items-center gap-1 text-left text-sm font-medium text-gray-500 tracking-wide"
               aria-expanded={checkedSectionOpen}
             >
               {checkedSectionOpen ? (
@@ -275,46 +306,94 @@ export default function ShoppingList({
               <button
                 type="button"
                 onClick={() => setShowClearCheckedModal(true)}
-                className="shrink-0 text-xs font-medium text-gray-500 hover:text-gray-700"
+                className="shrink-0 text-sm font-medium text-gray-500 hover:text-gray-700"
                 aria-label="Wis alle afgevinkte items"
               >
                 Wissen
               </button>
             )}
           </div>
-          {checkedSectionOpen &&
-            sortedCheckedItems.map((item) => (
-              <div key={item.id} className="mb-2">
+          {checkedSectionOpen && (
+            <div className="mt-2">
+              {sortedCheckedItems.map((item, itemIndex) => (
+                <div
+                  key={item.id}
+                  className={itemIndex === sortedCheckedItems.length - 1 ? '' : 'border-b border-gray-200'}
+                >
+                  <ShoppingListItem
+                    item={item}
+                    onCheck={onCheck}
+                    onUncheck={onUncheck}
+                    onDelete={onDelete}
+                    onUpdateDescription={onUpdateDescription}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. Binnenkort (was Later) */}
+      {sortedLaterUnchecked.length > 0 && (
+        <div className={cardClass}>
+          <h2 className="mb-2 text-sm font-medium text-gray-500 tracking-wide flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+            Binnenkort
+          </h2>
+          <div>
+            {sortedLaterUnchecked.map((item, itemIndex) => (
+              <div
+                key={item.id}
+                className={itemIndex === sortedLaterUnchecked.length - 1 ? '' : 'border-b border-gray-200'}
+                data-shopping-list-item
+              >
                 <ShoppingListItem
                   item={item}
                   onCheck={onCheck}
                   onUncheck={onUncheck}
                   onDelete={onDelete}
                   onUpdateDescription={onUpdateDescription}
+                  showMoveToMain={true}
+                  onMoveToMain={() => onUpdateDescription(item.id, stripLaterTokenFromDescription(item.description) ?? '')}
                 />
               </div>
             ))}
+          </div>
         </div>
       )}
 
-      {/* Later: unchecked items whose description contains a standalone day token (ma/di/wo/do/vr/za/zo or (wo)) or "later", below Afgevinkt */}
-      {sortedLaterUnchecked.length > 0 && (
-        <div className="mt-2">
-          <h2 className="mb-3 px-4 text-xs font-medium text-gray-500 tracking-wide flex items-center gap-1.5">
-            <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-            Later
+      {/* 4. Verwacht (op basis van koopfrequentie) */}
+      {expectedProducts.length > 0 && (
+        <div className={cardClass}>
+          <h2 className="mb-2 text-sm font-medium text-gray-500 tracking-wide flex items-center gap-1.5">
+            <Zap className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+            Verwacht
           </h2>
-          {sortedLaterUnchecked.map((item) => (
-            <div key={item.id} className="mb-2" data-shopping-list-item>
-              <ShoppingListItem
-                item={item}
-                onCheck={onCheck}
-                onUncheck={onUncheck}
-                onDelete={onDelete}
-                onUpdateDescription={onUpdateDescription}
-              />
-            </div>
-          ))}
+          <div>
+            {expectedProducts.map((product, index) => (
+              <div
+                key={product.id}
+                className={`flex items-center gap-3 py-3 ${index === expectedProducts.length - 1 ? '' : 'border-b border-gray-200'}`}
+              >
+                <span className="text-lg shrink-0">{product.emoji}</span>
+                <span className="flex-1 min-w-0 font-medium text-gray-900">{product.name}</span>
+                <span className="text-xs text-gray-400 shrink-0">
+                  {product.days_until_expected === 0 ? 'vandaag' : `over ${product.days_until_expected}d`}
+                </span>
+                {onAddExpectedToMain && (
+                  <button
+                    type="button"
+                    onClick={() => onAddExpectedToMain(product)}
+                    className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                    aria-label="Toevoegen aan hoofdlijst"
+                  >
+                    <Plus className="h-5 w-5" strokeWidth={2} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

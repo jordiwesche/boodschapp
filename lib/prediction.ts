@@ -33,9 +33,42 @@ function filterRecentPurchases(
   return filtered
 }
 
+/** Berekent percentiel (0–1) van gesorteerde array; lineaire interpolatie tussen indices */
+function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0
+  if (sorted.length === 1) return sorted[0]
+  const i = (sorted.length - 1) * p
+  const lo = Math.floor(i)
+  const hi = Math.ceil(i)
+  if (lo === hi) return sorted[lo]
+  return sorted[lo] + (i - lo) * (sorted[hi] - sorted[lo])
+}
+
+/** Filtert uitschieters: behoud alleen intervallen binnen [Q1 - 1.5*IQR, Q3 + 1.5*IQR] */
+function filterOutlierIntervals(intervals: number[]): number[] {
+  if (intervals.length < 3) return intervals
+  const sorted = [...intervals].sort((a, b) => a - b)
+  const q1 = percentile(sorted, 0.25)
+  const q3 = percentile(sorted, 0.75)
+  const iqr = q3 - q1
+  const lower = q1 - 1.5 * iqr
+  const upper = q3 + 1.5 * iqr
+  return intervals.filter((d) => d >= lower && d <= upper)
+}
+
+/** Mediaan van een gesorteerde array */
+function median(sorted: number[]): number {
+  if (sorted.length === 0) return 0
+  const mid = sorted.length / 2
+  if (sorted.length % 2 === 1) return sorted[Math.floor(mid)]
+  return (sorted[mid - 1] + sorted[mid]) / 2
+}
+
 /**
- * Berekent de gewogen gemiddelde aankoopfrequentie in dagen
- * Retourneert null als er niet genoeg data is (minimaal 3 aankopen nodig)
+ * Berekent de aankoopfrequentie in dagen op basis van de mediaan van de intervallen.
+ * Uitschieters (bijv. vakantie, online boodschappen) worden met IQR genegeerd;
+ * daarna bepalen we het ritme met de mediaan (robuust tegen resterende uitschieters).
+ * Retourneert null als er niet genoeg data is (minimaal 3 aankopen nodig).
  */
 export function calculatePurchaseFrequency(
   purchaseHistory: PurchaseHistory[]
@@ -70,20 +103,11 @@ export function calculatePurchaseFrequency(
     return null
   }
 
-  // Pas gewogen gemiddelde toe (nieuwste intervallen krijgen hoger gewicht)
-  let totalWeighted = 0
-  let totalWeight = 0
-
-  for (let i = 0; i < intervals.length; i++) {
-    // Gewicht: nieuwste interval = 1.0, daarna 0.8, 0.6, etc.
-    const weight = 1.0 - i * 0.2
-    const actualWeight = Math.max(weight, 0.2) // Minimum gewicht van 0.2
-
-    totalWeighted += intervals[intervals.length - 1 - i] * actualWeight
-    totalWeight += actualWeight
-  }
-
-  return totalWeighted / totalWeight
+  // Verwijder uitschieters (IQR), daarna mediaan van de overgebleven intervallen
+  const inlierIntervals = filterOutlierIntervals(intervals)
+  const toUse = inlierIntervals.length >= 2 ? inlierIntervals : intervals
+  const sortedToUse = [...toUse].sort((a, b) => a - b)
+  return median(sortedToUse)
 }
 
 /**
