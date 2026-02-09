@@ -1254,7 +1254,7 @@ export default function ShoppingListPage() {
 
       <main 
         ref={scrollContainerRef}
-        className="mx-auto w-full max-w-7xl flex-1 flex flex-col min-h-0 px-4 py-8 sm:px-6 lg:px-8"
+        className="mx-auto w-full max-w-7xl flex-1 flex flex-col min-h-0 px-4 py-4 sm:px-6 lg:px-8"
       >
         <PullToRefresh
           onRefresh={handleRefresh}
