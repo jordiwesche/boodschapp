@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Clock, Zap, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock, Zap, Plus, Trash2 } from 'lucide-react'
 import ShoppingListItem from './ShoppingListItem'
 import { isFruit } from '@/lib/fruit-groente'
 
@@ -306,10 +306,10 @@ export default function ShoppingList({
               <button
                 type="button"
                 onClick={() => setShowClearCheckedModal(true)}
-                className="shrink-0 text-sm font-medium text-gray-500 hover:text-gray-700"
+                className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                 aria-label="Wis alle afgevinkte items"
               >
-                Wissen
+                <Trash2 className="h-4 w-4" strokeWidth={2} />
               </button>
             )}
           </div>
