@@ -98,6 +98,7 @@ function WeekmenuGerechtTextarea({
       ref={ref}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onBlur={() => onSubmit()}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault()
