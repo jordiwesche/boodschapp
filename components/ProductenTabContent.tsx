@@ -104,12 +104,12 @@ export default function ProductenTabContent() {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
       <header className="bg-transparent">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900">Producten</h1>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-4 pb-8 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-4 pb-8 sm:px-6 lg:px-8">
         {error && (
           <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>
         )}
