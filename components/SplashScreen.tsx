@@ -28,7 +28,7 @@ export default function SplashScreen() {
       }}
       aria-hidden="true"
     >
-      <span className="text-5xl font-bold text-white">
+      <span className="-translate-y-10 text-5xl font-bold text-white">
         <span className="animate-boodsch-fade">Boodsch</span>app
       </span>
     </div>
