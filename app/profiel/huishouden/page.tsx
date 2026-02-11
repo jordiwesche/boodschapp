@@ -228,7 +228,7 @@ export default function ProfielHuishoudenPage() {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
       <header className="bg-transparent">
-        <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}

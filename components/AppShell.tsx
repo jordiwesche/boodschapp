@@ -81,7 +81,7 @@ export default function AppShell({ initialTab }: { initialTab: TabId }) {
       {activeTab === 'weekmenu' && (
         <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
           <header className="bg-transparent">
-            <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
               <h1 className="text-3xl font-bold text-gray-900">Weekmenu</h1>
             </div>
           </header>
