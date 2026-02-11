@@ -1242,7 +1242,7 @@ export default function ShoppingListPage() {
   }, [saveProductModalOpen])
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
+    <div className="flex h-dvh min-h-screen flex-col overflow-hidden bg-gray-50 pb-20">
       <header className="bg-transparent">
         <div className="mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900">Boodschappen</h1>
