@@ -68,7 +68,7 @@ export default function BottomNavigation({
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white shadow-lg"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white shadow-lg pb-2 sm:pb-0"
     >
       <div className="mx-auto flex max-w-md items-center justify-around px-4 py-2">
         {navItems.map((item) => {
