@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Search } from 'lucide-react'
 import ProductCard from './ProductCard'
 import ProductForm from './ProductForm'
@@ -50,6 +50,23 @@ export default function ProductList({ products, categories, onRefresh }: Product
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [optimisticBasics, setOptimisticBasics] = useState<Record<string, boolean>>({})
+
+  // Clear optimistic overrides when server data has caught up (e.g. after other refresh)
+  useEffect(() => {
+    setOptimisticBasics((prev) => {
+      const next = { ...prev }
+      let changed = false
+      for (const pid of Object.keys(next)) {
+        const p = products.find((x) => x.id === pid)
+        if (p && p.is_basic === next[pid]) {
+          delete next[pid]
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [products])
 
   const filteredByCategory = selectedCategory
     ? products.filter((p) => p.category_id === selectedCategory)
@@ -235,9 +252,37 @@ export default function ProductList({ products, categories, onRefresh }: Product
     setError('')
   }
 
+  const handleToggleBasic = async (product: Product) => {
+    const newValue = !product.is_basic
+    // Optimistic update: direct UI feedback
+    setOptimisticBasics((prev) => ({ ...prev, [product.id]: newValue }))
+    setError('')
+    try {
+      const response = await fetch(`/api/products/${product.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_basic: newValue }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Kon Basics-status niet bijwerken')
+      }
+
+      // No refresh: optimistic state stays, UI remains instant
+    } catch (err) {
+      setOptimisticBasics((prev) => {
+        const next = { ...prev }
+        delete next[product.id]
+        return next
+      })
+      setError(err instanceof Error ? err.message : 'Er is een fout opgetreden')
+    }
+  }
+
   if (showForm) {
     return (
-      <div className="rounded-lg bg-white p-6 shadow">
+      <div className="rounded-[16px] bg-white p-6 shadow">
         <ProductForm
           product={editingProduct || undefined}
           categories={categories}
@@ -298,13 +343,13 @@ export default function ProductList({ products, categories, onRefresh }: Product
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Product zoeken..."
-            className="block w-full rounded-md border-gray-200 bg-gray-100 py-2 pl-10 pr-3 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:bg-white focus:ring-blue-500"
+            className="block w-full rounded-md border-[#dbdee3] bg-[#eceef1] py-2 pl-10 pr-3 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:bg-white focus:ring-blue-500"
           />
         </div>
       </div>
 
       {filteredProducts.length === 0 ? (
-        <div className="rounded-lg bg-white p-8 text-center shadow">
+        <div className="rounded-[16px] bg-white p-8 text-center shadow">
           <p className="text-gray-600">
             {searchQuery.trim()
               ? 'Geen producten gevonden voor je zoekopdracht'
@@ -320,15 +365,22 @@ export default function ProductList({ products, categories, onRefresh }: Product
               {section.label ? (
                 <h3 className="mb-3 text-sm font-medium text-gray-500">{section.label}</h3>
               ) : null}
-              <div className="space-y-3">
-                {section.products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteFromList}
-                  />
-                ))}
+              <div className="space-y-2">
+                {section.products.map((product) => {
+                  const effectiveIsBasic = product.id in optimisticBasics
+                    ? optimisticBasics[product.id]
+                    : product.is_basic
+                  const displayProduct = { ...product, is_basic: effectiveIsBasic }
+                  return (
+                    <ProductCard
+                      key={product.id}
+                      product={displayProduct}
+                      onEdit={handleEdit}
+                      onToggleBasic={handleToggleBasic}
+                      onDelete={handleDeleteFromList}
+                    />
+                  )
+                })}
               </div>
             </div>
           ))}
@@ -337,7 +389,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
 
       {deletingProductId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="rounded-lg bg-white p-6">
+          <div className="rounded-[16px] bg-white p-6">
             <p className="text-gray-900">Product verwijderen...</p>
           </div>
         </div>

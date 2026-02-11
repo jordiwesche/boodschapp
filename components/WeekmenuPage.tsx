@@ -1,11 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link as LinkIcon, CornerDownLeft, X, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { haptic } from '@/lib/haptics'
 
 const DAY_LABELS = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'] as const
+
+/** Huidige dag (0=Ma, 6=Zo) */
+function getTodayDayOfWeek(): number {
+  return (new Date().getDay() + 6) % 7
+}
 
 interface WeekmenuDayRow {
   day_of_week: number
@@ -339,18 +344,25 @@ export default function WeekmenuPage() {
     }
   }, [])
 
+  const todayDayOfWeek = getTodayDayOfWeek()
   if (loading) {
     return (
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
-        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-4 pb-6">
+        <div className="rounded-[16px] border border-gray-200 bg-white overflow-hidden">
           {DAY_LABELS.map((label, i) => (
-            <div
-              key={i}
-              className="border-b border-gray-200 px-4 py-3 last:border-b-0 flex items-center gap-2"
-            >
-              <span className="w-8 shrink-0 text-sm font-medium text-gray-400">{label}</span>
+            <React.Fragment key={i}>
+              {i > 0 && <div className="mx-4 border-t border-gray-200" />}
+              <div className="px-4 py-3 flex items-center gap-4">
+              <span
+                className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm ${
+                  i === todayDayOfWeek ? 'bg-blue-100 font-bold text-blue-600' : 'bg-gray-100 font-medium text-gray-400'
+                }`}
+              >
+                {label}
+              </span>
               <div className="h-6 flex-1 max-w-[200px] rounded bg-gray-100 animate-pulse" />
-            </div>
+              </div>
+            </React.Fragment>
           ))}
         </div>
       </main>
@@ -360,16 +372,16 @@ export default function WeekmenuPage() {
   const orderedDays = [...days].sort((a, b) => a.day_of_week - b.day_of_week)
   if (orderedDays.length === 0) {
     return (
-      <main className="flex-1 px-4 py-8">
+      <main className="flex-1 px-4 pt-4 pb-8">
         <p className="text-gray-600">Geen weekmenu beschikbaar.</p>
       </main>
     )
   }
 
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
-      <div className="rounded-lg border border-gray-200 bg-white overflow-visible">
-        {orderedDays.map((day) => {
+    <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-4 pb-6">
+      <div className="rounded-[16px] border border-gray-200 bg-white overflow-visible">
+        {orderedDays.map((day, index) => {
           const label = DAY_LABELS[day.day_of_week] ?? `Dag ${day.day_of_week}`
           const text = localText[day.day_of_week] ?? day.menu_text ?? ''
           const savedText = (day.menu_text ?? '').trim()
@@ -381,12 +393,19 @@ export default function WeekmenuPage() {
           const isPatching = patching === day.day_of_week
 
           return (
-            <div
-              key={day.day_of_week}
-              className="border-b border-gray-200 px-4 py-3 last:border-b-0"
-            >
-              <div className="flex flex-wrap items-start gap-2">
-                <span className="w-8 shrink-0 pt-[10px] text-sm font-medium text-gray-600">
+            <React.Fragment key={day.day_of_week}>
+              {index > 0 && (
+                <div className="mx-4 border-t border-gray-200" />
+              )}
+              <div className="px-4 pt-5 pb-3">
+              <div className="flex flex-wrap items-start gap-4">
+                <span
+                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm ${
+                    day.day_of_week === todayDayOfWeek
+                      ? 'bg-blue-100 font-bold text-blue-600'
+                      : 'bg-gray-100 font-medium text-gray-600'
+                  }`}
+                >
                   {label}
                 </span>
                 {showViewMode ? (
@@ -397,7 +416,7 @@ export default function WeekmenuPage() {
                       setEditingDay(day.day_of_week)
                       setLocalText((prev) => ({ ...prev, [day.day_of_week]: savedText }))
                     }}
-                    className="flex min-h-[2.5rem] min-w-0 flex-1 items-center py-2 text-left font-semibold text-gray-900"
+                    className="flex min-h-8 min-w-0 flex-1 items-center text-left font-semibold text-gray-900"
                   >
                     {savedText}
                   </button>
@@ -409,12 +428,12 @@ export default function WeekmenuPage() {
                       setEditingDay(day.day_of_week)
                       setLocalText((prev) => ({ ...prev, [day.day_of_week]: '' }))
                     }}
-                    className="flex min-h-[2.5rem] min-w-0 flex-1 items-center py-2 text-left"
+                    className="flex h-8 min-w-0 flex-1 items-center justify-start text-left"
                     aria-label="Gerecht toevoegen"
                   />
                 ) : (
                   <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <div className="flex min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2">
+                    <div className="flex min-h-8 min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1">
                       <WeekmenuGerechtTextarea
                         value={text}
                         onChange={(v) =>
@@ -470,7 +489,7 @@ export default function WeekmenuPage() {
                         <LinkIcon className="h-4 w-4" />
                       </button>
                   {isUrlOpen && (
-                    <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-lg border border-gray-200 bg-white p-2 shadow-lg">
+                    <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-[16px] border border-gray-200 bg-white p-2 shadow-lg">
                       {hasLink ? (
                         <>
                           <div className="mb-2 rounded border border-gray-200 bg-gray-50 px-2 py-1.5 text-sm text-gray-700 break-all">
@@ -538,7 +557,7 @@ export default function WeekmenuPage() {
                   <button
                     type="button"
                     onClick={() => goToLink(day.link_url!)}
-                    className="flex w-full items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-left hover:bg-blue-100"
+                    className="flex w-full items-center gap-2 rounded-[16px] bg-blue-50 px-3 py-2 text-left hover:bg-blue-100"
                   >
                     <span className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
                       {linkDisplayText(day)}
@@ -547,7 +566,8 @@ export default function WeekmenuPage() {
                   </button>
                 </div>
               )}
-            </div>
+              </div>
+            </React.Fragment>
           )
         })}
       </div>

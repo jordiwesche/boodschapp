@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ShoppingCart } from 'lucide-react'
+import { ShoppingCart, Star } from 'lucide-react'
 import { calculatePurchaseFrequency } from '@/lib/prediction'
 import { formatPurchaseFrequency } from '@/lib/format-frequency'
 import { PurchaseHistory } from '@/types/database'
@@ -26,10 +26,11 @@ interface Product {
 interface ProductCardProps {
   product: Product
   onEdit: (product: Product) => void
+  onToggleBasic?: (product: Product) => void
   onDelete?: (productId: string) => void // Optional, not used in card display
 }
 
-export default function ProductCard({ product, onEdit }: ProductCardProps) {
+export default function ProductCard({ product, onEdit, onToggleBasic }: ProductCardProps) {
   const [purchaseHistory, setPurchaseHistory] = useState<PurchaseHistory[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
 
@@ -61,19 +62,16 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
   return (
     <div 
       onClick={() => onEdit(product)}
-      className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-2"
+      className="cursor-pointer rounded-[16px] border border-gray-200 bg-white px-3 py-3"
     >
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <span className="text-lg shrink-0 flex items-center">{product.emoji}</span>
             <div className="flex-1 min-w-0 flex items-center">
               <div className="flex flex-col gap-0.5 w-full">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-gray-900 truncate">{product.name}</h3>
-                  {product.is_basic && (
-                    <span className="text-yellow-500 shrink-0">★</span>
-                  )}
                 </div>
                 {/* Purchase history info */}
                 {!loadingHistory && purchaseCount > 0 && (
@@ -95,19 +93,31 @@ export default function ProductCard({ product, onEdit }: ProductCardProps) {
               {product.description}
             </p>
           )}
-          <div className="ml-7 mt-1 flex flex-wrap items-center gap-1.5">
-            {product.category && (
-              <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-                {product.category.name}
-              </span>
-            )}
-            {product.is_popular && (
+          {product.is_popular && (
+            <div className="ml-7 mt-1">
               <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
                 Populair
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
+        {onToggleBasic && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleBasic(product)
+            }}
+            className="shrink-0 rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-yellow-500 focus:outline-none"
+            aria-label={product.is_basic ? 'Verwijder uit Basics' : 'Markeer als Basics'}
+          >
+            {product.is_basic ? (
+              <Star size={20} className="fill-yellow-500 text-yellow-500" />
+            ) : (
+              <Star size={20} className="stroke-2 text-gray-300" />
+            )}
+          </button>
+        )}
       </div>
     </div>
   )

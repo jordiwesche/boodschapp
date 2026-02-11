@@ -15,7 +15,7 @@ export default function ShoppingListSkeleton() {
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4"
+              className="flex items-center gap-3 rounded-[16px] border border-gray-200 bg-white p-4"
             >
               {/* Checkbox skeleton */}
               <Skeleton variant="circular" width="24px" height="24px" />
@@ -44,7 +44,7 @@ export default function ShoppingListSkeleton() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4"
+              className="flex items-center gap-3 rounded-[16px] border border-gray-200 bg-white p-4"
             >
               <Skeleton variant="circular" width="24px" height="24px" />
               <div className="flex-1 space-y-2">

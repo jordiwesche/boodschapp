@@ -12,8 +12,8 @@ export default function NavigationWrapper() {
     pathname.startsWith('/onboarding') ||
     pathname.startsWith('/auth')
 
-  // Main tabs (/, /weekmenu, /profiel) render AppShell with its own nav; only show nav on sub-routes (e.g. /profiel/naam)
-  const isMainTab = pathname === '/' || pathname === '/weekmenu' || pathname === '/profiel'
+  // Main tabs (/, /weekmenu, /producten, /profiel) render AppShell with its own nav; only show nav on sub-routes (e.g. /profiel/naam)
+  const isMainTab = pathname === '/' || pathname === '/weekmenu' || pathname === '/producten' || pathname === '/profiel'
   if (hideNavigation || isMainTab) {
     return null
   }

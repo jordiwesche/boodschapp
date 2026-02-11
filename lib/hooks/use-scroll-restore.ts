@@ -10,17 +10,13 @@ import { usePathname } from 'next/navigation'
 export function useScrollRestore(containerRef: React.RefObject<HTMLElement | null>) {
   const pathname = usePathname()
   const scrollKey = `scroll-${pathname}`
-  const isRestoringRef = useRef(false)
 
-  // Save scroll position before navigation
+  // Save scroll position when user scrolls (for potential future use)
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
     const handleScroll = () => {
-      // Don't save while restoring
-      if (isRestoringRef.current) return
-      
       try {
         sessionStorage.setItem(scrollKey, container.scrollTop.toString())
       } catch (error) {
@@ -42,36 +38,16 @@ export function useScrollRestore(containerRef: React.RefObject<HTMLElement | nul
     }
   }, [containerRef, scrollKey])
 
-  // Restore scroll position on mount
+  // Start at top on mount (prevents mobile opening scrolled)
   useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-
-    try {
-      const savedScroll = sessionStorage.getItem(scrollKey)
-      if (savedScroll) {
-        isRestoringRef.current = true
-        const scrollTop = parseInt(savedScroll, 10)
-        
-        // Use requestAnimationFrame to ensure DOM is ready
-        requestAnimationFrame(() => {
-          if (container) {
-            container.scrollTo({
-              top: scrollTop,
-              behavior: 'auto', // Instant scroll, not smooth
-            })
-            
-            // Reset flag after a short delay
-            setTimeout(() => {
-              isRestoringRef.current = false
-            }, 100)
-          }
-        })
-      }
-    } catch (error) {
-      console.warn('Failed to restore scroll position:', error)
+    const scrollToTop = () => {
+      const container = containerRef.current
+      if (container) container.scrollTop = 0
     }
-  }, [containerRef, scrollKey, pathname])
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scrollToTop)
+    })
+  }, [containerRef, pathname])
 
   // Clear scroll position (call this when data is refreshed)
   const clearScroll = () => {

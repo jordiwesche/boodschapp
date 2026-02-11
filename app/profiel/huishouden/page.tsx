@@ -227,7 +227,7 @@ export default function ProfielHuishoudenPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
-      <header className="bg-white shadow">
+      <header className="bg-transparent">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
             <button
@@ -253,7 +253,7 @@ export default function ProfielHuishoudenPage() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-4 pb-8 sm:px-6 lg:px-8">
         <div className="space-y-6">
           {error && (
             <div className="rounded-md bg-red-50 p-4">
@@ -262,7 +262,7 @@ export default function ProfielHuishoudenPage() {
           )}
 
           {/* Huishouden naam */}
-          <div className="rounded-lg bg-white p-6 shadow">
+          <div className="rounded-[16px] bg-white p-6 shadow">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Naam van het huishouden</h2>
             <form onSubmit={handleUpdateName} className="flex gap-4">
               <input
@@ -284,7 +284,7 @@ export default function ProfielHuishoudenPage() {
           </div>
 
           {/* Leden */}
-          <div className="rounded-lg bg-white p-6 shadow">
+          <div className="rounded-[16px] bg-white p-6 shadow">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Leden</h2>
             {members.length === 0 ? (
               <p className="text-sm text-gray-600">Geen leden</p>
@@ -314,7 +314,7 @@ export default function ProfielHuishoudenPage() {
           </div>
 
           {/* Uitnodigingen */}
-          <div className="rounded-lg bg-white p-6 shadow">
+          <div className="rounded-[16px] bg-white p-6 shadow">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Uitnodigingen</h2>
             {invitations.length === 0 ? (
               <p className="text-sm text-gray-600 mb-4">Geen openstaande uitnodigingen</p>

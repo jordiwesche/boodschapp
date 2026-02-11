@@ -188,7 +188,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
-      <header className="bg-white shadow">
+      <header className="bg-transparent">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
             <button
@@ -211,9 +211,9 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-4 pb-8 sm:px-6 lg:px-8">
         {/* Statistics */}
-        <div className="mb-6 rounded-lg bg-white p-6 shadow">
+        <div className="mb-6 rounded-[16px] bg-white p-6 shadow">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-gray-500">Gekocht</p>
@@ -229,7 +229,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
         </div>
 
         {/* Purchase History List */}
-        <div className="rounded-lg bg-white shadow">
+        <div className="rounded-[16px] bg-white shadow">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Koophistorie</h2>
           </div>
@@ -265,7 +265,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
             <button
               onClick={() => setShowResetConfirmModal(true)}
               disabled={resetting}
-              className="flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 rounded-[16px] bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
             >
               <RotateCcw className="h-4 w-4" />
               <span>{resetting ? 'Resetten...' : 'Reset koophistorie'}</span>
@@ -278,7 +278,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
       {showResetConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => setShowResetConfirmModal(false)} />
-          <div className="relative rounded-lg bg-white p-4 shadow-lg max-w-sm w-full">
+          <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
             <p className="text-gray-900">
               Weet je zeker dat je de koophistorie wilt resetten? De frequentie wordt vanaf nu opnieuw berekend.
             </p>
@@ -286,7 +286,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
               <button
                 type="button"
                 onClick={() => setShowResetConfirmModal(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
               >
                 Annuleren
               </button>
@@ -294,7 +294,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
                 type="button"
                 onClick={() => handleReset()}
                 disabled={resetting}
-                className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
               >
                 {resetting ? 'Resetten...' : 'Resetten'}
               </button>

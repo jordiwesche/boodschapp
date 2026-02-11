@@ -119,7 +119,7 @@ export default function InlineSearchDropdown({
 
   if (isSearching) {
     return (
-      <div className="mb-2 rounded-2xl bg-white p-4 shadow-lg">
+      <div className="mb-2 rounded-[16px] bg-white p-4 shadow-lg">
         <p className="text-sm text-gray-500">Zoeken...</p>
       </div>
     )
@@ -130,7 +130,7 @@ export default function InlineSearchDropdown({
 
   if (matchLevel === 3) {
     return (
-      <div className="mb-2 rounded-2xl bg-white shadow-lg overflow-hidden">
+      <div className="mb-2 rounded-[16px] bg-white shadow-lg overflow-hidden">
         <ActionButtons
           q={q}
           desc={desc}
@@ -148,7 +148,7 @@ export default function InlineSearchDropdown({
   const showActionButtons = matchLevel === 2
 
   return (
-    <div className="mb-2 rounded-2xl bg-white shadow-lg overflow-hidden">
+    <div className="mb-2 rounded-[16px] bg-white shadow-lg overflow-hidden">
       {showResults && results.length > 0 && (
         <div className="divide-y divide-gray-100">
           {results.map((result, index) => {

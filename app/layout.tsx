@@ -1,27 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Onest, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import NavigationWrapper from "@/components/NavigationWrapper";
 import Providers from "@/components/Providers";
 import PageTransition from "@/components/PageTransition";
 import SplashScreen from "@/components/SplashScreen";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  display: 'swap', // Prevent FOIT (Flash of Invisible Text)
-  preload: true, // Preload critical font
+const onest = Onest({
+  variable: "--font-onest",
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  preload: true,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-  display: 'swap',
-  preload: false, // Not critical, don't preload
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
-  title: "Boodschapp - Slimme Boodschappen App",
+  title: "Boodschapp",
   description: "Samen boodschappen doen met je huishouden",
   manifest: "/manifest.json",
   themeColor: [
@@ -59,7 +60,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://medmrhmuhghcozfydxov.supabase.co" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${onest.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
           <SplashScreen />

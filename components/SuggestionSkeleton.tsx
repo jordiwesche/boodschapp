@@ -6,7 +6,7 @@ export default function SuggestionSkeleton() {
   return (
     <div className="fixed bottom-32 left-0 right-0 z-30 px-4">
       <div className="mx-auto max-w-md">
-        <div className="rounded-lg bg-white p-3 shadow-lg">
+        <div className="rounded-[16px] bg-white p-3 shadow-lg">
           <div className="flex flex-wrap gap-2">
             {/* 4 suggestion pills */}
             {[1, 2, 3, 4].map((i) => (

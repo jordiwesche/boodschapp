@@ -87,7 +87,7 @@ export default function SearchBar({
       <div className="w-full">
         <div
           ref={containerRef}
-          className={`relative rounded-lg bg-white shadow-lg transition-all ${
+          className={`relative rounded-[16px] bg-white shadow-lg transition-all ${
             isActive ? 'ring-2 ring-blue-500' : 'ring-1 ring-gray-200'
           }`}
         >
@@ -119,7 +119,7 @@ export default function SearchBar({
       <div className="mx-auto max-w-md">
         <div
           ref={containerRef}
-          className={`relative rounded-lg bg-white shadow-lg transition-all ${
+          className={`relative rounded-[16px] bg-white shadow-lg transition-all ${
             isActive ? 'ring-2 ring-blue-500' : 'ring-1 ring-gray-200'
           }`}
         >

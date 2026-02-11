@@ -107,7 +107,7 @@ export default function EmptyListItem({
   }
 
   return (
-    <div className="mb-2 flex items-center gap-3 rounded-2xl bg-white px-4 py-3">
+    <div className="mb-2 flex items-center gap-3 rounded-[16px] border border-gray-200 bg-white px-4 py-3">
       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-gray-300">
         <Check className="h-3 w-3 text-transparent" />
       </div>
@@ -126,21 +126,6 @@ export default function EmptyListItem({
           style={{ fontSize: '16px' }}
           autoFocus={autoFocus}
           inputMode="text"
-        />
-        <div className="h-5 w-px shrink-0 bg-gray-200 self-center" aria-hidden />
-        <input
-          type="text"
-          value={description}
-          onChange={(e) => onDescriptionChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              handleSubmit()
-            }
-          }}
-          placeholder="Toelichting"
-          className="w-28 shrink-0 rounded bg-transparent px-2 py-1 text-gray-600 placeholder:text-gray-400 focus:outline-none placeholder:text-[14px]"
-          style={{ fontSize: '12px' }}
         />
       </form>
 

@@ -20,7 +20,7 @@ export default function Skeleton({
   const variantClasses = {
     text: 'rounded',
     circular: 'rounded-full',
-    rectangular: 'rounded-lg',
+    rectangular: 'rounded-[16px]',
   }
 
   const animationClasses = {

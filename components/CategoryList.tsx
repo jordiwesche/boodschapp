@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import CategoryForm from './CategoryForm'
+// import CategoryForm from './CategoryForm' // Tijdelijk uitgeschakeld
 
 interface Category {
   id: string
@@ -186,19 +186,20 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
     }
   }
 
-  if (showForm) {
-    return (
-      <div className="rounded-lg bg-white p-6 shadow">
-        <CategoryForm
-          category={editingCategory || undefined}
-          onSave={handleSave}
-          onCancel={handleCancel}
-          onDelete={editingCategory ? handleDeleteFromForm : undefined}
-          loading={loading}
-        />
-      </div>
-    )
-  }
+  // Tijdelijk uitgeschakeld: bewerken en toevoegen van categorieën
+  // if (showForm) {
+  //   return (
+  //     <div className="rounded-[16px] bg-white p-6 shadow">
+  //       <CategoryForm
+  //         category={editingCategory || undefined}
+  //         onSave={handleSave}
+  //         onCancel={handleCancel}
+  //         onDelete={editingCategory ? handleDeleteFromForm : undefined}
+  //         loading={loading}
+  //       />
+  //     </div>
+  //   )
+  // }
 
   return (
     <div className="space-y-4">
@@ -209,17 +210,18 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
         <div className="rounded-md bg-green-50 p-3 text-sm text-green-800">{success}</div>
       )}
 
-      <div className="flex justify-end">
+      {/* Tijdelijk uitgeschakeld: categorie toevoegen */}
+      {/* <div className="flex justify-end">
         <button
           onClick={handleAdd}
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           + Categorie toevoegen
         </button>
-      </div>
+      </div> */}
 
       {categories.length === 0 ? (
-        <div className="rounded-lg bg-white p-8 text-center shadow">
+        <div className="rounded-[16px] border border-gray-200 bg-white p-8 text-center">
           <p className="text-gray-600">Nog geen categorieën. Voeg je eerste categorie toe!</p>
         </div>
       ) : (
@@ -227,8 +229,8 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
           {categories.map((category, index) => (
             <div
               key={category.id}
-              onClick={() => handleEdit(category)}
-              className="flex cursor-pointer items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+              // Tijdelijk uitgeschakeld: onClick={() => handleEdit(category)}
+              className="flex items-center justify-between rounded-[16px] border border-gray-200 bg-white p-4"
             >
               <div className="flex items-center gap-4">
                 <div className="flex flex-col gap-1">
@@ -257,7 +259,6 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">{category.name}</h3>
-                  <p className="text-xs text-gray-500">Volgorde: {category.display_order}</p>
                 </div>
               </div>
             </div>

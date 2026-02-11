@@ -58,6 +58,7 @@ export default function ShoppingListItem({
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const touchStartY = useRef<number>(0)
   const longPressJustTriggeredRef = useRef(false)
+  const submenuOpenedAtRef = useRef<number>(0)
 
   const handleCheck = async () => {
     if (longPressJustTriggeredRef.current) {
@@ -123,6 +124,7 @@ export default function ShoppingListItem({
       setPressActive(true)
       setTimeout(() => setPressActive(false), 120)
       setShowSubmenu(true)
+      submenuOpenedAtRef.current = Date.now()
       setIsPressing(false)
     }, LONG_PRESS_MS)
   }
@@ -222,6 +224,7 @@ export default function ShoppingListItem({
         onContextMenu={(e) => e.preventDefault()}
         onClick={(e) => {
           if (!showSubmenu) return
+          if (Date.now() - submenuOpenedAtRef.current < 400) return
           const target = e.target as Node
           if (checkboxRef.current?.contains(target) || submenuRef.current?.contains(target)) return
           e.preventDefault()
@@ -255,19 +258,8 @@ export default function ShoppingListItem({
 
         <div className={isEditingDescription ? 'shrink-0 min-w-0' : 'flex-1 min-w-0'}>
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            {item.product_name != null ? (
-              <span
-                className={`font-medium shrink-0 ${
-                  showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
-                }`}
-              >
-                {item.product_name}
-              </span>
-            ) : (
-              <Skeleton variant="text" className="h-5 w-24 shrink-0" animation="pulse" />
-            )}
-            {!isEditingDescription && (
-              <span
+            {!isEditingDescription ? (
+              <div
                 role="button"
                 tabIndex={0}
                 onClick={handleEditClick}
@@ -278,11 +270,40 @@ export default function ShoppingListItem({
                     setEditValue(item.description || '')
                   }
                 }}
-                className={`text-sm cursor-pointer hover:text-gray-700 flex-1 min-w-0 min-h-[1.25rem] block ${item.description ? 'text-gray-500' : ''}`}
+                className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
                 aria-label="Toelichting bewerken"
               >
-                {item.description ?? ''}
-              </span>
+                {item.product_name != null ? (
+                  <span
+                    className={`font-medium shrink-0 ${
+                      showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
+                    }`}
+                  >
+                    {item.product_name}
+                  </span>
+                ) : (
+                  <Skeleton variant="text" className="h-5 w-24 shrink-0" animation="pulse" />
+                )}
+                <span
+                  className={`text-sm flex-1 min-w-0 min-h-[1.25rem] block ${item.description ? 'text-gray-500' : ''}`}
+                >
+                  {item.description ?? ''}
+                </span>
+              </div>
+            ) : (
+              <>
+                {item.product_name != null ? (
+                  <span
+                    className={`font-medium shrink-0 ${
+                      showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
+                    }`}
+                  >
+                    {item.product_name}
+                  </span>
+                ) : (
+                  <Skeleton variant="text" className="h-5 w-24 shrink-0" animation="pulse" />
+                )}
+              </>
             )}
           </div>
         </div>
@@ -328,17 +349,17 @@ export default function ShoppingListItem({
         )}
       </div>
 
-      {/* Long-press submenu: klein, rechts uitgelijnd, iets over het item */}
+      {/* Long-press submenu: tekst link met icoon */}
       {showSubmenu && !item.is_checked && !isEditingDescription && (
         <div
           ref={submenuRef}
-          className="absolute right-2 top-1/2 z-10 min-w-0 -translate-y-1/2 select-none overflow-hidden rounded-lg bg-white py-1.5 shadow-lg ring-1 ring-black/5 animate-slide-down"
+          className="absolute right-2 top-1/2 z-10 min-w-0 -translate-y-1/2 select-none animate-slide-down"
           style={{ WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
         >
           <button
             type="button"
             onClick={handleDelete}
-            className="flex items-center gap-2 whitespace-nowrap px-3 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+            className="flex items-center gap-2 whitespace-nowrap text-left text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
             aria-label="Verwijderen"
           >
             <Trash2 className="h-4 w-4 shrink-0" />

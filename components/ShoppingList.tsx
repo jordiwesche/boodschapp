@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Clock, Zap, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock, Zap, Plus, Trash2, Star } from 'lucide-react'
 import ShoppingListItem from './ShoppingListItem'
 import { isFruit } from '@/lib/fruit-groente'
 
@@ -66,31 +66,44 @@ export interface ExpectedProduct {
   days_until_expected: number
 }
 
+export interface BasicProduct {
+  id: string
+  name: string
+  emoji: string
+  category_id: string
+  category: { id: string; name: string; display_order: number } | null
+}
+
 interface ShoppingListProps {
   items: ShoppingListItemData[]
   expectedProducts?: ExpectedProduct[]
+  basicProducts?: BasicProduct[]
   onCheck: (id: string) => void
   onUncheck?: (id: string) => void
   onDelete: (id: string) => void
   onUpdateDescription: (id: string, description: string) => void
   onClearChecked?: () => void
   onAddExpectedToMain?: (product: ExpectedProduct) => void
+  onAddBasicToMain?: (product: BasicProduct) => void
   children?: React.ReactNode
 }
 
 export default function ShoppingList({
   items,
   expectedProducts = [],
+  basicProducts = [],
   onCheck,
   onUncheck,
   onDelete,
   onUpdateDescription,
   onClearChecked,
   onAddExpectedToMain,
+  onAddBasicToMain,
   children,
 }: ShoppingListProps) {
   const checkedItemsCount = items.filter((item) => item.is_checked).length
   const [checkedSectionOpen, setCheckedSectionOpen] = useState(false)
+  const [basicsSectionOpen, setBasicsSectionOpen] = useState(false)
   const [showClearCheckedModal, setShowClearCheckedModal] = useState(false)
   // Separate checked and unchecked items; unchecked split into normal vs "Later" (description = weekday)
   const uncheckedItems = items.filter((item) => !item.is_checked)
@@ -174,7 +187,7 @@ export default function ShoppingList({
   if (allSortedCategories.length === 0) {
     return (
       <div className="pb-32">
-        <div className="bg-white rounded-[16px] p-8 text-center">
+        <div className="rounded-[16px] border border-gray-200 bg-white p-8 text-center">
           <p className="text-gray-500">Je boodschappenlijst is leeg</p>
         </div>
       </div>
@@ -204,6 +217,17 @@ export default function ShoppingList({
     const nameB = (b.product_name || '').toLowerCase()
     return nameA.localeCompare(nameB, 'nl')
   })
+
+  // Basics: exclude products already in list (any section), sort by category then name
+  const productIdsInList = new Set(items.map((i) => i.product_id).filter(Boolean))
+  const basicsNotInList = basicProducts
+    .filter((p) => !productIdsInList.has(p.id))
+    .sort((a, b) => {
+      const orderA = a.category?.display_order ?? 999
+      const orderB = b.category?.display_order ?? 999
+      if (orderA !== orderB) return orderA - orderB
+      return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase(), 'nl')
+    })
 
   // Sort checked items by checked_at (most recent first), then alphabetically
   const sortedCheckedItems = [...checkedItems].sort((a, b) => {
@@ -237,7 +261,7 @@ export default function ShoppingList({
     return orderA - orderB
   })
 
-  const cardClass = 'bg-white rounded-[16px] p-4'
+  const cardClass = 'rounded-[16px] border border-gray-200 bg-white p-4'
 
   return (
     <div className="pb-32 flex flex-col flex-1 min-h-0 gap-4">
@@ -263,10 +287,9 @@ export default function ShoppingList({
                   {categoryGroup.category?.name || 'Overig'}
                 </h2>
                 <div>
-                  {itemsToRender.map((item, itemIndex) => (
+                  {itemsToRender.map((item) => (
                     <div
                       key={item.id}
-                      className={itemIndex === itemsToRender.length - 1 ? '' : 'border-b border-gray-200'}
                       data-shopping-list-item
                     >
                       <ShoppingListItem
@@ -315,11 +338,8 @@ export default function ShoppingList({
           </div>
           {checkedSectionOpen && (
             <div className="mt-2">
-              {sortedCheckedItems.map((item, itemIndex) => (
-                <div
-                  key={item.id}
-                  className={itemIndex === sortedCheckedItems.length - 1 ? '' : 'border-b border-gray-200'}
-                >
+              {sortedCheckedItems.map((item) => (
+                <div key={item.id}>
                   <ShoppingListItem
                     item={item}
                     onCheck={onCheck}
@@ -342,10 +362,9 @@ export default function ShoppingList({
             Binnenkort
           </h2>
           <div>
-            {sortedLaterUnchecked.map((item, itemIndex) => (
+            {sortedLaterUnchecked.map((item) => (
               <div
                 key={item.id}
-                className={itemIndex === sortedLaterUnchecked.length - 1 ? '' : 'border-b border-gray-200'}
                 data-shopping-list-item
               >
                 <ShoppingListItem
@@ -371,14 +390,14 @@ export default function ShoppingList({
             Verwacht
           </h2>
           <div>
-            {expectedProducts.map((product, index) => (
+            {expectedProducts.map((product) => (
               <div
                 key={product.id}
-                className={`flex items-center gap-3 py-3 ${index === expectedProducts.length - 1 ? '' : 'border-b border-gray-200'}`}
+                className="flex items-center gap-3 py-3"
               >
                 <span className="text-lg shrink-0">{product.emoji}</span>
                 <span className="flex-1 min-w-0 font-medium text-gray-900">{product.name}</span>
-                <span className="text-xs text-gray-400 shrink-0">
+                <span className="text-sm text-gray-400 shrink-0">
                   {product.days_until_expected === 0 ? 'vandaag' : `over ${product.days_until_expected}d`}
                 </span>
                 {onAddExpectedToMain && (
@@ -397,11 +416,56 @@ export default function ShoppingList({
         </div>
       )}
 
+      {/* 5. Basics (ster-icoon) - standaard ingeklapt */}
+      {basicsNotInList.length > 0 && (
+        <div className={cardClass}>
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => setBasicsSectionOpen((open) => !open)}
+              className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-sm font-medium text-gray-500 tracking-wide"
+              aria-expanded={basicsSectionOpen}
+            >
+              {basicsSectionOpen ? (
+                <ChevronDown className="h-4 w-4 shrink-0" />
+              ) : (
+                <ChevronRight className="h-4 w-4 shrink-0" />
+              )}
+              <Star className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+              <span>Basics ({basicsNotInList.length})</span>
+            </button>
+          </div>
+          {basicsSectionOpen && (
+            <div className="mt-2">
+              {basicsNotInList.map((product) => (
+                <div
+                  key={product.id}
+                  className="flex items-center gap-3 py-3"
+                >
+                  <span className="text-lg shrink-0">{product.emoji}</span>
+                  <span className="flex-1 min-w-0 font-medium text-gray-900">{product.name}</span>
+                  {onAddBasicToMain && (
+                    <button
+                      type="button"
+                      onClick={() => onAddBasicToMain(product)}
+                      className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                      aria-label="Toevoegen aan hoofdlijst"
+                    >
+                      <Plus className="h-5 w-5" strokeWidth={2} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Modal: bevestiging wissen afgevinkte items */}
       {showClearCheckedModal && onClearChecked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => setShowClearCheckedModal(false)} />
-          <div className="relative rounded-lg bg-white p-4 shadow-lg max-w-sm w-full">
+          <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
             <p className="text-gray-900">
               Weet je zeker dat je alle {checkedItemsCount} afgevinkte item{checkedItemsCount !== 1 ? 's' : ''} wilt wissen?
             </p>
@@ -409,7 +473,7 @@ export default function ShoppingList({
               <button
                 type="button"
                 onClick={() => setShowClearCheckedModal(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
               >
                 Annuleren
               </button>
@@ -419,7 +483,7 @@ export default function ShoppingList({
                   onClearChecked()
                   setShowClearCheckedModal(false)
                 }}
-                className="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
+                className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
               >
                 Wissen
               </button>

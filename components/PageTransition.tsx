@@ -12,6 +12,16 @@ export default function PageTransition({ children }: PageTransitionProps) {
   const prevPathnameRef = useRef(pathname)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // Scroll to top when pathname changes (fixes mobile opening scrolled)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.history.scrollRestoration = 'manual'
+      window.scrollTo(0, 0)
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+    }
+  }, [pathname])
+
   useEffect(() => {
     // Only animate if pathname actually changed (not on initial mount)
     if (prevPathnameRef.current !== pathname && containerRef.current && prevPathnameRef.current !== '') {

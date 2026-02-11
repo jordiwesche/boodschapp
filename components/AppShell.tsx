@@ -26,17 +26,27 @@ const ProfielTabContent = dynamic(() => import('@/components/ProfielTabContent')
   ),
 })
 
-type TabId = 'lijst' | 'weekmenu' | 'profiel'
+const ProductenTabContent = dynamic(() => import('@/components/ProductenTabContent'), {
+  loading: () => (
+    <div className="flex min-h-[40vh] items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
+    </div>
+  ),
+})
+
+type TabId = 'lijst' | 'weekmenu' | 'producten' | 'profiel'
 
 const PATH_TO_TAB: Record<string, TabId> = {
   '/': 'lijst',
   '/weekmenu': 'weekmenu',
+  '/producten': 'producten',
   '/profiel': 'profiel',
 }
 
 const TAB_TO_PATH: Record<TabId, string> = {
   lijst: '/',
   weekmenu: '/weekmenu',
+  producten: '/producten',
   profiel: '/profiel',
 }
 
@@ -58,7 +68,7 @@ export default function AppShell({ initialTab }: { initialTab: TabId }) {
     prefetchProfile()
   }, [queryClient])
 
-  const handleTabChange = (path: '/' | '/weekmenu' | '/profiel') => {
+  const handleTabChange = (path: '/' | '/weekmenu' | '/producten' | '/profiel') => {
     const tab = PATH_TO_TAB[path]
     if (tab == null) return
     setActiveTab(tab)
@@ -70,7 +80,7 @@ export default function AppShell({ initialTab }: { initialTab: TabId }) {
       {activeTab === 'lijst' && <ShoppingListPage />}
       {activeTab === 'weekmenu' && (
         <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
-          <header className="bg-white border-b border-gray-100">
+          <header className="bg-transparent">
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
               <h1 className="text-3xl font-bold text-gray-900">Weekmenu</h1>
             </div>
@@ -78,6 +88,7 @@ export default function AppShell({ initialTab }: { initialTab: TabId }) {
           <WeekmenuPage />
         </div>
       )}
+      {activeTab === 'producten' && <ProductenTabContent />}
       {activeTab === 'profiel' && <ProfielTabContent />}
       <BottomNavigation onTabChange={handleTabChange} />
     </>

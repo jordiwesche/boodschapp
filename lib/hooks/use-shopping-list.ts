@@ -42,6 +42,7 @@ export const queryKeys = {
   shoppingListItems: ['shopping-list-items'] as const,
   suggestions: ['suggestions'] as const,
   expectedProducts: ['expected-products'] as const,
+  basicProducts: ['basic-products'] as const,
 }
 
 // Fetch functions
@@ -72,6 +73,30 @@ async function fetchExpectedProducts(): Promise<ExpectedProduct[]> {
   return data.expected || []
 }
 
+export interface BasicProduct {
+  id: string
+  name: string
+  emoji: string
+  category_id: string
+  category: { id: string; name: string; display_order: number } | null
+}
+
+async function fetchBasicProducts(): Promise<BasicProduct[]> {
+  const response = await fetch('/api/products?is_basic=true')
+  if (!response.ok) {
+    return []
+  }
+  const data = await response.json()
+  const products = data.products || []
+  return products.map((p: { id: string; name: string; emoji: string; category_id: string; category?: { id: string; name: string; display_order: number } | null }) => ({
+    id: p.id,
+    name: p.name,
+    emoji: p.emoji,
+    category_id: p.category_id,
+    category: p.category ?? null,
+  }))
+}
+
 // Hooks
 export function useShoppingListItems() {
   return useQuery({
@@ -93,6 +118,14 @@ export function useExpectedProducts() {
   return useQuery({
     queryKey: queryKeys.expectedProducts,
     queryFn: fetchExpectedProducts,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  })
+}
+
+export function useBasicProducts() {
+  return useQuery({
+    queryKey: queryKeys.basicProducts,
+    queryFn: fetchBasicProducts,
     staleTime: 2 * 60 * 1000, // 2 minutes
   })
 }

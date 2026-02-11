@@ -1,11 +1,11 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { ShoppingCart, Calendar, User } from 'lucide-react'
+import { ShoppingCart, Calendar, Package, User } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { haptic } from '@/lib/haptics'
 
-type TabPath = '/' | '/weekmenu' | '/profiel'
+type TabPath = '/' | '/weekmenu' | '/producten' | '/profiel'
 
 export default function BottomNavigation({
   onTabChange,
@@ -27,6 +27,11 @@ export default function BottomNavigation({
       label: 'Weekmenu',
       icon: Calendar,
       path: '/weekmenu',
+    },
+    {
+      label: 'Producten',
+      icon: Package,
+      path: '/producten',
     },
     {
       label: 'Profiel',

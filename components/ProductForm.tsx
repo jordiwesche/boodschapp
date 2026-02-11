@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Info, Trash2, Search, Star } from 'lucide-react'
+import { Info, Trash2, Search } from 'lucide-react'
 import { CATEGORY_CONCEPT_PRODUCTS } from '@/data/category-concept-products'
 import FixedActionBar from './FixedActionBar'
 
@@ -582,23 +582,9 @@ export default function ProductForm({
       )}
 
       <div>
-        <div className="flex items-center justify-between">
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Naam <span className="text-red-500">*</span>
-          </label>
-          <button
-            type="button"
-            onClick={() => setIsBasic(!isBasic)}
-            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-            aria-label={isBasic ? 'Verwijder basis product' : 'Markeer als basis product'}
-          >
-            {isBasic ? (
-              <Star size={20} className="fill-yellow-500 text-yellow-500" />
-            ) : (
-              <Star size={20} className="stroke-2" />
-            )}
-          </button>
-        </div>
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          Naam <span className="text-red-500">*</span>
+        </label>
         <input
           type="text"
           id="name"

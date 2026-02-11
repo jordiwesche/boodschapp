@@ -21,11 +21,16 @@ export default function SplashScreen() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-white transition-opacity duration-300"
-      style={{ opacity: fadeOut ? 0 : 1 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-300"
+      style={{
+        opacity: fadeOut ? 0 : 1,
+        background: 'radial-gradient(ellipse 90% 90% at 50% 50%, #155DFC 0%, #1248D4 100%)',
+      }}
       aria-hidden="true"
     >
-      <span className="text-2xl font-bold text-gray-900">Boodschapp</span>
+      <span className="text-5xl font-bold text-white">
+        <span className="animate-boodsch-fade">Boodsch</span>app
+      </span>
     </div>
   )
 }

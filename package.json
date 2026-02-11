@@ -27,6 +27,8 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@fontsource/onest": "^5.2.11",
+    "@napi-rs/canvas": "^0.1.91",
     "@next/bundle-analyzer": "^16.1.5",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",

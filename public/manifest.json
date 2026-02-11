@@ -1,11 +1,11 @@
 {
-  "name": "Boodschapp - Slimme Boodschappen App",
+  "name": "Boodschapp",
   "short_name": "Boodschapp",
   "description": "Samen boodschappen doen met je huishouden",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
+  "theme_color": "#155DFC",
   "orientation": "portrait",
   "scope": "/",
   "icons": [

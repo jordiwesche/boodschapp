@@ -106,10 +106,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform response to flatten category data
-    const transformedProducts = (products || []).map((product: { id: string; product_categories?: unknown[]; [key: string]: unknown }) => {
-      const category = Array.isArray(product.product_categories) && product.product_categories.length > 0
-        ? product.product_categories[0]
-        : null
+    const transformedProducts = (products || []).map((product: { id: string; product_categories?: unknown; [key: string]: unknown }) => {
+      const rawCat = product.product_categories
+      const category = Array.isArray(rawCat) && rawCat.length > 0
+        ? rawCat[0]
+        : rawCat && typeof rawCat === 'object' && !Array.isArray(rawCat)
+          ? rawCat
+          : null
 
       const out: Record<string, unknown> = {
         id: product.id,

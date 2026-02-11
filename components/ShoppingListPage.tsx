@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/client'
 import {
   useShoppingListItems,
   useExpectedProducts,
+  useBasicProducts,
   useCheckItem,
   useUncheckItem,
   useDeleteItem,
@@ -301,6 +302,7 @@ export default function ShoppingListPage() {
   // Use TanStack Query hooks for data fetching
   const { data: items = [], isLoading: isLoadingItems, refetch: refetchItems } = useShoppingListItems()
   const { data: expectedProducts = [] } = useExpectedProducts()
+  const { data: basicProducts = [] } = useBasicProducts()
   const queryClient = useQueryClient()
 
   // Mutations
@@ -1350,6 +1352,7 @@ export default function ShoppingListPage() {
               <ShoppingList
                 items={items}
                 expectedProducts={expectedProducts}
+                basicProducts={basicProducts}
                 onCheck={handleCheck}
                 onUncheck={handleUncheck}
                 onDelete={handleDelete}
@@ -1369,6 +1372,20 @@ export default function ShoppingListPage() {
                     setErrorMessage('Kon item niet toevoegen. Probeer het opnieuw.')
                     setTimeout(() => setErrorMessage(null), 5000)
                     console.error('Error adding expected product:', error)
+                  }
+                }}
+                onAddBasicToMain={async (product) => {
+                  haptic('light')
+                  try {
+                    await addItemMutation.mutateAsync({
+                      product_id: product.id,
+                      category_id: product.category_id,
+                      quantity: '1',
+                    })
+                  } catch (error) {
+                    setErrorMessage('Kon item niet toevoegen. Probeer het opnieuw.')
+                    setTimeout(() => setErrorMessage(null), 5000)
+                    console.error('Error adding basic product:', error)
                   }
                 }}
               >
@@ -1416,7 +1433,7 @@ export default function ShoppingListPage() {
       {/* Error message toast */}
       {errorMessage && (
         <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 transform">
-          <div className="mx-auto max-w-md rounded-lg bg-red-50 border border-red-200 px-4 py-3 shadow-lg">
+          <div className="mx-auto max-w-md rounded-[16px] bg-red-50 border border-red-200 px-4 py-3 shadow-lg">
             <p className="text-sm font-medium text-red-800">{errorMessage}</p>
           </div>
         </div>
@@ -1433,7 +1450,7 @@ export default function ShoppingListPage() {
           aria-labelledby="save-product-modal-title"
         >
           <div
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            className="w-full max-w-md rounded-[16px] bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 id="save-product-modal-title" className="text-lg font-semibold text-gray-900 mb-4">
