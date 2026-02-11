@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Loader2, ArrowDown } from 'lucide-react'
 
 interface PullToRefreshProps {
   onRefresh: () => Promise<void>
@@ -138,44 +137,16 @@ export default function PullToRefresh({
     }
   }, [disabled, onRefresh, pullDistance, isRefreshing, scrollContainerRef])
 
-  const pullProgress = Math.min(pullDistance / threshold, 1)
   const shouldShowIndicator = (isPulling && pullDistance > 20) || isRefreshing
 
   return (
     <>
-      {/* Pull to refresh indicator */}
       {shouldShowIndicator && (
         <div
-          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-white shadow-sm transition-all duration-200"
-          style={{
-            height: `${Math.min(pullDistance, threshold * 1.5)}px`,
-            transform: `translateY(${Math.max(0, pullDistance - 60)}px)`,
-            opacity: Math.min(pullProgress * 1.5, 1),
-          }}
+          className="flex items-center justify-center py-3 text-sm text-gray-500 transition-opacity"
+          style={{ minHeight: `${Math.min(pullDistance, threshold * 1.5)}px`, opacity: Math.min(pullDistance / threshold, 1) }}
         >
-          {isRefreshing ? (
-            <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-              <span className="text-xs font-medium text-gray-600">Vernieuwen...</span>
-            </div>
-          ) : (
-            <div
-              className="flex flex-col items-center gap-2"
-              style={{ opacity: Math.min(pullProgress * 1.5, 1) }}
-            >
-              <div className="relative">
-                <ArrowDown
-                  className="h-6 w-6 text-blue-500 transition-transform duration-200"
-                  style={{
-                    transform: `rotate(${pullProgress >= 1 ? 180 : 0}deg) translateY(${pullProgress * 5}px)`,
-                  }}
-                />
-              </div>
-              <span className="text-xs font-medium text-gray-600 whitespace-nowrap">
-                {pullDistance >= threshold ? 'Los om te vernieuwen' : 'Trek om te vernieuwen'}
-              </span>
-            </div>
-          )}
+          {isRefreshing ? 'Vernieuwen...' : pullDistance >= threshold ? 'Los om te vernieuwen' : 'Trek om te vernieuwen'}
         </div>
       )}
       {children}

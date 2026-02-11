@@ -40,13 +40,8 @@ export function useScrollRestore(containerRef: React.RefObject<HTMLElement | nul
 
   // Start at top on mount (prevents mobile opening scrolled)
   useEffect(() => {
-    const scrollToTop = () => {
-      const container = containerRef.current
-      if (container) container.scrollTop = 0
-    }
-    requestAnimationFrame(() => {
-      requestAnimationFrame(scrollToTop)
-    })
+    const container = containerRef.current
+    if (container) container.scrollTop = 0
   }, [containerRef, pathname])
 
   // Clear scroll position (call this when data is refreshed)

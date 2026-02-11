@@ -58,6 +58,11 @@ function createIcon() {
     const smallPng = await sharp(pngBuffer).resize(192, 192).toBuffer();
     fs.writeFileSync(path.join(publicDir, 'icon-192x192.png'), smallPng);
     console.log('Generated icon-192x192.png');
+
+    const applePng = await sharp(pngBuffer).resize(180, 180).toBuffer();
+    fs.writeFileSync(path.join(publicDir, 'icon-180x180.png'), applePng);
+    fs.writeFileSync(path.join(__dirname, '..', 'app', 'apple-icon.png'), applePng);
+    console.log('Generated icon-180x180.png & app/apple-icon.png (180x180 for iOS)');
   } catch (err) {
     console.error(err);
     process.exit(1);

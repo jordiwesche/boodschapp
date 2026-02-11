@@ -58,6 +58,9 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://medmrhmuhghcozfydxov.supabase.co" />
         <link rel="dns-prefetch" href="https://medmrhmuhghcozfydxov.supabase.co" />
+        <link rel="apple-touch-icon" href="/icon-180x180.png" sizes="180x180" />
+        <link rel="apple-touch-icon" href="/icon-192x192.png" sizes="192x192" />
+        <link rel="apple-touch-icon" href="/icon-512x512.png" sizes="512x512" />
       </head>
       <body
         className={`${onest.variable} ${geistMono.variable} antialiased`}
