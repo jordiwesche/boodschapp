@@ -1242,7 +1242,7 @@ export default function ShoppingListPage() {
   }, [saveProductModalOpen])
 
   return (
-    <div className="flex h-dvh min-h-screen flex-col overflow-hidden bg-gray-50 pb-20">
+    <div className="flex min-h-screen flex-col bg-gray-50 pb-20 h-dvh overflow-hidden md:h-auto md:overflow-visible">
       <header className="bg-transparent">
         <div className="mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900">Boodschappen</h1>
@@ -1254,9 +1254,9 @@ export default function ShoppingListPage() {
         </div>
       </header>
 
-      <main 
+      <main
         ref={scrollContainerRef}
-        className="mx-auto w-full max-w-2xl flex-1 flex flex-col min-h-0 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 lg:px-8"
+        className="mx-auto w-full max-w-2xl flex-1 flex flex-col min-h-0 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 lg:px-8 md:flex-none md:overflow-visible"
       >
         <PullToRefresh
           onRefresh={handleRefresh}
