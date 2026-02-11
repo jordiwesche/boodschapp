@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from 'react'
 import { Search } from 'lucide-react'
 import ProductCard from './ProductCard'
 import ProductForm from './ProductForm'
-import FixedActionBar from './FixedActionBar'
 import { formatDayLabel, daySortKey } from '@/lib/format-day-label'
 
 interface Category {
@@ -313,7 +312,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             aria-label="Filter op categorie"
-            className="min-w-0 flex-1 rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="min-w-0 flex-1 rounded-md border-gray-300 bg-white pl-3 pr-12 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           >
             <option value="" className="text-gray-500">Alle categorieën</option>
             {categories.map((category) => (
@@ -327,7 +326,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
             aria-label="Sorteren"
-            className="min-w-0 flex-1 rounded-md border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="min-w-0 flex-1 rounded-md border-gray-300 bg-white pl-3 pr-12 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
           >
             <option value="alfabetisch">Alfabetisch</option>
             <option value="koopfrequentie">Koopfrequentie</option>
@@ -395,16 +394,12 @@ export default function ProductList({ products, categories, onRefresh }: Product
         </div>
       )}
     </div>
-    <FixedActionBar
-      right={
-        <button
-          onClick={handleAdd}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          + Product toevoegen
-        </button>
-      }
-    />
+    <button
+      onClick={handleAdd}
+      className="fixed bottom-[100px] right-4 z-40 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-lg hover:bg-blue-700"
+    >
+      + Product toevoegen
+    </button>
     </>
   )
 }

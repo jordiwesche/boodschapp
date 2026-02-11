@@ -62,7 +62,7 @@ export default function ProductCard({ product, onEdit, onToggleBasic }: ProductC
   return (
     <div 
       onClick={() => onEdit(product)}
-      className="cursor-pointer rounded-[16px] border border-gray-200 bg-white px-3 py-3"
+      className="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-3"
     >
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0">

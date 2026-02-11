@@ -33,6 +33,11 @@ select {
   font-size: 16px !important;
 }
 
+/* Chevron spacing for dropdowns */
+select {
+  padding-right: 3rem;
+}
+
 @media screen and (max-width: 768px) {
   /* Prevent page scrolling when keyboard appears */
   body.keyboard-open {

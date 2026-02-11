@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { ShoppingCart, Calendar, Package, User } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { haptic } from '@/lib/haptics'
 
 type TabPath = '/' | '/weekmenu' | '/producten' | '/profiel'
@@ -47,6 +47,25 @@ export default function BottomNavigation({
     return pathname.startsWith(path)
   }
 
+  // Stick to visual viewport bottom when iOS browser bar hides on scroll
+  const [bottomOffset, setBottomOffset] = useState(0)
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return
+    const updatePosition = () => {
+      const vv = window.visualViewport!
+      const delta = vv.offsetTop + vv.height - window.innerHeight
+      setBottomOffset(delta > 0 ? -delta : 0)
+    }
+    updatePosition()
+    window.visualViewport.addEventListener('resize', updatePosition)
+    window.visualViewport.addEventListener('scroll', updatePosition)
+    return () => {
+      window.visualViewport!.removeEventListener('resize', updatePosition)
+      window.visualViewport!.removeEventListener('scroll', updatePosition)
+    }
+  }, [])
+
   // Animate active indicator transition
   useEffect(() => {
     if (prevPathnameRef.current !== pathname) {
@@ -67,7 +86,10 @@ export default function BottomNavigation({
   }, [pathname])
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white shadow-lg">
+    <nav
+      className="fixed left-0 right-0 z-50 border-t border-gray-200 bg-white shadow-lg pb-[env(safe-area-inset-bottom)]"
+      style={{ bottom: bottomOffset }}
+    >
       <div className="mx-auto flex max-w-md items-center justify-around px-4 py-2">
         {navItems.map((item) => {
           const Icon = item.icon
