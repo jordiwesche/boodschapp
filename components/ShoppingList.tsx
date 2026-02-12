@@ -187,7 +187,7 @@ export default function ShoppingList({
 
   if (allSortedCategories.length === 0) {
     return (
-      <div className="pb-32">
+      <div className="pb-16">
         <div className="rounded-[16px] border border-gray-200 bg-white p-8 text-center">
           <p className="text-gray-500">Je boodschappenlijst is leeg</p>
         </div>
@@ -266,7 +266,7 @@ export default function ShoppingList({
   const mainListCardClass = 'rounded-[16px] border-2 border-gray-200 bg-white/80 p-4'
 
   return (
-    <div className="pb-32 flex flex-col flex-1 min-h-0 gap-4">
+    <div className="pb-16 flex flex-col flex-1 min-h-0 gap-4">
       {/* 1. Urgent: alle categoriesecties (Fruit & Groente t/m Overig) */}
       {sortedUncheckedCategories.length > 0 && (
         <div className={mainListCardClass}>
@@ -284,9 +284,9 @@ export default function ShoppingList({
                 aria-label={showCategoryTitles ? 'Lijst compacter maken' : 'Lijst uitgebreider maken'}
               >
                 {showCategoryTitles ? (
-                  <List className="h-4 w-4" strokeWidth={2} />
-                ) : (
                   <LayoutList className="h-4 w-4" strokeWidth={2} />
+                ) : (
+                  <List className="h-4 w-4" strokeWidth={2} />
                 )}
               </button>
             )}
@@ -307,7 +307,7 @@ export default function ShoppingList({
             const isOverig = (categoryGroup.category?.name || 'Overig') === 'Overig'
             const categorySpacing =
               index === 0
-                ? ''
+                ? showCategoryTitles ? 'mt-4' : ''
                 : showCategoryTitles
                   ? 'mt-4'
                   : isOverig

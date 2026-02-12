@@ -64,6 +64,35 @@ function median(sorted: number[]): number {
   return (sorted[mid - 1] + sorted[mid]) / 2
 }
 
+/** Gemiddelde van een array */
+function average(values: number[]): number {
+  if (values.length === 0) return 0
+  return values.reduce((a, b) => a + b, 0) / values.length
+}
+
+/** Modus: meest voorkomende waarde na afronden op gehele getallen. Null bij gelijke frequenties. */
+function mode(values: number[]): number | null {
+  if (values.length === 0) return null
+  const rounded = values.map((v) => Math.round(v))
+  const counts = new Map<number, number>()
+  for (const v of rounded) {
+    counts.set(v, (counts.get(v) ?? 0) + 1)
+  }
+  let maxCount = 0
+  let modeVal: number | null = null
+  let tie = false
+  for (const [val, count] of counts) {
+    if (count > maxCount) {
+      maxCount = count
+      modeVal = val
+      tie = false
+    } else if (count === maxCount && count > 0) {
+      tie = true
+    }
+  }
+  return maxCount > 1 && !tie ? modeVal : null
+}
+
 /**
  * Berekent de aankoopfrequentie in dagen op basis van de mediaan van de intervallen.
  * Uitschieters (bijv. vakantie, online boodschappen) worden met IQR genegeerd;
@@ -108,6 +137,56 @@ export function calculatePurchaseFrequency(
   const toUse = inlierIntervals.length >= 2 ? inlierIntervals : intervals
   const sortedToUse = [...toUse].sort((a, b) => a - b)
   return median(sortedToUse)
+}
+
+export type PurchaseFrequencyStats = {
+  average: number | null
+  median: number | null
+  mode: number | null
+}
+
+/**
+ * Berekent gemiddelde, mediaan en modus van de aankoopfrequentie (in dagen).
+ * Gebruikt dezelfde logica als calculatePurchaseFrequency (filter, outlier removal).
+ */
+export function calculatePurchaseFrequencyStats(
+  purchaseHistory: PurchaseHistory[]
+): PurchaseFrequencyStats {
+  if (purchaseHistory.length < 3) {
+    return { average: null, median: null, mode: null }
+  }
+
+  const filtered = filterRecentPurchases(purchaseHistory)
+  if (filtered.length < 2) {
+    return { average: null, median: null, mode: null }
+  }
+
+  const sorted = [...filtered].sort(
+    (a, b) =>
+      new Date(a.purchased_at).getTime() - new Date(b.purchased_at).getTime()
+  )
+
+  const intervals: number[] = []
+  for (let i = 1; i < sorted.length; i++) {
+    const current = new Date(sorted[i].purchased_at).getTime()
+    const previous = new Date(sorted[i - 1].purchased_at).getTime()
+    const diffDays = (current - previous) / (1000 * 60 * 60 * 24)
+    intervals.push(diffDays)
+  }
+
+  if (intervals.length === 0) {
+    return { average: null, median: null, mode: null }
+  }
+
+  const inlierIntervals = filterOutlierIntervals(intervals)
+  const toUse = inlierIntervals.length >= 2 ? inlierIntervals : intervals
+  const sortedToUse = [...toUse].sort((a, b) => a - b)
+
+  return {
+    average: average(toUse),
+    median: median(sortedToUse),
+    mode: mode(toUse),
+  }
 }
 
 /**

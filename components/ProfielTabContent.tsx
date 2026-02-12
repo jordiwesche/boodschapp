@@ -82,14 +82,14 @@ export default function ProfielTabContent() {
             href="/profiel/naam"
             className="block rounded-[16px] border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0">
-                <h2 className="text-lg font-semibold text-gray-900 shrink-0">Naam</h2>
-                <span className="text-sm text-gray-600 truncate">{user?.first_name ?? '…'}</span>
+            <div className="flex items-center justify-between min-w-0">
+              <h2 className="text-lg font-semibold text-gray-900 shrink-0">Naam</h2>
+              <div className="flex items-center gap-6 min-w-0 justify-end">
+                <span className="text-sm text-gray-600 truncate text-right">{user?.first_name ?? '…'}</span>
+                <svg className="h-5 w-5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-              <svg className="h-5 w-5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
             </div>
           </Link>
 
@@ -97,14 +97,14 @@ export default function ProfielTabContent() {
             href="/profiel/huishouden"
             className="block rounded-[16px] border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0">
-                <h2 className="text-lg font-semibold text-gray-900 shrink-0">Huishouden</h2>
-                <span className="text-sm text-gray-600 truncate">{householdName}</span>
+            <div className="flex items-center justify-between min-w-0">
+              <h2 className="text-lg font-semibold text-gray-900 shrink-0">Huishouden</h2>
+              <div className="flex items-center gap-6 min-w-0 justify-end">
+                <span className="text-sm text-gray-600 truncate text-right">{householdName}</span>
+                <svg className="h-5 w-5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
-              <svg className="h-5 w-5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
             </div>
           </Link>
 

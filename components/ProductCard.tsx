@@ -28,14 +28,18 @@ interface ProductCardProps {
   onEdit: (product: Product) => void
   onToggleBasic?: (product: Product) => void
   onDelete?: (productId: string) => void // Optional, not used in card display
+  /** Toon alleen wanneer sortering op Koopfrequentie staat */
+  showPurchaseInfo?: boolean
 }
 
-export default function ProductCard({ product, onEdit, onToggleBasic }: ProductCardProps) {
+export default function ProductCard({ product, onEdit, onToggleBasic, showPurchaseInfo = false }: ProductCardProps) {
   const [purchaseHistory, setPurchaseHistory] = useState<PurchaseHistory[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
 
-  // Fetch purchase history for this product
+  // Fetch purchase history alleen wanneer we het tonen
   useEffect(() => {
+    if (!showPurchaseInfo) return
+
     const fetchPurchaseHistory = async () => {
       setLoadingHistory(true)
       try {
@@ -52,7 +56,7 @@ export default function ProductCard({ product, onEdit, onToggleBasic }: ProductC
     }
 
     fetchPurchaseHistory()
-  }, [product.id])
+  }, [product.id, showPurchaseInfo])
 
   // Calculate frequency
   const frequencyDays = calculatePurchaseFrequency(purchaseHistory)
@@ -73,8 +77,8 @@ export default function ProductCard({ product, onEdit, onToggleBasic }: ProductC
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-gray-900 truncate">{product.name}</h3>
                 </div>
-                {/* Purchase history info */}
-                {!loadingHistory && purchaseCount > 0 && (
+                {/* Purchase history info - alleen bij sortering op Koopfrequentie */}
+                {showPurchaseInfo && !loadingHistory && purchaseCount > 0 && (
                   <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <ShoppingCart className="h-3 w-3 shrink-0" />
                     <span>

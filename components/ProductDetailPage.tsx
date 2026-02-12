@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, RotateCcw } from 'lucide-react'
 import {
   calculatePurchaseFrequency,
+  calculatePurchaseFrequencyStats,
   getLastPurchaseDate,
 } from '@/lib/prediction'
 import { PurchaseHistory } from '@/types/database'
@@ -161,7 +162,13 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
   }
 
   const frequency = calculatePurchaseFrequency(purchaseHistory)
+  const frequencyStats = calculatePurchaseFrequencyStats(purchaseHistory)
   const totalPurchases = purchaseHistory.length
+
+  const formatDaysLabel = (days: number) => {
+    const rounded = Math.round(days * 10) / 10
+    return `Elke ${rounded} ${rounded === 1 ? 'dag' : 'dagen'}`
+  }
 
   if (loading) {
     return (
@@ -228,6 +235,17 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
               <p className="text-2xl font-bold text-gray-900">
                 {frequency ? formatFrequency(frequency) : 'Nog niet berekend'}
               </p>
+              {frequencyStats.average !== null && frequencyStats.median !== null && (
+                <div className="mt-2 space-y-1 text-sm text-gray-600">
+                  <p>{formatDaysLabel(frequencyStats.average)} (Gem)</p>
+                  <p>{formatDaysLabel(frequencyStats.median)} (Med)</p>
+                  <p>
+                    {frequencyStats.mode !== null
+                      ? `${formatDaysLabel(frequencyStats.mode)} (Mod)`
+                      : '— (Mod)'}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

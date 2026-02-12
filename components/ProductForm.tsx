@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Info, Trash2, Search } from 'lucide-react'
 import { CATEGORY_CONCEPT_PRODUCTS } from '@/data/category-concept-products'
-import FixedActionBar from './FixedActionBar'
 
 interface Category {
   id: string
@@ -557,8 +556,7 @@ export default function ProductForm({
   }
 
   return (
-    <>
-    <form id="product-form" onSubmit={handleSubmit} className="space-y-4 pb-20">
+    <form id="product-form" onSubmit={handleSubmit} className="space-y-4">
       {/* Header with title and info button */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">
@@ -669,9 +667,7 @@ export default function ProductForm({
         </div>
       </div>
 
-    </form>
-    <FixedActionBar
-      left={
+      <div className="flex items-center justify-between gap-3 pt-2">
         <button
           type="button"
           onClick={onCancel}
@@ -680,8 +676,6 @@ export default function ProductForm({
         >
           Annuleren
         </button>
-      }
-      right={
         <div className="flex items-center gap-3">
           {onDelete && product && (
             <button
@@ -696,15 +690,13 @@ export default function ProductForm({
           )}
           <button
             type="submit"
-            form="product-form"
             disabled={loading}
             className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? 'Opslaan...' : product ? 'Bijwerken' : 'Toevoegen'}
           </button>
         </div>
-      }
-    />
-    </>
+      </div>
+    </form>
   )
 }

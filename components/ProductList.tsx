@@ -267,17 +267,43 @@ export default function ProductList({ products, categories, onRefresh }: Product
 
   if (showForm) {
     return (
-      <div className="rounded-[16px] bg-white p-6 shadow">
-        <ProductForm
-          product={editingProduct || undefined}
-          categories={categories}
-          products={products}
-          onSave={handleSave}
-          onCancel={handleCancel}
-          onDelete={editingProduct ? handleDeleteFromForm : undefined}
-          loading={loading}
-        />
-      </div>
+      <>
+        <div className="rounded-[16px] bg-white p-6 shadow">
+          <ProductForm
+            product={editingProduct || undefined}
+            categories={categories}
+            products={products}
+            onSave={handleSave}
+            onCancel={handleCancel}
+            onDelete={editingProduct ? handleDeleteFromForm : undefined}
+            loading={loading}
+          />
+        </div>
+        {showDeleteConfirmModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => { setShowDeleteConfirmModal(false); setProductToDelete(null) }} />
+            <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
+              <p className="text-gray-900">Weet je zeker dat je dit product wilt verwijderen?</p>
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowDeleteConfirmModal(false); setProductToDelete(null) }}
+                  className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  Annuleren
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
+                >
+                  Verwijderen
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     )
   }
 
@@ -363,6 +389,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
                       onEdit={handleEdit}
                       onToggleBasic={handleToggleBasic}
                       onDelete={handleDeleteFromList}
+                      showPurchaseInfo={sortBy === 'koopfrequentie'}
                     />
                   )
                 })}
