@@ -20,6 +20,8 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
   const [showForm, setShowForm] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null)
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
+  const [categoryToDelete, setCategoryToDelete] = useState<{ id: string; fromForm?: boolean } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -34,11 +36,18 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
     setShowForm(true)
   }
 
-  const handleDelete = async (categoryId: string) => {
-    if (!confirm('Weet je zeker dat je deze categorie wilt verwijderen? Als er producten in deze categorie zitten, kan deze niet worden verwijderd.')) {
-      return
-    }
+  const handleDelete = (categoryId: string) => {
+    setCategoryToDelete({ id: categoryId })
+    setShowDeleteConfirmModal(true)
+  }
 
+  const handleDeleteConfirm = async () => {
+    if (!categoryToDelete) return
+
+    const categoryId = categoryToDelete.id
+    const fromForm = categoryToDelete.fromForm ?? false
+    setShowDeleteConfirmModal(false)
+    setCategoryToDelete(null)
     setDeletingCategoryId(categoryId)
     setError('')
     setSuccess('')
@@ -54,6 +63,10 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
       }
 
       setSuccess('Categorie verwijderd')
+      if (fromForm) {
+        setShowForm(false)
+        setEditingCategory(null)
+      }
       onRefresh()
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
@@ -95,37 +108,10 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
     }
   }
 
-  const handleDeleteFromForm = async () => {
+  const handleDeleteFromForm = () => {
     if (!editingCategory) return
-    
-    if (!confirm('Weet je zeker dat je deze categorie wilt verwijderen? Als er producten in deze categorie zitten, kan deze niet worden verwijderd.')) {
-      return
-    }
-
-    setDeletingCategoryId(editingCategory.id)
-    setError('')
-    setSuccess('')
-
-    try {
-      const response = await fetch(`/api/categories/${editingCategory.id}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Kon categorie niet verwijderen')
-      }
-
-      setSuccess('Categorie verwijderd')
-      setShowForm(false)
-      setEditingCategory(null)
-      onRefresh()
-      setTimeout(() => setSuccess(''), 3000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Er is een fout opgetreden')
-    } finally {
-      setDeletingCategoryId(null)
-    }
+    setCategoryToDelete({ id: editingCategory.id, fromForm: true })
+    setShowDeleteConfirmModal(true)
   }
 
   const handleCancel = () => {
@@ -263,6 +249,31 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {showDeleteConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => { setShowDeleteConfirmModal(false); setCategoryToDelete(null) }} />
+          <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
+            <p className="text-gray-900">Weet je zeker dat je deze categorie wilt verwijderen? Als er producten in deze categorie zitten, kan deze niet worden verwijderd.</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => { setShowDeleteConfirmModal(false); setCategoryToDelete(null) }}
+                className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              >
+                Annuleren
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
+              >
+                Verwijderen
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

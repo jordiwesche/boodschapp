@@ -25,6 +25,8 @@ export default function ProfielHuishoudenPage() {
   const [error, setError] = useState('')
   const [initialLoading, setInitialLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [showRemoveMemberModal, setShowRemoveMemberModal] = useState(false)
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -136,11 +138,17 @@ export default function ProfielHuishoudenPage() {
     }
   }
 
-  const handleRemoveMember = async (memberId: string) => {
-    if (!confirm('Weet je zeker dat je dit lid wilt verwijderen?')) {
-      return
-    }
+  const handleRemoveMemberClick = (memberId: string) => {
+    setMemberToRemove(memberId)
+    setShowRemoveMemberModal(true)
+  }
 
+  const handleRemoveMemberConfirm = async () => {
+    if (!memberToRemove) return
+
+    const memberId = memberToRemove
+    setShowRemoveMemberModal(false)
+    setMemberToRemove(null)
     setError('')
     setLoading(true)
 
@@ -301,7 +309,7 @@ export default function ProfielHuishoudenPage() {
                     </div>
                     {member.id === currentUserId && (
                       <button
-                        onClick={() => handleRemoveMember(member.id)}
+                        onClick={() => handleRemoveMemberClick(member.id)}
                         className="rounded-md border border-red-300 bg-red-50 px-3 py-1 text-sm text-red-700 hover:bg-red-100"
                       >
                         Verwijder
@@ -383,6 +391,32 @@ export default function ProfielHuishoudenPage() {
           </div>
         </div>
       </main>
+
+      {showRemoveMemberModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => { setShowRemoveMemberModal(false); setMemberToRemove(null) }} />
+          <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
+            <p className="text-gray-900">Weet je zeker dat je dit lid wilt verwijderen?</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => { setShowRemoveMemberModal(false); setMemberToRemove(null) }}
+                className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              >
+                Annuleren
+              </button>
+              <button
+                type="button"
+                onClick={handleRemoveMemberConfirm}
+                disabled={loading}
+                className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+              >
+                Verwijderen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

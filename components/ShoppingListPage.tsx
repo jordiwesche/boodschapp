@@ -11,6 +11,7 @@ import ShoppingList from './ShoppingList'
 import ShoppingListSkeleton from './ShoppingListSkeleton'
 import PullToRefresh from './PullToRefresh'
 import { createClient } from '@/lib/supabase/client'
+import { setLastActivityInStorage, shouldAutoClear } from '@/lib/afgevinkt-activity'
 import {
   useShoppingListItems,
   useExpectedProducts,
@@ -377,6 +378,29 @@ export default function ShoppingListPage() {
   useEffect(() => {
     fetchLastUpdate()
   }, [items.length])
+
+  // Auto-clear afgevinkt list after 12 hours of inactivity (no check/uncheck actions)
+  useEffect(() => {
+    if (items.length === 0) return
+    if (!shouldAutoClear(items)) return
+
+    const clear = () => {
+      clearCheckedMutation.mutateAsync().catch((err) => {
+        console.error('Error auto-clearing checked items:', err)
+      })
+    }
+
+    clear()
+
+    // Also check when user returns to tab (e.g. after 12h in background)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && shouldAutoClear(items)) {
+        clear()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [items])
 
   // Pull to refresh handler
   const handleRefresh = async () => {
@@ -1132,6 +1156,7 @@ export default function ShoppingListPage() {
     haptic('light')
     try {
       const result = await checkItemMutation.mutateAsync(id)
+      setLastActivityInStorage()
       if (result?.item?.product_id) {
         try {
           const res = await fetch(`/api/shopping-list/record-purchase/${id}`, { method: 'POST' })
@@ -1161,6 +1186,7 @@ export default function ShoppingListPage() {
         // ignore; uncheck regardless
       }
       await uncheckItemMutation.mutateAsync(id)
+      setLastActivityInStorage()
     } catch (error) {
       setErrorMessage('Kon item niet unchecken. Probeer het opnieuw.')
       setTimeout(() => setErrorMessage(null), 5000)
@@ -1191,16 +1217,8 @@ export default function ShoppingListPage() {
 
   const handleClearChecked = async () => {
     const checkedCount = items.filter((item) => item.is_checked).length
-    
+
     if (checkedCount === 0) {
-      return
-    }
-
-    const confirmed = confirm(
-      `Weet je zeker dat je alle ${checkedCount} afgevinkte item${checkedCount > 1 ? 's' : ''} wilt verwijderen?`
-    )
-
-    if (!confirmed) {
       return
     }
 
@@ -1242,7 +1260,7 @@ export default function ShoppingListPage() {
   }, [saveProductModalOpen])
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 pb-20 h-dvh overflow-hidden md:h-auto md:overflow-visible">
+    <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
       <header className="bg-transparent">
         <div className="mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900">Boodschappen</h1>
@@ -1256,7 +1274,7 @@ export default function ShoppingListPage() {
 
       <main
         ref={scrollContainerRef}
-        className="mx-auto w-full max-w-2xl flex-1 flex flex-col min-h-0 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 lg:px-8 md:flex-none md:overflow-visible"
+        className="mx-auto w-full max-w-2xl flex-1 px-4 py-4 sm:px-6 lg:px-8"
       >
         <PullToRefresh
           onRefresh={handleRefresh}
@@ -1266,7 +1284,7 @@ export default function ShoppingListPage() {
           {isLoadingItems ? (
             <ShoppingListSkeleton />
           ) : (
-            <div className="flex flex-1 flex-col min-h-0">
+            <div className="flex flex-col">
               {/* Empty item at top + dropdown (wrapper for click-outside) */}
               {isEmptyItemOpen && (
                 <div ref={emptyItemContainerRef} className="mb-4">
@@ -1483,7 +1501,7 @@ export default function ShoppingListPage() {
                   id="save-product-category"
                   value={saveProductModalCategoryId}
                   onChange={(e) => setSaveProductModalCategoryId(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white pl-3 pr-12 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white pl-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Selecteer categorie</option>
                   {saveProductModalCategories.map((cat) => (

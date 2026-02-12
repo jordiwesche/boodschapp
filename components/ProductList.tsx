@@ -46,6 +46,8 @@ export default function ProductList({ products, categories, onRefresh }: Product
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
+  const [productToDelete, setProductToDelete] = useState<{ id: string; source: 'list' | 'form' } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -151,11 +153,24 @@ export default function ProductList({ products, categories, onRefresh }: Product
     setShowForm(true)
   }
 
-  const handleDeleteFromList = async (productId: string) => {
-    if (!confirm('Weet je zeker dat je dit product wilt verwijderen?')) {
-      return
-    }
+  const handleDeleteFromList = (productId: string) => {
+    setProductToDelete({ id: productId, source: 'list' })
+    setShowDeleteConfirmModal(true)
+  }
 
+  const handleDeleteFromForm = () => {
+    if (!editingProduct) return
+    setProductToDelete({ id: editingProduct.id, source: 'form' })
+    setShowDeleteConfirmModal(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!productToDelete) return
+
+    const productId = productToDelete.id
+    const fromForm = productToDelete.source === 'form'
+    setShowDeleteConfirmModal(false)
+    setProductToDelete(null)
     setDeletingProductId(productId)
     setError('')
     setSuccess('')
@@ -171,39 +186,10 @@ export default function ProductList({ products, categories, onRefresh }: Product
       }
 
       setSuccess('Product verwijderd')
-      onRefresh()
-      setTimeout(() => setSuccess(''), 3000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Er is een fout opgetreden')
-    } finally {
-      setDeletingProductId(null)
-    }
-  }
-
-  const handleDeleteFromForm = async () => {
-    if (!editingProduct) return
-    
-    if (!confirm('Weet je zeker dat je dit product wilt verwijderen?')) {
-      return
-    }
-
-    setDeletingProductId(editingProduct.id)
-    setError('')
-    setSuccess('')
-
-    try {
-      const response = await fetch(`/api/products/${editingProduct.id}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Kon product niet verwijderen')
+      if (fromForm) {
+        setShowForm(false)
+        setEditingProduct(null)
       }
-
-      setSuccess('Product verwijderd')
-      setShowForm(false)
-      setEditingProduct(null)
       onRefresh()
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
@@ -312,7 +298,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             aria-label="Filter op categorie"
-            className="min-w-0 flex-1 rounded-md border-gray-300 bg-white pl-3 pr-12 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="min-w-0 flex-1 rounded-md border-gray-300 bg-white pl-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:min-w-[140px]"
           >
             <option value="" className="text-gray-500">Alle categorieën</option>
             {categories.map((category) => (
@@ -326,7 +312,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
             aria-label="Sorteren"
-            className="min-w-0 flex-1 rounded-md border-gray-300 bg-white pl-3 pr-12 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="min-w-0 flex-1 rounded-md border-gray-300 bg-white pl-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:min-w-[140px]"
           >
             <option value="alfabetisch">Alfabetisch</option>
             <option value="koopfrequentie">Koopfrequentie</option>
@@ -383,6 +369,31 @@ export default function ProductList({ products, categories, onRefresh }: Product
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {showDeleteConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => { setShowDeleteConfirmModal(false); setProductToDelete(null) }} />
+          <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
+            <p className="text-gray-900">Weet je zeker dat je dit product wilt verwijderen?</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => { setShowDeleteConfirmModal(false); setProductToDelete(null) }}
+                className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              >
+                Annuleren
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
+              >
+                Verwijderen
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

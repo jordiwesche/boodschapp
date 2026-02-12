@@ -4,12 +4,20 @@ import { useState, useEffect } from 'react'
 
 const SHOW_MS = 2500
 const FADE_MS = 300
+const SESSION_KEY = 'boodschapp_splash_shown'
 
 export default function SplashScreen() {
-  const [visible, setVisible] = useState(true)
+  const [visible, setVisible] = useState(false)
   const [fadeOut, setFadeOut] = useState(false)
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const alreadyShown = sessionStorage.getItem(SESSION_KEY)
+    if (alreadyShown) return
+
+    setVisible(true)
+    sessionStorage.setItem(SESSION_KEY, '1')
+
     const t = setTimeout(() => {
       setFadeOut(true)
       setTimeout(() => setVisible(false), FADE_MS)

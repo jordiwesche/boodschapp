@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Clock, Zap, Plus, Trash2, Star } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock, Zap, Plus, Trash2, Star, ShoppingCart, LayoutList, List } from 'lucide-react'
 import ShoppingListItem from './ShoppingListItem'
 import { isFruit } from '@/lib/fruit-groente'
 
@@ -105,6 +105,7 @@ export default function ShoppingList({
   const [checkedSectionOpen, setCheckedSectionOpen] = useState(false)
   const [basicsSectionOpen, setBasicsSectionOpen] = useState(false)
   const [showClearCheckedModal, setShowClearCheckedModal] = useState(false)
+  const [showCategoryTitles, setShowCategoryTitles] = useState(false)
   // Separate checked and unchecked items; unchecked split into normal vs "Later" (description = weekday)
   const uncheckedItems = items.filter((item) => !item.is_checked)
   const laterUncheckedItems = uncheckedItems.filter(isLaterItem)
@@ -261,13 +262,35 @@ export default function ShoppingList({
     return orderA - orderB
   })
 
-  const cardClass = 'rounded-[16px] border border-gray-200 bg-white p-4'
+  const cardClass = 'rounded-[16px] border-2 border-white bg-white/80 p-4'
+  const mainListCardClass = 'rounded-[16px] border-2 border-gray-200 bg-white/80 p-4'
 
   return (
     <div className="pb-32 flex flex-col flex-1 min-h-0 gap-4">
       {/* 1. Urgent: alle categoriesecties (Fruit & Groente t/m Overig) */}
       {sortedUncheckedCategories.length > 0 && (
-        <div className={cardClass}>
+        <div className={mainListCardClass}>
+          <div className="mb-2 flex h-8 min-h-8 items-center justify-between gap-2">
+            <h2 className="flex items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
+              <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+              Lijst
+            </h2>
+            {sortedUncheckedCategories.length >= 2 && (
+              <button
+                type="button"
+                onClick={() => setShowCategoryTitles((v) => !v)}
+                className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                aria-pressed={showCategoryTitles}
+                aria-label={showCategoryTitles ? 'Lijst compacter maken' : 'Lijst uitgebreider maken'}
+              >
+                {showCategoryTitles ? (
+                  <List className="h-4 w-4" strokeWidth={2} />
+                ) : (
+                  <LayoutList className="h-4 w-4" strokeWidth={2} />
+                )}
+              </button>
+            )}
+          </div>
           {sortedUncheckedCategories.map((categoryGroup, index) => {
             const categoryName = categoryGroup.category?.name || ''
             const isFruitGroente = categoryName === 'Fruit & Groente'
@@ -281,11 +304,22 @@ export default function ShoppingList({
                 })()
               : categoryGroup.items
 
+            const isOverig = (categoryGroup.category?.name || 'Overig') === 'Overig'
+            const categorySpacing =
+              index === 0
+                ? ''
+                : showCategoryTitles
+                  ? 'mt-4'
+                  : isOverig
+                    ? 'mt-2'
+                    : ''
             return (
-              <div key={categoryGroup.category?.id || 'overig'} className={index === 0 ? '' : 'mt-4'}>
-                <h2 className="mb-2 text-sm font-medium text-gray-500 tracking-wide">
-                  {categoryGroup.category?.name || 'Overig'}
-                </h2>
+              <div key={categoryGroup.category?.id || 'overig'} className={categorySpacing}>
+                {sortedUncheckedCategories.length > 1 && showCategoryTitles && (
+                  <h3 className="mb-2 text-xs font-normal uppercase tracking-wide text-gray-500">
+                    {categoryGroup.category?.name || 'Overig'}
+                  </h3>
+                )}
                 <div>
                   {itemsToRender.map((item) => (
                     <div
@@ -311,7 +345,7 @@ export default function ShoppingList({
       {/* 2. Afgevinkt */}
       {checkedItemsCount > 0 && (
         <div className={cardClass}>
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex h-8 min-h-8 items-center justify-between gap-2">
             <button
               type="button"
               onClick={() => setCheckedSectionOpen((open) => !open)}
@@ -357,7 +391,7 @@ export default function ShoppingList({
       {/* 3. Binnenkort (was Later) */}
       {sortedLaterUnchecked.length > 0 && (
         <div className={cardClass}>
-          <h2 className="mb-2 text-sm font-medium text-gray-500 tracking-wide flex items-center gap-1.5">
+          <h2 className="mb-2 flex h-8 min-h-8 items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
             <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" />
             Binnenkort
           </h2>
@@ -385,7 +419,7 @@ export default function ShoppingList({
       {/* 4. Verwacht (op basis van koopfrequentie) */}
       {expectedProducts.length > 0 && (
         <div className={cardClass}>
-          <h2 className="mb-2 text-sm font-medium text-gray-500 tracking-wide flex items-center gap-1.5">
+          <h2 className="mb-2 flex h-8 min-h-8 items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
             <Zap className="h-3.5 w-3.5 shrink-0 text-gray-400" />
             Verwacht
           </h2>
@@ -393,7 +427,7 @@ export default function ShoppingList({
             {expectedProducts.map((product) => (
               <div
                 key={product.id}
-                className="flex items-center gap-3 py-3"
+                className="flex items-center gap-3 py-2"
               >
                 <span className="text-lg shrink-0">{product.emoji}</span>
                 <span className="flex-1 min-w-0 font-medium text-gray-900">{product.name}</span>
@@ -419,7 +453,7 @@ export default function ShoppingList({
       {/* 5. Basics (ster-icoon) - standaard ingeklapt */}
       {basicsNotInList.length > 0 && (
         <div className={cardClass}>
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex h-8 min-h-8 items-center justify-between gap-2">
             <button
               type="button"
               onClick={() => setBasicsSectionOpen((open) => !open)}
@@ -440,7 +474,7 @@ export default function ShoppingList({
               {basicsNotInList.map((product) => (
                 <div
                   key={product.id}
-                  className="flex items-center gap-3 py-3"
+                  className="flex items-center gap-3 py-2"
                 >
                   <span className="text-lg shrink-0">{product.emoji}</span>
                   <span className="flex-1 min-w-0 font-medium text-gray-900">{product.name}</span>

@@ -53,6 +53,7 @@ export default function ShoppingListItem({
   const [isChecking, setIsChecking] = useState(false)
   const checkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [showSubmenu, setShowSubmenu] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [isPressing, setIsPressing] = useState(false)
   const [pressActive, setPressActive] = useState(false)
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -90,19 +91,22 @@ export default function ShoppingListItem({
     }, 1000)
   }
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
     setShowSubmenu(false)
-    if (confirm('Weet je zeker dat je dit item wilt verwijderen?')) {
-      setIsDeleting(true)
-      if (itemRef.current) {
-        itemRef.current.style.transition = 'transform 0.2s ease-in, opacity 0.2s ease-in'
-        itemRef.current.style.transform = 'translateX(-100px)'
-        itemRef.current.style.opacity = '0'
-        setTimeout(() => onDelete(item.id), 200)
-        return
-      }
-      onDelete(item.id)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteConfirm = () => {
+    setShowDeleteModal(false)
+    setIsDeleting(true)
+    if (itemRef.current) {
+      itemRef.current.style.transition = 'transform 0.2s ease-in, opacity 0.2s ease-in'
+      itemRef.current.style.transform = 'translateX(-100px)'
+      itemRef.current.style.opacity = '0'
+      setTimeout(() => onDelete(item.id), 200)
+      return
     }
+    onDelete(item.id)
   }
 
   const clearLongPress = () => {
@@ -215,7 +219,7 @@ export default function ShoppingListItem({
       {/* Row */}
       <div
         ref={itemRef}
-        className={`relative flex select-none items-center gap-3 py-3 transition-transform duration-150 ${
+        className={`relative flex select-none items-center gap-3 py-2 transition-transform duration-150 ${
           showChecked ? 'bg-transparent opacity-90' : 'bg-white'
         } ${isChecking ? 'scale-[0.98]' : ''} ${
           isPressing ? 'scale-[0.99]' : pressActive ? 'scale-[0.97]' : ''
@@ -358,13 +362,39 @@ export default function ShoppingListItem({
         >
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={handleDeleteClick}
             className="flex items-center gap-2 whitespace-nowrap text-left text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
             aria-label="Verwijderen"
           >
             <Trash2 className="h-4 w-4 shrink-0" />
             Verwijder
           </button>
+        </div>
+      )}
+
+      {/* Modal: bevestiging item verwijderen */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => setShowDeleteModal(false)} />
+          <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
+            <p className="text-gray-900">Weet je zeker dat je dit item wilt verwijderen?</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              >
+                Annuleren
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800"
+              >
+                Verwijderen
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

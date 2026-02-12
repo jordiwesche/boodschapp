@@ -32,6 +32,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
   const [error, setError] = useState('')
   const [resetting, setResetting] = useState(false)
   const [showResetConfirmModal, setShowResetConfirmModal] = useState(false)
+  const [resetMessage, setResetMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   useEffect(() => {
     fetchProductData()
@@ -77,17 +78,20 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
       if (response.ok) {
         setPurchaseHistory([])
         setShowResetConfirmModal(false)
-        alert('Koophistorie is gereset. De frequentie wordt vanaf nu opnieuw berekend.')
+        setResetMessage({ type: 'success', text: 'Koophistorie is gereset. De frequentie wordt vanaf nu opnieuw berekend.' })
+        setTimeout(() => setResetMessage(null), 5000)
       } else {
         const errorData = await response.json().catch(() => ({}))
         console.error('Error resetting purchase history:', errorData)
         setShowResetConfirmModal(false)
-        alert('Er is een fout opgetreden bij het resetten van de koophistorie.')
+        setResetMessage({ type: 'error', text: 'Er is een fout opgetreden bij het resetten van de koophistorie.' })
+        setTimeout(() => setResetMessage(null), 5000)
       }
     } catch (err) {
       console.error('Error resetting purchase history:', err)
       setShowResetConfirmModal(false)
-      alert('Er is een fout opgetreden bij het resetten van de koophistorie.')
+      setResetMessage({ type: 'error', text: 'Er is een fout opgetreden bij het resetten van de koophistorie.' })
+      setTimeout(() => setResetMessage(null), 5000)
     } finally {
       setResetting(false)
     }
@@ -258,6 +262,16 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
             </div>
           )}
         </div>
+
+        {resetMessage && (
+          <div
+            className={`mt-4 rounded-[16px] px-4 py-3 text-sm ${
+              resetMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+            }`}
+          >
+            {resetMessage.text}
+          </div>
+        )}
 
         {/* Reset koophistorie – midden onderaan */}
         {totalPurchases > 0 && (
