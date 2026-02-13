@@ -25,10 +25,10 @@ function formatBuildTime(iso: string | undefined): string {
 
     const time = d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
 
-    if (buildDate.getTime() === today.getTime()) return `Vandaag ${time}`
-    if (buildDate.getTime() === yesterday.getTime()) return `Gisteren ${time}`
+    if (buildDate.getTime() === today.getTime()) return `vandaag ${time}`
+    if (buildDate.getTime() === yesterday.getTime()) return `gisteren ${time}`
 
-    const dayNames = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za']
+    const dayNames = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za']
     const monthNames = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
     return `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]}, ${time}`
   } catch {
@@ -145,15 +145,13 @@ export default function ProfielTabContent() {
                   }
                   window.location.reload()
                 }}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
               >
-                <span className="inline-flex items-center gap-2">
-                  <RefreshCw className="h-4 w-4" />
-                  App vernieuwen
-                </span>
+                <RefreshCw className="h-4 w-4 shrink-0" />
+                App vernieuwen
               </button>
               <span className="text-xs text-gray-400" title={process.env.NEXT_PUBLIC_BUILD_VERSION || 'dev'}>
-                {formatBuildTime(process.env.NEXT_PUBLIC_BUILD_TIME)}
+                Laatste build: {formatBuildTime(process.env.NEXT_PUBLIC_BUILD_TIME)}
               </span>
             </div>
             <LogoutButton />
