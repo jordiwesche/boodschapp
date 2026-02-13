@@ -1276,8 +1276,8 @@ export default function ShoppingListPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col pb-20">
-      <div className="absolute inset-0 z-0 min-h-full bg-[#2563eb]" aria-hidden />
-      <div className="absolute inset-0 z-0 min-h-full" style={{ background: 'linear-gradient(180deg, rgba(249, 250, 251, 0) 0%, rgba(249, 250, 251, 1) 28%)' }} aria-hidden />
+      <div className="fixed inset-0 z-0 min-h-screen bg-[#2563eb]" aria-hidden />
+      <div className="fixed inset-0 z-0 min-h-screen" style={{ background: 'linear-gradient(180deg, rgba(249, 250, 251, 0) 0%, rgba(249, 250, 251, 1) 28%)' }} aria-hidden />
       <header className="relative z-10 min-h-[320px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
         <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-2 sm:px-6 sm:pt-12 sm:pb-6 lg:px-8">
           <h1 className="text-3xl font-bold text-white">Boodschappen</h1>

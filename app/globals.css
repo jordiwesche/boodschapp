@@ -17,15 +17,15 @@
 }
 
 html {
-  /* Solid blue at top for native status bar, then gray */
-  background: linear-gradient(to bottom, #2563eb 0%, #2563eb 60px, var(--background) 60px);
+  background: #2563eb;
   min-height: 100dvh;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
 
 body {
-  background: var(--background);
+  /* Blue at top for webapp status bar area, then gray */
+  background: linear-gradient(to bottom, #2563eb 0%, #2563eb 60px, var(--background) 60px);
   color: var(--foreground);
   font-family: var(--font-onest), Arial, Helvetica, sans-serif;
   min-height: 100dvh;
@@ -145,22 +145,6 @@ select {
       rgb(209 213 219 / 0.5) 100%
     ) !important;
     background-size: 1000px 100%;
-  }
-}
-
-/* PWA only: fixed blue bar at top for notch + native status bar (transparent bar shows through) */
-@media (display-mode: standalone) {
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: env(safe-area-inset-top);
-    min-height: 20px;
-    background: #2563eb;
-    z-index: 9999;
-    pointer-events: none;
   }
 }
 
