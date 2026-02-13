@@ -20,10 +20,10 @@ export default function PullToRefresh({
 }: PullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [fadeOut, setFadeOut] = useState(false)
   const touchStartY = useRef<number>(0)
   const wasAtTopRef = useRef(false)
   const pullDistanceRef = useRef(0)
-  const rafIdRef = useRef<number | null>(null)
 
   const isAtTop = (): boolean => {
     if ((window.scrollY || window.pageYOffset) > 0) return false
@@ -56,12 +56,7 @@ export default function PullToRefresh({
 
       if (distance > 0) {
         pullDistanceRef.current = distance
-        if (rafIdRef.current === null) {
-          rafIdRef.current = requestAnimationFrame(() => {
-            rafIdRef.current = null
-            setPullDistance(pullDistanceRef.current)
-          })
-        }
+        setPullDistance(distance)
       } else {
         wasAtTopRef.current = false
         pullDistanceRef.current = 0
@@ -70,11 +65,6 @@ export default function PullToRefresh({
     }
 
     const handleTouchEnd = async () => {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current)
-        rafIdRef.current = null
-      }
-
       if (!wasAtTopRef.current) return
       if (!isAtTop()) {
         setPullDistance(0)
@@ -93,12 +83,18 @@ export default function PullToRefresh({
         try {
           await onRefresh()
         } finally {
-          setTimeout(() => setIsRefreshing(false), 150)
+          setFadeOut(true)
+          setTimeout(() => {
+            setIsRefreshing(false)
+            setFadeOut(false)
+          }, 200)
         }
       } else {
+        setFadeOut(true)
         setPullDistance(0)
         pullDistanceRef.current = 0
         wasAtTopRef.current = false
+        setTimeout(() => setFadeOut(false), 200)
       }
     }
 
@@ -110,18 +106,21 @@ export default function PullToRefresh({
       document.removeEventListener('touchstart', handleTouchStart)
       document.removeEventListener('touchmove', handleTouchMove)
       document.removeEventListener('touchend', handleTouchEnd)
-      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current)
     }
   }, [disabled, onRefresh, scrollContainerRef])
 
-  const showIndicator = (pullDistance > 12 || isRefreshing)
+  const showIndicator = pullDistance > 8 || isRefreshing || fadeOut
+  const opacity = isRefreshing ? 1 : fadeOut ? 0 : Math.min(pullDistance / THRESHOLD, 1)
 
   return (
     <>
       {showIndicator && (
         <div
-          className="flex h-12 flex-shrink-0 items-center justify-center text-sm text-white transition-all duration-150 ease-out"
-          style={{ opacity: Math.min(pullDistance / THRESHOLD, 1) }}
+          className="flex h-12 flex-shrink-0 items-center justify-center text-sm text-white"
+          style={{
+            opacity,
+            transition: 'opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
         >
           {isRefreshing ? 'Vernieuwen...' : pullDistance >= THRESHOLD ? 'Los om te vernieuwen' : 'Trek om te vernieuwen'}
         </div>
