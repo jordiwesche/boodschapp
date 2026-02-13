@@ -5,6 +5,7 @@ import NavigationWrapper from "@/components/NavigationWrapper";
 import Providers from "@/components/Providers";
 import PageTransition from "@/components/PageTransition";
 import SplashScreen from "@/components/SplashScreen";
+import ServiceWorkerUpdateListener from "@/components/ServiceWorkerUpdateListener";
 
 const onest = Onest({
   variable: "--font-onest",
@@ -73,6 +74,7 @@ export default function RootLayout({
         className={`${onest.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
+          <ServiceWorkerUpdateListener />
           <SplashScreen />
           <PageTransition>
             {children}

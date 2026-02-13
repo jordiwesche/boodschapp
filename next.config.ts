@@ -6,6 +6,20 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   // Compress output
   compress: true,
+  // HTML-document altijd vers (na deploy), niet uit browser/SW cache
+  async headers() {
+    return [
+      {
+        source: '/((?!_next|api|icon|favicon|manifest|sw|workbox).*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+    ]
+  },
   // Use webpack instead of Turbopack (required for next-pwa)
   // Turbopack doesn't support webpack plugins yet
   webpack: (config, { isServer }) => {
