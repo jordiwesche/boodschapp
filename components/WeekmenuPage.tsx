@@ -356,7 +356,7 @@ export default function WeekmenuPage() {
               <div className="px-4 py-3 flex items-center gap-4">
               <span
                 className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm ${
-                  i === todayDayOfWeek ? 'bg-blue-100 font-bold text-blue-600' : 'bg-gray-100 font-medium text-gray-400'
+                  i === todayDayOfWeek ? 'bg-blue-600 font-bold text-white' : 'bg-gray-100 font-medium text-gray-400'
                 }`}
               >
                 {label}
@@ -403,7 +403,7 @@ export default function WeekmenuPage() {
                 <span
                   className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm ${
                     day.day_of_week === todayDayOfWeek
-                      ? 'bg-blue-100 font-bold text-blue-600'
+                      ? 'bg-blue-600 font-bold text-white'
                       : 'bg-gray-100 font-medium text-gray-600'
                   }`}
                 >

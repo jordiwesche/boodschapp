@@ -67,12 +67,12 @@ export default function ProfielNaamPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
-      <header className="bg-transparent">
-        <div className="mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
+      <header className="relative min-h-[264px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent">
+        <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-white/90 hover:text-white"
             >
               <svg
                 className="h-6 w-6"
@@ -88,12 +88,12 @@ export default function ProfielNaamPage() {
                 />
               </svg>
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">Naam wijzigen</h1>
+            <h1 className="text-3xl font-bold text-white">Naam wijzigen</h1>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-4 pb-8 sm:px-6 lg:px-8">
+      <main className="-mt-40 relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-4 pb-8 sm:px-6 lg:px-8">
         <div className="rounded-[16px] bg-white p-8 shadow">
           {error && (
             <div className="mb-4 rounded-md bg-red-50 p-4">

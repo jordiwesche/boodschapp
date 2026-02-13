@@ -1276,16 +1276,16 @@ export default function ShoppingListPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
-      <header className="bg-transparent">
-        <div className="mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900">Boodschappen</h1>
+      <header className="relative min-h-[264px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent">
+        <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
+          <h1 className="text-3xl font-bold text-white">Boodschappen</h1>
           {!isOnline ? (
-            <p className="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-white/90">
               <WifiOff className="h-4 w-4 shrink-0" />
               De app is momenteel offline
             </p>
           ) : lastUpdate ? (
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="mt-1 text-sm text-white/90">
               {lastUpdate.userName} • {formatTimeAgo(lastUpdate.updatedAt)}
             </p>
           ) : null}
@@ -1294,7 +1294,7 @@ export default function ShoppingListPage() {
 
       <main
         ref={scrollContainerRef}
-        className="mx-auto w-full max-w-2xl flex-1 px-4 py-4 sm:px-6 lg:px-8"
+        className="-mt-40 relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 py-4 sm:px-6 lg:px-8"
       >
         <PullToRefresh
           onRefresh={handleRefresh}

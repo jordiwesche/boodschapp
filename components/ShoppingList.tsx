@@ -232,8 +232,8 @@ export default function ShoppingList({
     return orderA - orderB
   })
 
-  const cardClass = 'rounded-[16px] border-2 border-white bg-white/80 p-4'
-  const mainListCardClass = 'rounded-[16px] border-2 border-gray-200 bg-white/80 p-4'
+  const cardClass = 'rounded-[16px] border-2 border-white bg-white p-4'
+  const mainListCardClass = 'rounded-[16px] border-2 border-gray-200 bg-white p-4'
 
   return (
     <div className="pb-16 flex flex-col flex-1 min-h-0 gap-4">
