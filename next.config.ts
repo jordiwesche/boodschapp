@@ -4,18 +4,8 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_BUILD_VERSION:
       process.env.VERCEL_GIT_COMMIT_SHA || process.env.BUILD_ID || 'dev',
-    // Timestamp van de build (wordt bij elke deploy opnieuw gezet)
-    NEXT_PUBLIC_BUILD_TIME: (() => {
-      const d = new Date()
-      return d.toLocaleString('nl-NL', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Europe/Amsterdam',
-      })
-    })(),
+    // ISO timestamp van de build (wordt bij elke deploy opnieuw gezet)
+    NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
   },
   /* config options here */
   // Optimize production builds

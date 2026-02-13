@@ -12,6 +12,30 @@ type ProfileCache = {
 
 let profileCache: ProfileCache | null = null
 
+function formatBuildTime(iso: string | undefined): string {
+  if (!iso || iso === 'dev') return 'dev'
+  try {
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return 'dev'
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const buildDate = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    const time = d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+
+    if (buildDate.getTime() === today.getTime()) return `Vandaag ${time}`
+    if (buildDate.getTime() === yesterday.getTime()) return `Gisteren ${time}`
+
+    const dayNames = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za']
+    const monthNames = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
+    return `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]}, ${time}`
+  } catch {
+    return 'dev'
+  }
+}
+
 export async function prefetchProfile(): Promise<void> {
   try {
     const [userRes, householdRes] = await Promise.all([
@@ -112,7 +136,7 @@ export default function ProfielTabContent() {
           </Link>
 
           <div className="pt-4 flex flex-col items-center gap-8">
-            <div className="flex flex-col items-center gap-1">
+            <div className="flex flex-col items-center gap-3">
               <button
                 type="button"
                 onClick={() => {
@@ -129,7 +153,7 @@ export default function ProfielTabContent() {
                 </span>
               </button>
               <span className="text-xs text-gray-400" title={process.env.NEXT_PUBLIC_BUILD_VERSION || 'dev'}>
-                {process.env.NEXT_PUBLIC_BUILD_TIME || 'dev'}
+                {formatBuildTime(process.env.NEXT_PUBLIC_BUILD_TIME)}
               </span>
             </div>
             <LogoutButton />
