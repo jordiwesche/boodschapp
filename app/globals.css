@@ -17,8 +17,8 @@
 }
 
 html {
-  /* Prevent black background flash on iPhone overscroll / safe area */
-  background: var(--background);
+  /* Solid blue at top for native status bar, then gray */
+  background: linear-gradient(to bottom, #2563eb 0%, #2563eb 60px, var(--background) 60px);
   min-height: 100dvh;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
