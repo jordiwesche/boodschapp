@@ -11,6 +11,7 @@ interface PullToRefreshProps {
 
 const THRESHOLD = 56
 const MAX_PULL = 80
+const INDICATOR_HEIGHT = 48
 
 export default function PullToRefresh({
   onRefresh,
@@ -20,7 +21,7 @@ export default function PullToRefresh({
 }: PullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [fadeOut, setFadeOut] = useState(false)
+  const [isReleasing, setIsReleasing] = useState(false)
   const touchStartY = useRef<number>(0)
   const wasAtTopRef = useRef(false)
   const pullDistanceRef = useRef(0)
@@ -39,6 +40,7 @@ export default function PullToRefresh({
       wasAtTopRef.current = atTop
       if (!atTop) return
       touchStartY.current = e.touches[0].clientY
+      setIsReleasing(false)
     }
 
     const handleTouchMove = (e: TouchEvent) => {
@@ -77,24 +79,27 @@ export default function PullToRefresh({
 
       if (dist >= THRESHOLD && !isRefreshing) {
         setIsRefreshing(true)
-        setPullDistance(0)
-        pullDistanceRef.current = 0
+        setPullDistance(INDICATOR_HEIGHT)
+        pullDistanceRef.current = INDICATOR_HEIGHT
         wasAtTopRef.current = false
+        setIsReleasing(true)
         try {
           await onRefresh()
         } finally {
-          setFadeOut(true)
           setTimeout(() => {
+            setIsReleasing(true)
+            setPullDistance(0)
+            pullDistanceRef.current = 0
             setIsRefreshing(false)
-            setFadeOut(false)
-          }, 200)
+            setTimeout(() => setIsReleasing(false), 250)
+          }, 150)
         }
       } else {
-        setFadeOut(true)
+        setIsReleasing(true)
         setPullDistance(0)
         pullDistanceRef.current = 0
         wasAtTopRef.current = false
-        setTimeout(() => setFadeOut(false), 200)
+        setTimeout(() => setIsReleasing(false), 250)
       }
     }
 
@@ -109,23 +114,34 @@ export default function PullToRefresh({
     }
   }, [disabled, onRefresh, scrollContainerRef])
 
-  const showIndicator = pullDistance > 8 || isRefreshing || fadeOut
-  const opacity = isRefreshing ? 1 : fadeOut ? 0 : Math.min(pullDistance / THRESHOLD, 1)
+  const showIndicator = pullDistance > 4 || isRefreshing || isReleasing
+  const opacity = isRefreshing ? 1 : Math.min(pullDistance / THRESHOLD, 1)
+  const indicatorHeight = isReleasing
+    ? (isRefreshing ? INDICATOR_HEIGHT : 0)
+    : showIndicator
+      ? Math.min(pullDistance, INDICATOR_HEIGHT)
+      : 0
 
   return (
-    <>
-      {showIndicator && (
-        <div
-          className="flex h-12 flex-shrink-0 items-center justify-center text-sm text-white"
-          style={{
-            opacity,
-            transition: 'opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
-        >
-          {isRefreshing ? 'Vernieuwen...' : pullDistance >= THRESHOLD ? 'Los om te vernieuwen' : 'Trek om te vernieuwen'}
-        </div>
-      )}
+    <div className="flex flex-col overflow-hidden">
+      <div
+        className="flex flex-shrink-0 items-center justify-center text-sm text-white"
+        style={{
+          height: indicatorHeight,
+          minHeight: indicatorHeight,
+          opacity: showIndicator ? opacity : 0,
+          transition: isReleasing
+            ? 'height 0.25s cubic-bezier(0.4, 0, 0.2, 1), min-height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+            : 'none',
+        }}
+      >
+        {showIndicator && (
+          <>
+            {isRefreshing ? 'Vernieuwen...' : pullDistance >= THRESHOLD ? 'Los om te vernieuwen' : 'Trek om te vernieuwen'}
+          </>
+        )}
+      </div>
       {children}
-    </>
+    </div>
   )
 }
