@@ -284,7 +284,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
   return (
     <div className="flex min-h-screen flex-col pb-20" style={{ background: 'linear-gradient(to bottom, #2563eb 0%, #2563eb 200px, #f9fafb 400px)' }}>
       <header className="relative min-h-[320px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
-        <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
+        <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-2 sm:px-6 sm:pt-12 sm:pb-6 lg:px-8">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.back()}
@@ -306,7 +306,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
         </div>
       </header>
 
-      <main className="-mt-40 relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-2 pb-8 sm:px-6 sm:pt-4 lg:px-8">
+      <main className="-mt-48 sm:-mt-40 relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-0 pb-8 sm:px-6 sm:pt-4 lg:px-8">
         {/* Statistics */}
         <div className="mb-6 rounded-[16px] bg-white p-6 shadow">
           <div className="grid grid-cols-2 gap-4">

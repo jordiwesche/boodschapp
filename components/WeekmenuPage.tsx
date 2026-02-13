@@ -348,7 +348,7 @@ export default function WeekmenuPage() {
   const todayDayOfWeek = getTodayDayOfWeek()
   if (loading) {
     return (
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-2 pb-6 sm:pt-4">
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-0 pb-6 sm:pt-4">
         <div className="rounded-[16px] border border-gray-200 bg-white overflow-hidden">
           {DAY_LABELS.map((label, i) => (
             <React.Fragment key={i}>
@@ -373,14 +373,14 @@ export default function WeekmenuPage() {
   const orderedDays = [...days].sort((a, b) => a.day_of_week - b.day_of_week)
   if (orderedDays.length === 0) {
     return (
-      <main className="flex-1 px-4 pt-2 pb-8 sm:pt-4">
+      <main className="flex-1 px-4 pt-0 pb-8 sm:pt-4">
         <p className="text-gray-600">Geen weekmenu beschikbaar.</p>
       </main>
     )
   }
 
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-2 pb-6 sm:pt-4">
+    <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-0 pb-6 sm:pt-4">
       <div className="rounded-[16px] border border-gray-200 bg-white overflow-visible">
         {orderedDays.map((day, index) => {
           const label = DAY_LABELS[day.day_of_week] ?? `Dag ${day.day_of_week}`
