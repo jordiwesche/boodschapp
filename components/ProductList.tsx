@@ -43,7 +43,7 @@ type SortOption = 'alfabetisch' | 'koopfrequentie' | 'laatst_gekocht' | 'categor
 export default function ProductList({ products, categories, onRefresh }: ProductListProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState<SortOption>('koopfrequentie')
+  const [sortBy, setSortBy] = useState<SortOption>('categorie')
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
@@ -347,10 +347,10 @@ export default function ProductList({ products, categories, onRefresh }: Product
             aria-label="Sorteren"
             className="min-w-0 flex-1 rounded-md border-gray-300 bg-white pl-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:min-w-[140px]"
           >
-            <option value="alfabetisch">Alfabetisch</option>
-            <option value="koopfrequentie">Koopfrequentie</option>
-            <option value="laatst_gekocht">Laatst gekocht</option>
             <option value="categorie">Categorie</option>
+            <option value="alfabetisch">Alfabetisch</option>
+            <option value="koopfrequentie">Vaak gekocht</option>
+            <option value="laatst_gekocht">Laatst gekocht</option>
           </select>
         </div>
         <div className="relative">

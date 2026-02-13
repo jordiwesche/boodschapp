@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Search } from 'lucide-react'
+import { Search, WifiOff } from 'lucide-react'
 import FloatingAddButton from './FloatingAddButton'
 import { EMOJI_PICKER_LIST } from '@/lib/emoji-picker-list'
 import EmptyListItem from './EmptyListItem'
@@ -333,6 +333,7 @@ export default function ShoppingListPage() {
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<{ userName: string; updatedAt: string } | null>(null)
+  const [isOnline, setIsOnline] = useState(true)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const { clearScroll } = useScrollRestore(scrollContainerRef)
 
@@ -372,6 +373,19 @@ export default function ShoppingListPage() {
   // Fetch last update on mount
   useEffect(() => {
     fetchLastUpdate()
+  }, [])
+
+  // Listen for online/offline
+  useEffect(() => {
+    setIsOnline(navigator.onLine)
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
   }, [])
 
   // Update last update info when items change (triggered by realtime subscription)
@@ -1265,11 +1279,16 @@ export default function ShoppingListPage() {
       <header className="bg-transparent">
         <div className="mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
           <h1 className="text-3xl font-bold text-gray-900">Boodschappen</h1>
-          {lastUpdate && (
+          {!isOnline ? (
+            <p className="text-sm text-gray-500 mt-1 flex items-center gap-1.5">
+              <WifiOff className="h-4 w-4 shrink-0" />
+              De app is momenteel offline
+            </p>
+          ) : lastUpdate ? (
             <p className="text-sm text-gray-500 mt-1">
               {lastUpdate.userName} • {formatTimeAgo(lastUpdate.updatedAt)}
             </p>
-          )}
+          ) : null}
         </div>
       </header>
 
