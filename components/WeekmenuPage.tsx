@@ -54,6 +54,7 @@ function WeekmenuGerechtTextarea({
   autoFocus,
   blurIgnoreRef,
   blurIgnoreTouchedRef,
+  textareaRef,
 }: {
   value: string
   onChange: (v: string) => void
@@ -65,8 +66,17 @@ function WeekmenuGerechtTextarea({
   blurIgnoreRef?: React.RefObject<HTMLElement | null>
   /** Op mobile is relatedTarget vaak null; parent zet dit op pointerdown van URL-knop */
   blurIgnoreTouchedRef?: React.MutableRefObject<boolean>
+  /** Ref voor parent om focus te herstellen (bijv. na openen URL-dropdown) */
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>
 }) {
   const ref = useRef<HTMLTextAreaElement>(null)
+  const setRef = useCallback(
+    (el: HTMLTextAreaElement | null) => {
+      ;(ref as React.MutableRefObject<HTMLTextAreaElement | null>).current = el
+      if (textareaRef) (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el
+    },
+    [textareaRef]
+  )
 
   const LINE_HEIGHT_PX = 20
   const MIN_HEIGHT_PX = 24
@@ -116,7 +126,7 @@ function WeekmenuGerechtTextarea({
 
   return (
     <textarea
-      ref={ref}
+      ref={setRef}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onBlur={handleBlur}
@@ -158,6 +168,7 @@ export default function WeekmenuPage() {
   const urlDropdownWrapperRef = useRef<HTMLDivElement | null>(null)
   const urlButtonContainerRef = useRef<HTMLDivElement | null>(null)
   const urlButtonTouchedRef = useRef(false)
+  const editingTextareaRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
     if (urlDropdownDay === null) return
@@ -318,9 +329,8 @@ export default function WeekmenuPage() {
     const row = days.find((d) => d.day_of_week === day_of_week)
     setUrlInput(row?.link_url ?? '')
     setUrlDropdownDay(day_of_week)
-    if (!row?.link_url) {
-      setTimeout(() => urlInputRef.current?.focus(), 50)
-    }
+    // Focus op gerecht-veld houden zodat toetsenbord open blijft en gebruiker kan blijven typen
+    setTimeout(() => editingTextareaRef.current?.focus(), 0)
   }, [days])
 
   const saveUrl = useCallback(
@@ -476,6 +486,7 @@ export default function WeekmenuPage() {
                         autoFocus={isEditing}
                         blurIgnoreRef={editingDay === day.day_of_week ? urlButtonContainerRef : undefined}
                         blurIgnoreTouchedRef={editingDay === day.day_of_week ? urlButtonTouchedRef : undefined}
+                        textareaRef={editingDay === day.day_of_week ? editingTextareaRef : undefined}
                       />
                       {text.trim().length > 0 && (
                         <button
