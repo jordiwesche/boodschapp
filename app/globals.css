@@ -4,6 +4,9 @@
   /* Page background: light gray (gray-50) - native bar uses themeColor #fff in layout */
   --background: #f9fafb;
   --foreground: #171717;
+  /* Spring-like easing for native feel */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-spring-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
@@ -17,6 +20,8 @@ html {
   /* Prevent black background flash on iPhone overscroll / safe area */
   background: var(--background);
   min-height: 100dvh;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 body {
@@ -24,6 +29,30 @@ body {
   color: var(--foreground);
   font-family: var(--font-onest), Arial, Helvetica, sans-serif;
   min-height: 100dvh;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Native-like touch: no 300ms delay, no blue tap highlight */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+[role="button"],
+a,
+[tabindex]:not([tabindex="-1"]) {
+  touch-action: manipulation;
+}
+
+/* Native momentum scroll on iOS for overflow containers */
+.overflow-y-auto,
+.overflow-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 /* Prevent zoom on input focus on mobile devices */
@@ -63,7 +92,7 @@ select {
   }
 }
 
-/* Long-press submenu expand */
+/* Long-press submenu expand - spring easing */
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -76,7 +105,7 @@ select {
 }
 
 .animate-slide-down {
-  animation: slideDown 0.15s ease-out;
+  animation: slideDown 0.2s var(--ease-spring-out);
 }
 
 /* Splash screen: "Boodsch" animates to light blue and thinner */
@@ -116,5 +145,16 @@ select {
       #f3f4f6 100%
     ) !important;
     background-size: 1000px 100%;
+  }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

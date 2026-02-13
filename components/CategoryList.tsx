@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { haptic } from '@/lib/haptics'
 // import CategoryForm from './CategoryForm' // Tijdelijk uitgeschakeld
 
 interface Category {
@@ -37,12 +38,14 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
   }
 
   const handleDelete = (categoryId: string) => {
+    haptic('light')
     setCategoryToDelete({ id: categoryId })
     setShowDeleteConfirmModal(true)
   }
 
   const handleDeleteConfirm = async () => {
     if (!categoryToDelete) return
+    haptic('medium')
 
     const categoryId = categoryToDelete.id
     const fromForm = categoryToDelete.fromForm ?? false
@@ -62,6 +65,7 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
         throw new Error(data.error || 'Kon categorie niet verwijderen')
       }
 
+      haptic('success')
       setSuccess('Categorie verwijderd')
       if (fromForm) {
         setShowForm(false)
@@ -96,6 +100,7 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
         throw new Error(data.error || 'Kon categorie niet opslaan')
       }
 
+      haptic('success')
       setSuccess(editingCategory ? 'Categorie bijgewerkt' : 'Categorie toegevoegd')
       setShowForm(false)
       setEditingCategory(null)
@@ -110,6 +115,7 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
 
   const handleDeleteFromForm = () => {
     if (!editingCategory) return
+    haptic('light')
     setCategoryToDelete({ id: editingCategory.id, fromForm: true })
     setShowDeleteConfirmModal(true)
   }
@@ -254,7 +260,7 @@ export default function CategoryList({ categories, onRefresh }: CategoryListProp
 
       {showDeleteConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => { setShowDeleteConfirmModal(false); setCategoryToDelete(null) }} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden onClick={() => { setShowDeleteConfirmModal(false); setCategoryToDelete(null) }} />
           <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
             <p className="text-gray-900">Weet je zeker dat je deze categorie wilt verwijderen? Als er producten in deze categorie zitten, kan deze niet worden verwijderd.</p>
             <div className="mt-4 flex justify-end gap-2">

@@ -321,34 +321,33 @@ export default function ProfielHuishoudenPage() {
             )}
           </div>
 
-          {/* Uitnodigingen */}
+          {/* Leden toevoegen */}
           <div className="rounded-[16px] bg-white p-6 shadow">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Uitnodigingen</h2>
-            {invitations.length === 0 ? (
-              <p className="text-sm text-gray-600 mb-4">Geen openstaande uitnodigingen</p>
-            ) : (
-              <ul className="space-y-2 mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Leden toevoegen</h2>
+            {invitations.length > 0 && (
+              <div className="mb-4 rounded-md bg-blue-50 p-3 space-y-3">
                 {invitations.map((invitation) => (
-                  <li
-                    key={invitation.id}
-                    className="flex items-center justify-between rounded-md border border-gray-200 p-3"
-                  >
-                    <p className="text-gray-900">{invitation.email}</p>
+                  <div key={invitation.id} className="flex items-start justify-between gap-3">
+                    <p className="text-sm text-blue-800 flex-1 min-w-0">
+                      <span className="font-semibold">{invitation.email}</span> kan zich nu aanmelden en heeft direct toegang tot het huishouden <span className="font-semibold">{householdName || 'huishouden'}</span>.
+                    </p>
                     <button
                       onClick={() => handleRemoveInvitation(invitation.id)}
-                      className="rounded-md border border-red-300 bg-red-50 px-3 py-1 text-sm text-red-700 hover:bg-red-100"
+                      className="shrink-0 rounded-md border border-red-300 bg-red-50 px-3 py-1 text-sm text-red-700 hover:bg-red-100"
                     >
                       Verwijder
                     </button>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
+            )}
+            {invitations.length === 0 && (
+              <p className="text-sm text-gray-600 mb-4">Nog geen e-mailadressen toegevoegd</p>
             )}
 
-            {/* Nieuwe uitnodigingen toevoegen */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nieuwe leden uitnodigen
+                E-mailadres toevoegen
               </label>
               {invitedEmails.map((email, index) => (
                 <div key={index} className="mb-2 flex gap-2">
@@ -384,7 +383,7 @@ export default function ProfielHuishoudenPage() {
                   disabled={loading || invitedEmails.every((e) => !e.trim())}
                   className="ml-auto rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
                 >
-                  {loading ? 'Uitnodigen...' : 'Uitnodigen'}
+                  {loading ? 'Toevoegen...' : 'Toevoegen'}
                 </button>
               </div>
             </div>
@@ -394,7 +393,7 @@ export default function ProfielHuishoudenPage() {
 
       {showRemoveMemberModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => { setShowRemoveMemberModal(false); setMemberToRemove(null) }} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden onClick={() => { setShowRemoveMemberModal(false); setMemberToRemove(null) }} />
           <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
             <p className="text-gray-900">Weet je zeker dat je dit lid wilt verwijderen?</p>
             <div className="mt-4 flex justify-end gap-2">

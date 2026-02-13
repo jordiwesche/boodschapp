@@ -37,7 +37,7 @@ export default function SearchBar({
     setIsActive(true)
     // Subtle scale animation on focus
     if (containerRef.current) {
-      containerRef.current.style.transition = 'transform 0.2s ease-out'
+      containerRef.current.style.transition = 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)'
       containerRef.current.style.transform = 'scale(1.02)'
     }
     onFocus?.()
@@ -49,7 +49,7 @@ export default function SearchBar({
       setIsActive(false)
       // Scale back on blur
       if (containerRef.current) {
-        containerRef.current.style.transition = 'transform 0.2s ease-in'
+        containerRef.current.style.transition = 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)'
         containerRef.current.style.transform = 'scale(1)'
       }
       onBlur?.()

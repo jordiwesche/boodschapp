@@ -1224,6 +1224,7 @@ export default function ShoppingListPage() {
 
     try {
       await clearCheckedMutation.mutateAsync()
+      haptic('success')
     } catch (error) {
       setErrorMessage('Kon afgevinkte items niet verwijderen. Probeer het opnieuw.')
       setTimeout(() => setErrorMessage(null), 5000)
@@ -1460,7 +1461,7 @@ export default function ShoppingListPage() {
       {/* Save Product modal (actie 3: add to list + save new product) */}
       {saveProductModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overscroll-contain"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overscroll-contain"
           style={{ overflow: 'auto' }}
           onClick={(e) => e.target === e.currentTarget && handleCloseSaveProductModal()}
           role="dialog"

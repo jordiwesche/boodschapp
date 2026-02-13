@@ -33,7 +33,7 @@ export default function SuggestionBlock({
         if (element) {
           element.style.opacity = '0'
           element.style.transform = 'translateY(10px)'
-          element.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out'
+          element.style.transition = 'opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1), transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)'
         }
       })
       

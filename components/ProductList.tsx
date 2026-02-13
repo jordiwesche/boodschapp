@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
+import { haptic } from '@/lib/haptics'
 import { Search } from 'lucide-react'
 import ProductCard from './ProductCard'
 import ProductForm from './ProductForm'
@@ -154,18 +155,21 @@ export default function ProductList({ products, categories, onRefresh }: Product
   }
 
   const handleDeleteFromList = (productId: string) => {
+    haptic('light')
     setProductToDelete({ id: productId, source: 'list' })
     setShowDeleteConfirmModal(true)
   }
 
   const handleDeleteFromForm = () => {
     if (!editingProduct) return
+    haptic('light')
     setProductToDelete({ id: editingProduct.id, source: 'form' })
     setShowDeleteConfirmModal(true)
   }
 
   const handleDeleteConfirm = async () => {
     if (!productToDelete) return
+    haptic('medium')
 
     const productId = productToDelete.id
     const fromForm = productToDelete.source === 'form'
@@ -185,6 +189,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
         throw new Error(data.error || 'Kon product niet verwijderen')
       }
 
+      haptic('success')
       setSuccess('Product verwijderd')
       if (fromForm) {
         setShowForm(false)
@@ -219,6 +224,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
         throw new Error(data.error || 'Kon product niet opslaan')
       }
 
+      haptic('success')
       setSuccess(editingProduct ? 'Product bijgewerkt' : 'Product toegevoegd')
       setShowForm(false)
       setEditingProduct(null)
@@ -238,6 +244,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
   }
 
   const handleToggleBasic = async (product: Product) => {
+    haptic('light')
     const newValue = !product.is_basic
     // Optimistic update: direct UI feedback
     setOptimisticBasics((prev) => ({ ...prev, [product.id]: newValue }))
@@ -281,7 +288,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
         </div>
         {showDeleteConfirmModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => { setShowDeleteConfirmModal(false); setProductToDelete(null) }} />
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden onClick={() => { setShowDeleteConfirmModal(false); setProductToDelete(null) }} />
             <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
               <p className="text-gray-900">Weet je zeker dat je dit product wilt verwijderen?</p>
               <div className="mt-4 flex justify-end gap-2">
@@ -401,7 +408,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
 
       {showDeleteConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => { setShowDeleteConfirmModal(false); setProductToDelete(null) }} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden onClick={() => { setShowDeleteConfirmModal(false); setProductToDelete(null) }} />
           <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
             <p className="text-gray-900">Weet je zeker dat je dit product wilt verwijderen?</p>
             <div className="mt-4 flex justify-end gap-2">
@@ -425,7 +432,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
       )}
 
       {deletingProductId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="rounded-[16px] bg-white p-6">
             <p className="text-gray-900">Product verwijderen...</p>
           </div>

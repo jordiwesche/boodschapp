@@ -26,7 +26,7 @@ export default function PageTransition({ children }: PageTransitionProps) {
       // Use a very subtle fade-in only (no fade-out to prevent flashing)
       // This creates a smooth transition without the black background flash
       containerRef.current.style.opacity = '0.7'
-      containerRef.current.style.transition = 'opacity 0.2s ease-out'
+      containerRef.current.style.transition = 'opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1)'
       
       // Use requestAnimationFrame to ensure the new content is rendered before animating
       requestAnimationFrame(() => {

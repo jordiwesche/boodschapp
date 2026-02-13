@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Clock, Zap, Plus, Trash2, Star, ShoppingCart, LayoutList, List } from 'lucide-react'
+import Link from 'next/link'
+import { haptic } from '@/lib/haptics'
+import { ChevronDown, ChevronRight, Clock, Zap, Plus, Trash2, Star, ShoppingCart, LayoutList, List, Package } from 'lucide-react'
 import ShoppingListItem from './ShoppingListItem'
 import { isFruit } from '@/lib/fruit-groente'
 
@@ -163,38 +165,6 @@ export default function ShoppingList({
     >
   )
 
-  // Sort categories:
-  // 1. Categories with unchecked items first (sorted by display_order)
-  // 2. Categories with only checked items (sorted by display_order)
-  const categoriesWithUnchecked = Object.values(groupedByCategory).filter(
-    (group) => group.uncheckedItems.length > 0
-  )
-  const categoriesOnlyChecked = Object.values(groupedByCategory).filter(
-    (group) => group.uncheckedItems.length === 0 && group.checkedItems.length > 0
-  )
-
-  const sortedCategoriesWithUnchecked = [...categoriesWithUnchecked].sort(
-    (a, b) => a.displayOrder - b.displayOrder
-  )
-  const sortedCategoriesOnlyChecked = [...categoriesOnlyChecked].sort(
-    (a, b) => a.displayOrder - b.displayOrder
-  )
-
-  const allSortedCategories = [
-    ...sortedCategoriesWithUnchecked,
-    ...sortedCategoriesOnlyChecked,
-  ]
-
-  if (allSortedCategories.length === 0) {
-    return (
-      <div className="pb-16">
-        <div className="rounded-[16px] border border-gray-200 bg-white p-8 text-center">
-          <p className="text-gray-500">Je boodschappenlijst is leeg</p>
-        </div>
-      </div>
-    )
-  }
-
   // Sort normal unchecked items by category display_order, then alphabetically
   const sortedNormalUnchecked = [...normalUncheckedItems].sort((a, b) => {
     const orderA = a.category?.display_order ?? 999
@@ -267,31 +237,31 @@ export default function ShoppingList({
 
   return (
     <div className="pb-16 flex flex-col flex-1 min-h-0 gap-4">
-      {/* 1. Urgent: alle categoriesecties (Fruit & Groente t/m Overig) */}
-      {sortedUncheckedCategories.length > 0 && (
-        <div className={mainListCardClass}>
-          <div className="mb-2 flex h-8 min-h-8 items-center justify-between gap-2">
-            <h2 className="flex items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
-              <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-              Lijst
-            </h2>
-            {sortedUncheckedCategories.length >= 2 && (
-              <button
-                type="button"
-                onClick={() => setShowCategoryTitles((v) => !v)}
-                className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                aria-pressed={showCategoryTitles}
-                aria-label={showCategoryTitles ? 'Lijst compacter maken' : 'Lijst uitgebreider maken'}
-              >
-                {showCategoryTitles ? (
-                  <LayoutList className="h-4 w-4" strokeWidth={2} />
-                ) : (
-                  <List className="h-4 w-4" strokeWidth={2} />
-                )}
-              </button>
-            )}
-          </div>
-          {sortedUncheckedCategories.map((categoryGroup, index) => {
+      {/* 1. Hoofdlijst – altijd tonen */}
+      <div className={mainListCardClass}>
+        <div className="mb-2 flex h-8 min-h-8 items-center justify-between gap-2">
+          <h2 className="flex items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
+            <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+            Lijst
+          </h2>
+          {sortedUncheckedCategories.length >= 2 && (
+            <button
+              type="button"
+              onClick={() => setShowCategoryTitles((v) => !v)}
+              className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              aria-pressed={showCategoryTitles}
+              aria-label={showCategoryTitles ? 'Lijst compacter maken' : 'Lijst uitgebreider maken'}
+            >
+              {showCategoryTitles ? (
+                <LayoutList className="h-4 w-4" strokeWidth={2} />
+              ) : (
+                <List className="h-4 w-4" strokeWidth={2} />
+              )}
+            </button>
+          )}
+        </div>
+        {sortedUncheckedCategories.length > 0 ? (
+          sortedUncheckedCategories.map((categoryGroup, index) => {
             const categoryName = categoryGroup.category?.name || ''
             const isFruitGroente = categoryName === 'Fruit & Groente'
             const itemsToRender = isFruitGroente
@@ -338,9 +308,11 @@ export default function ShoppingList({
                 </div>
               </div>
             )
-          })}
-        </div>
-      )}
+          })
+        ) : (
+          <p className="text-gray-500">Je boodschappenlijst is leeg</p>
+        )}
+      </div>
 
       {/* 2. Afgevinkt */}
       {checkedItemsCount > 0 && (
@@ -362,7 +334,10 @@ export default function ShoppingList({
             {onClearChecked && (
               <button
                 type="button"
-                onClick={() => setShowClearCheckedModal(true)}
+                onClick={() => {
+                  haptic('light')
+                  setShowClearCheckedModal(true)
+                }}
                 className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                 aria-label="Wis alle afgevinkte items"
               >
@@ -450,28 +425,28 @@ export default function ShoppingList({
         </div>
       )}
 
-      {/* 5. Basics (ster-icoon) - standaard ingeklapt */}
-      {basicsNotInList.length > 0 && (
-        <div className={cardClass}>
-          <div className="flex h-8 min-h-8 items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => setBasicsSectionOpen((open) => !open)}
-              className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-sm font-medium text-gray-500 tracking-wide"
-              aria-expanded={basicsSectionOpen}
-            >
-              {basicsSectionOpen ? (
-                <ChevronDown className="h-4 w-4 shrink-0" />
-              ) : (
-                <ChevronRight className="h-4 w-4 shrink-0" />
-              )}
-              <Star className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-              <span>Basics ({basicsNotInList.length})</span>
-            </button>
-          </div>
-          {basicsSectionOpen && (
-            <div className="mt-2">
-              {basicsNotInList.map((product) => (
+      {/* 5. Basics (ster-icoon) – altijd tonen */}
+      <div className={cardClass}>
+        <div className="flex h-8 min-h-8 items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={() => setBasicsSectionOpen((open) => !open)}
+            className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-sm font-medium text-gray-500 tracking-wide"
+            aria-expanded={basicsSectionOpen}
+          >
+            {basicsSectionOpen ? (
+              <ChevronDown className="h-4 w-4 shrink-0" />
+            ) : (
+              <ChevronRight className="h-4 w-4 shrink-0" />
+            )}
+            <Star className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+            <span>Basics ({basicsNotInList.length})</span>
+          </button>
+        </div>
+        {basicsSectionOpen && (
+          <div className="mt-2">
+            {basicsNotInList.length > 0 ? (
+              basicsNotInList.map((product) => (
                 <div
                   key={product.id}
                   className="flex items-center gap-3 py-2"
@@ -489,16 +464,27 @@ export default function ShoppingList({
                     </button>
                   )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+              ))
+            ) : (
+              <p className="text-sm text-gray-500">
+                Ga naar{' '}
+                <Link href="/producten" className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700">
+                  <Package className="h-4 w-4 shrink-0" />
+                  Producten
+                </Link>
+                {' '}en markeer producten als Basic{' '}
+                <Star className="inline-block h-4 w-4 shrink-0 align-middle text-gray-400" />
+                {' '}om ze altijd snel terug te vinden.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Modal: bevestiging wissen afgevinkte items */}
       {showClearCheckedModal && onClearChecked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => setShowClearCheckedModal(false)} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden onClick={() => setShowClearCheckedModal(false)} />
           <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
             <p className="text-gray-900">
               Weet je zeker dat je alle {checkedItemsCount} afgevinkte item{checkedItemsCount !== 1 ? 's' : ''} wilt wissen?
@@ -514,6 +500,7 @@ export default function ShoppingList({
               <button
                 type="button"
                 onClick={() => {
+                  haptic('medium')
                   onClearChecked()
                   setShowClearCheckedModal(false)
                 }}

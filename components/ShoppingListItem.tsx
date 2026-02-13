@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Check, Trash2, CornerDownLeft, Plus } from 'lucide-react'
+import { haptic } from '@/lib/haptics'
 import Skeleton from './Skeleton'
 
 const LONG_PRESS_MS = 600
@@ -68,7 +69,7 @@ export default function ShoppingListItem({
     }
     if (item.is_checked) {
       if (checkboxRef.current) {
-        checkboxRef.current.style.transition = 'transform 0.15s ease-out, opacity 0.15s ease-out'
+        checkboxRef.current.style.transition = 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1)'
         checkboxRef.current.style.transform = 'scale(1.2)'
         checkboxRef.current.style.opacity = '0.8'
         setTimeout(() => {
@@ -92,6 +93,7 @@ export default function ShoppingListItem({
   }
 
   const handleDeleteClick = () => {
+    haptic('light')
     setShowSubmenu(false)
     setShowDeleteModal(true)
   }
@@ -100,7 +102,7 @@ export default function ShoppingListItem({
     setShowDeleteModal(false)
     setIsDeleting(true)
     if (itemRef.current) {
-      itemRef.current.style.transition = 'transform 0.2s ease-in, opacity 0.2s ease-in'
+      itemRef.current.style.transition = 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1)'
       itemRef.current.style.transform = 'translateX(-100px)'
       itemRef.current.style.opacity = '0'
       setTimeout(() => onDelete(item.id), 200)
@@ -125,6 +127,7 @@ export default function ShoppingListItem({
     longPressTimerRef.current = setTimeout(() => {
       longPressTimerRef.current = null
       longPressJustTriggeredRef.current = true
+      haptic('medium')
       setPressActive(true)
       setTimeout(() => setPressActive(false), 120)
       setShowSubmenu(true)
@@ -159,7 +162,7 @@ export default function ShoppingListItem({
     if (itemRef.current) {
       itemRef.current.style.opacity = '0'
       itemRef.current.style.transform = 'translateY(10px)'
-      itemRef.current.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out'
+      itemRef.current.style.transition = 'opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1), transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)'
       requestAnimationFrame(() => {
         if (itemRef.current) {
           itemRef.current.style.opacity = '1'
@@ -375,7 +378,7 @@ export default function ShoppingListItem({
       {/* Modal: bevestiging item verwijderen */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40" aria-hidden onClick={() => setShowDeleteModal(false)} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden onClick={() => setShowDeleteModal(false)} />
           <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
             <p className="text-gray-900">Weet je zeker dat je dit item wilt verwijderen?</p>
             <div className="mt-4 flex justify-end gap-2">
