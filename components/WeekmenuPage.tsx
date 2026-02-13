@@ -70,7 +70,9 @@ function WeekmenuGerechtTextarea({
 
   const LINE_HEIGHT_PX = 20
   const MIN_HEIGHT_PX = 24
-  const PADDING_TOP_PX = (MIN_HEIGHT_PX - LINE_HEIGHT_PX) / 2 // 2px: centreert één regel
+  // Iets meer padding onderaan voor optische centrering (font baseline)
+  const PADDING_TOP_PX = 1
+  const PADDING_BOTTOM_PX = 3
 
   const handleBlur = useCallback(
     (e: React.FocusEvent<HTMLTextAreaElement>) => {
@@ -139,8 +141,9 @@ function WeekmenuGerechtTextarea({
         lineHeight: `${LINE_HEIGHT_PX}px`,
         minHeight: MIN_HEIGHT_PX,
         paddingTop: PADDING_TOP_PX,
-        paddingBottom: PADDING_TOP_PX,
+        paddingBottom: PADDING_BOTTOM_PX,
       }}
+      className="min-w-0 flex-1 resize-none overflow-hidden border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-500 focus:outline-none box-border"
       onInput={resize}
     />
   )
@@ -156,8 +159,8 @@ export default function WeekmenuPage() {
   const [patching, setPatching] = useState<number | null>(null)
   const urlInputRef = useRef<HTMLInputElement>(null)
   const urlDropdownWrapperRef = useRef<HTMLDivElement | null>(null)
-  const urlButtonContainerRef = useRef<HTMLDivElement | null>(null)
   const urlButtonTouchedRef = useRef(false)
+  const gerechtRowRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (urlDropdownDay === null) return
@@ -277,9 +280,9 @@ export default function WeekmenuPage() {
               d.day_of_week === day_of_week
                 ? {
                     ...d,
-                    menu_text: updated.menu_text ?? d.menu_text,
-                    link_url: updated.link_url ?? d.link_url,
-                    link_title: updated.link_title ?? d.link_title,
+                    menu_text: updated.menu_text !== undefined ? updated.menu_text : d.menu_text,
+                    link_url: updated.link_url !== undefined ? updated.link_url : d.link_url,
+                    link_title: updated.link_title !== undefined ? updated.link_title : d.link_title,
                   }
                 : d
             )
@@ -303,15 +306,6 @@ export default function WeekmenuPage() {
       setEditingDay(null)
     },
     [localText, patchDay]
-  )
-
-  const handleClear = useCallback(
-    (day_of_week: number) => {
-      haptic('light')
-      setLocalText((prev) => ({ ...prev, [day_of_week]: '' }))
-      patchDay(day_of_week, { menu_text: null })
-    },
-    [patchDay]
   )
 
   const openUrlDropdown = useCallback((day_of_week: number) => {
@@ -428,10 +422,10 @@ export default function WeekmenuPage() {
               {index > 0 && (
                 <div className="mx-4 border-t border-gray-200" />
               )}
-              <div className="px-4 pt-5 pb-3">
-              <div className="flex flex-wrap items-start gap-4">
+              <div className="px-4 py-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <span
-                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm ${
+                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm leading-none ${
                     day.day_of_week === todayDayOfWeek
                       ? 'bg-blue-600 font-bold text-white'
                       : 'bg-gray-100 font-medium text-gray-600'
@@ -447,7 +441,7 @@ export default function WeekmenuPage() {
                       setEditingDay(day.day_of_week)
                       setLocalText((prev) => ({ ...prev, [day.day_of_week]: savedText }))
                     }}
-                    className="flex min-h-8 min-w-0 flex-1 items-center text-left font-semibold text-gray-900"
+                    className="flex min-h-8 min-w-0 flex-1 items-center text-left font-semibold text-gray-900 leading-none"
                   >
                     {savedText}
                   </button>
@@ -463,7 +457,12 @@ export default function WeekmenuPage() {
                     aria-label="Gerecht toevoegen"
                   />
                 ) : (
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <div
+                    ref={(el) => {
+                      if (editingDay === day.day_of_week) gerechtRowRef.current = el
+                    }}
+                    className="flex min-w-0 flex-1 items-center gap-2"
+                  >
                     <div className="flex min-h-8 min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1">
                       <WeekmenuGerechtTextarea
                         value={text}
@@ -481,13 +480,16 @@ export default function WeekmenuPage() {
                         placeholder="Gerecht"
                         disabled={isPatching}
                         autoFocus={isEditing}
-                        blurIgnoreRef={editingDay === day.day_of_week ? urlButtonContainerRef : undefined}
+                        blurIgnoreRef={editingDay === day.day_of_week ? gerechtRowRef : undefined}
                         blurIgnoreTouchedRef={editingDay === day.day_of_week ? urlButtonTouchedRef : undefined}
                       />
                       {text.trim().length > 0 && (
                         <button
                           type="button"
-                          onClick={() => handleClear(day.day_of_week)}
+                          onClick={() => {
+                            haptic('light')
+                            setLocalText((prev) => ({ ...prev, [day.day_of_week]: '' }))
+                          }}
                           disabled={isPatching}
                           className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
                           aria-label="Veld wissen"
@@ -507,7 +509,6 @@ export default function WeekmenuPage() {
                     </div>
                     <div
                       ref={(el) => {
-                        if (editingDay === day.day_of_week) urlButtonContainerRef.current = el
                         if (isUrlOpen) urlDropdownWrapperRef.current = el
                       }}
                       className="relative shrink-0 self-center"
