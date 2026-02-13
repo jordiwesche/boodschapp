@@ -33,8 +33,7 @@ export default function LoginPage() {
           return
         }
         if (res.ok) {
-          router.replace('/')
-          router.refresh()
+          window.location.replace('/')
         }
       })
       .catch(() => {})
