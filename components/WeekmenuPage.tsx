@@ -53,6 +53,7 @@ function WeekmenuGerechtTextarea({
   disabled,
   autoFocus,
   blurIgnoreRef,
+  blurIgnoreTouchedRef,
 }: {
   value: string
   onChange: (v: string) => void
@@ -62,6 +63,8 @@ function WeekmenuGerechtTextarea({
   disabled: boolean
   autoFocus: boolean
   blurIgnoreRef?: React.RefObject<HTMLElement | null>
+  /** Op mobile is relatedTarget vaak null; parent zet dit op pointerdown van URL-knop */
+  blurIgnoreTouchedRef?: React.MutableRefObject<boolean>
 }) {
   const ref = useRef<HTMLTextAreaElement>(null)
 
@@ -75,9 +78,14 @@ function WeekmenuGerechtTextarea({
       if (blurIgnoreRef?.current && target && blurIgnoreRef.current.contains(target)) {
         return
       }
+      // Mobile: relatedTarget is vaak null; fallback op flag van pointerdown
+      if (blurIgnoreTouchedRef?.current) {
+        blurIgnoreTouchedRef.current = false
+        return
+      }
       onSubmit()
     },
-    [onSubmit, blurIgnoreRef]
+    [onSubmit, blurIgnoreRef, blurIgnoreTouchedRef]
   )
 
   const resize = useCallback(() => {
@@ -149,6 +157,7 @@ export default function WeekmenuPage() {
   const urlInputRef = useRef<HTMLInputElement>(null)
   const urlDropdownWrapperRef = useRef<HTMLDivElement | null>(null)
   const urlButtonContainerRef = useRef<HTMLDivElement | null>(null)
+  const urlButtonTouchedRef = useRef(false)
 
   useEffect(() => {
     if (urlDropdownDay === null) return
@@ -466,6 +475,7 @@ export default function WeekmenuPage() {
                         disabled={isPatching}
                         autoFocus={isEditing}
                         blurIgnoreRef={editingDay === day.day_of_week ? urlButtonContainerRef : undefined}
+                        blurIgnoreTouchedRef={editingDay === day.day_of_week ? urlButtonTouchedRef : undefined}
                       />
                       {text.trim().length > 0 && (
                         <button
@@ -497,6 +507,9 @@ export default function WeekmenuPage() {
                     >
                       <button
                         type="button"
+                        onPointerDown={() => {
+                          urlButtonTouchedRef.current = true
+                        }}
                         onClick={(e) => {
                           e.preventDefault()
                           openUrlDropdown(day.day_of_week)
