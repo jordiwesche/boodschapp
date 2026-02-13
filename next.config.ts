@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
       process.env.VERCEL_GIT_COMMIT_SHA || process.env.BUILD_ID || 'dev',
     // ISO timestamp van de build (wordt bij elke deploy opnieuw gezet)
     NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
+    // Vercel deployment ID uit URL (bijv. AmSFpYuzM)
+    NEXT_PUBLIC_DEPLOYMENT_ID: (() => {
+      const url = process.env.VERCEL_URL || ''
+      const m = url.match(/-([a-zA-Z0-9]+)\./)
+      return m ? m[1] : ''
+    })(),
   },
   /* config options here */
   // Optimize production builds

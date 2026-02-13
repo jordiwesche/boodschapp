@@ -152,6 +152,7 @@ export default function ProfielTabContent() {
               </button>
               <span className="text-xs text-gray-400" title={process.env.NEXT_PUBLIC_BUILD_VERSION || 'dev'}>
                 Laatste build: {formatBuildTime(process.env.NEXT_PUBLIC_BUILD_TIME)}
+                {process.env.NEXT_PUBLIC_DEPLOYMENT_ID && ` (${process.env.NEXT_PUBLIC_DEPLOYMENT_ID})`}
               </span>
             </div>
             <LogoutButton />
