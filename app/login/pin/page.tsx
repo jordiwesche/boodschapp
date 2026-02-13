@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { saveSessionToCache } from '@/lib/session-persistence'
 
 function PinVerification() {
   const router = useRouter()
@@ -66,6 +67,8 @@ function PinVerification() {
       const data = await response.json()
 
       if (response.ok) {
+        // Backup voor Safari PWA: cookies kunnen verdwijnen bij sluiten app
+        await saveSessionToCache(data.user.id)
         router.push('/')
         router.refresh()
       } else {

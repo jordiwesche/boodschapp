@@ -1,13 +1,50 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { getSessionFromCache } from '@/lib/session-persistence'
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [restoring, setRestoring] = useState(true)
+
+  // Safari PWA: herstel sessie uit Cache API als cookie ontbreekt
+  useEffect(() => {
+    let cancelled = false
+    getSessionFromCache()
+      .then((userId) => {
+        if (cancelled || !userId) {
+          setRestoring(false)
+          return
+        }
+        return fetch('/api/auth/restore-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId }),
+          credentials: 'include',
+        })
+      })
+      .then(async (res) => {
+        if (cancelled || !res) {
+          setRestoring(false)
+          return
+        }
+        if (res.ok) {
+          router.replace('/')
+          router.refresh()
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setRestoring(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [router])
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,6 +84,14 @@ export default function LoginPage() {
     }
   }
 
+
+  if (restoring) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <p className="text-gray-500">Laden...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">

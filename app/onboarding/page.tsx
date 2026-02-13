@@ -59,6 +59,8 @@ function OnboardingForm() {
       const data = await response.json()
 
       if (response.ok) {
+        const { saveSessionToCache } = await import('@/lib/session-persistence')
+        await saveSessionToCache(data.user.id)
         router.push('/')
         router.refresh()
       } else {

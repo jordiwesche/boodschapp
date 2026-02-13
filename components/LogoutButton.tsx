@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { clearSessionFromCache } from '@/lib/session-persistence'
 
 export default function LogoutButton() {
   const router = useRouter()
@@ -10,7 +11,8 @@ export default function LogoutButton() {
   const handleLogout = async () => {
     setLoading(true)
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
+      await clearSessionFromCache()
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
       router.push('/login')
       router.refresh()
     } catch (error) {
