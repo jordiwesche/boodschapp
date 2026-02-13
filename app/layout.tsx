@@ -26,12 +26,12 @@ export const metadata: Metadata = {
   description: "Samen boodschappen doen met je huishouden",
   manifest: "/manifest.json",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: light)", color: "#2563eb" },
+    { media: "(prefers-color-scheme: dark)", color: "#2563eb" },
   ],
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Boodschapp",
   },
   other: {

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Page background: light gray (gray-50) - native bar uses themeColor #fff in layout */
+  /* Page background: light gray (gray-50) - native bar uses themeColor #2563eb (blue-600) in layout */
   --background: #f9fafb;
   --foreground: #171717;
   /* Spring-like easing for native feel */
