@@ -128,8 +128,8 @@ export default function ProfielTabContent() {
                   App vernieuwen
                 </span>
               </button>
-              <span className="text-xs text-gray-400 font-mono" title={process.env.NEXT_PUBLIC_BUILD_VERSION || 'dev'}>
-                {process.env.NEXT_PUBLIC_DEPLOYMENT_ID || process.env.NEXT_PUBLIC_BUILD_VERSION || 'dev'}
+              <span className="text-xs text-gray-400" title={process.env.NEXT_PUBLIC_BUILD_VERSION || 'dev'}>
+                {process.env.NEXT_PUBLIC_BUILD_TIME || 'dev'}
               </span>
             </div>
             <LogoutButton />
