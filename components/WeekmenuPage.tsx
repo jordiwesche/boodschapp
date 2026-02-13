@@ -54,6 +54,7 @@ function WeekmenuGerechtTextarea({
   autoFocus,
   blurIgnoreRef,
   blurIgnoreTouchedRef,
+  blurIgnoreClearTouchedRef,
 }: {
   value: string
   onChange: (v: string) => void
@@ -65,6 +66,8 @@ function WeekmenuGerechtTextarea({
   blurIgnoreRef?: React.RefObject<HTMLElement | null>
   /** Op mobile is relatedTarget vaak null; parent zet dit op pointerdown van URL-knop */
   blurIgnoreTouchedRef?: React.MutableRefObject<boolean>
+  /** Op mobile: pointerdown op kruisje (veld wissen) */
+  blurIgnoreClearTouchedRef?: React.MutableRefObject<boolean>
 }) {
   const ref = useRef<HTMLTextAreaElement>(null)
 
@@ -85,9 +88,13 @@ function WeekmenuGerechtTextarea({
         blurIgnoreTouchedRef.current = false
         return
       }
+      if (blurIgnoreClearTouchedRef?.current) {
+        blurIgnoreClearTouchedRef.current = false
+        return
+      }
       onSubmit()
     },
-    [onSubmit, blurIgnoreRef, blurIgnoreTouchedRef]
+    [onSubmit, blurIgnoreRef, blurIgnoreTouchedRef, blurIgnoreClearTouchedRef]
   )
 
   const resize = useCallback(() => {
@@ -159,6 +166,7 @@ export default function WeekmenuPage() {
   const urlInputRef = useRef<HTMLInputElement>(null)
   const urlDropdownWrapperRef = useRef<HTMLDivElement | null>(null)
   const urlButtonTouchedRef = useRef(false)
+  const clearButtonTouchedRef = useRef(false)
   const gerechtRowRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -462,7 +470,7 @@ export default function WeekmenuPage() {
                     }}
                     className="flex min-w-0 flex-1 items-center gap-2"
                   >
-                    <div className="flex min-h-8 min-w-0 flex-1 items-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-1">
+                    <div className="flex min-h-8 min-w-0 flex-1 items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 py-1">
                       <WeekmenuGerechtTextarea
                         value={text}
                         onChange={(v) =>
@@ -481,10 +489,14 @@ export default function WeekmenuPage() {
                         autoFocus={isEditing}
                         blurIgnoreRef={editingDay === day.day_of_week ? gerechtRowRef : undefined}
                         blurIgnoreTouchedRef={editingDay === day.day_of_week ? urlButtonTouchedRef : undefined}
+                        blurIgnoreClearTouchedRef={editingDay === day.day_of_week ? clearButtonTouchedRef : undefined}
                       />
                       {text.trim().length > 0 && (
                         <button
                           type="button"
+                          onPointerDown={() => {
+                            clearButtonTouchedRef.current = true
+                          }}
                           onClick={() => {
                             haptic('light')
                             setLocalText((prev) => ({ ...prev, [day.day_of_week]: '' }))
@@ -500,7 +512,7 @@ export default function WeekmenuPage() {
                         type="button"
                         onClick={() => handleSubmit(day.day_of_week)}
                         disabled={isPatching}
-                        className="shrink-0 flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                        className="shrink-0 ml-auto flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
                         aria-label="Opslaan"
                       >
                         <CornerDownLeft className="h-4 w-4" strokeWidth={2} />
