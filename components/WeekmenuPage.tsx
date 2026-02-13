@@ -321,11 +321,12 @@ export default function WeekmenuPage() {
   }, [days])
 
   // Focus URL-invoerveld zodra dropdown met input zichtbaar is (belangrijk voor mobile: toetsenbord + cursor)
+  // autoFocus op input + fallback voor browsers waar autoFocus niet werkt (bijv. iOS)
   useEffect(() => {
     if (urlDropdownDay === null) return
     const row = days.find((d) => d.day_of_week === urlDropdownDay)
     if (row?.link_url) return // heeft al link, geen input om te focussen
-    const t = setTimeout(() => urlInputRef.current?.focus(), 100)
+    const t = setTimeout(() => urlInputRef.current?.focus(), 150)
     return () => clearTimeout(t)
   }, [urlDropdownDay, days])
 
@@ -513,8 +514,9 @@ export default function WeekmenuPage() {
                     >
                       <button
                         type="button"
-                        onPointerDown={() => {
+                        onPointerDown={(e) => {
                           urlButtonTouchedRef.current = true
+                          e.preventDefault() // voorkom dat knop focus krijgt; input krijgt focus via autoFocus
                         }}
                         onClick={(e) => {
                           e.preventDefault()
@@ -553,6 +555,7 @@ export default function WeekmenuPage() {
                             type="url"
                             inputMode="url"
                             autoComplete="url"
+                            autoFocus
                             value={urlInput}
                             onChange={(e) => setUrlInput(e.target.value)}
                             onKeyDown={(e) => {
