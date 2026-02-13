@@ -79,7 +79,7 @@ export default function AppShell({ initialTab }: { initialTab: TabId }) {
     <>
       {activeTab === 'lijst' && <ShoppingListPage />}
       {activeTab === 'weekmenu' && (
-        <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
+        <div className="flex min-h-screen flex-col pb-20" style={{ background: 'linear-gradient(to bottom, #2563eb 0%, #2563eb 200px, #f9fafb 400px)' }}>
           <header className="relative min-h-[320px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
             <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
               <h1 className="text-3xl font-bold text-white">Weekmenu</h1>
