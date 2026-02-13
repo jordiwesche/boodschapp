@@ -1287,7 +1287,7 @@ export default function ShoppingListPage() {
               De app is momenteel offline
             </p>
           ) : lastUpdate ? (
-            <p className="mt-1 text-sm text-white/90">
+            <p className="mt-1 text-sm text-white/80">
               {lastUpdate.userName} • {formatTimeAgo(lastUpdate.updatedAt)}
             </p>
           ) : null}

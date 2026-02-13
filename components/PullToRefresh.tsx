@@ -9,35 +9,25 @@ interface PullToRefreshProps {
   scrollContainerRef?: React.RefObject<HTMLElement | null>
 }
 
+const THRESHOLD = 56
+const MAX_PULL = 80
+
 export default function PullToRefresh({
   onRefresh,
   children,
   disabled = false,
   scrollContainerRef,
 }: PullToRefreshProps) {
-  const [isPulling, setIsPulling] = useState(false)
   const [pullDistance, setPullDistance] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const touchStartY = useRef<number>(0)
   const wasAtTopRef = useRef(false)
-  const threshold = 80 // Distance in pixels to trigger refresh
+  const pullDistanceRef = useRef(0)
+  const rafIdRef = useRef<number | null>(null)
 
-  // Helper to check if at top of scroll - check both window and container
   const isAtTop = (): boolean => {
-    // Check window scroll first (most common case)
-    const windowScroll = window.scrollY || window.pageYOffset || 0
-    if (windowScroll > 0) {
-      return false
-    }
-    
-    // If there's a specific scroll container, check that too
-    if (scrollContainerRef?.current) {
-      const containerScroll = scrollContainerRef.current.scrollTop || 0
-      if (containerScroll > 0) {
-        return false
-      }
-    }
-    
+    if ((window.scrollY || window.pageYOffset) > 0) return false
+    if (scrollContainerRef?.current && scrollContainerRef.current.scrollTop > 0) return false
     return true
   }
 
@@ -45,87 +35,73 @@ export default function PullToRefresh({
     if (disabled) return
 
     const handleTouchStart = (e: TouchEvent) => {
-      // CRITICAL: Check if at top BEFORE allowing drag to start
       const atTop = isAtTop()
       wasAtTopRef.current = atTop
-      
-      if (!atTop) {
-        return // Don't start dragging if not at top
-      }
-      
+      if (!atTop) return
       touchStartY.current = e.touches[0].clientY
     }
 
     const handleTouchMove = (e: TouchEvent) => {
-      // Don't do anything if we didn't start at the top
-      if (!wasAtTopRef.current) {
-        return
-      }
-
-      // CRITICAL: Check if still at top on every move - if not, immediately stop
+      if (!wasAtTopRef.current) return
       if (!isAtTop()) {
-        setIsPulling(false)
-        setPullDistance(0)
         wasAtTopRef.current = false
+        pullDistanceRef.current = 0
+        setPullDistance(0)
         return
       }
 
-      const currentY = e.touches[0].clientY
-      const distance = currentY - touchStartY.current
+      const distance = Math.min(Math.max(0, e.touches[0].clientY - touchStartY.current), MAX_PULL)
 
-      // Only allow pull down (positive distance) when at top
+      if (distance > 10) e.preventDefault()
+
       if (distance > 0) {
-        // Only prevent default when pulling down significantly
-        if (distance > 10) {
-          e.preventDefault()
+        pullDistanceRef.current = distance
+        if (rafIdRef.current === null) {
+          rafIdRef.current = requestAnimationFrame(() => {
+            rafIdRef.current = null
+            setPullDistance(pullDistanceRef.current)
+          })
         }
-        setIsPulling(true)
-        setPullDistance(Math.min(distance, threshold * 1.5)) // Cap at 1.5x threshold
-      } else if (distance <= 0) {
-        // Reset if pulling up
-        setIsPulling(false)
-        setPullDistance(0)
+      } else {
         wasAtTopRef.current = false
+        pullDistanceRef.current = 0
+        setPullDistance(0)
       }
     }
 
     const handleTouchEnd = async () => {
-      // Don't do anything if we didn't start at the top
-      if (!wasAtTopRef.current) {
-        return
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current)
+        rafIdRef.current = null
       }
 
-      // CRITICAL: Double check we're still at top before refreshing
+      if (!wasAtTopRef.current) return
       if (!isAtTop()) {
-        setIsPulling(false)
         setPullDistance(0)
+        pullDistanceRef.current = 0
         wasAtTopRef.current = false
         return
       }
 
-      if (pullDistance >= threshold && !isRefreshing) {
+      const dist = pullDistanceRef.current
+
+      if (dist >= THRESHOLD && !isRefreshing) {
         setIsRefreshing(true)
+        setPullDistance(0)
+        pullDistanceRef.current = 0
+        wasAtTopRef.current = false
         try {
           await onRefresh()
         } finally {
-          // Keep refreshing state for a moment for visual feedback
-          setTimeout(() => {
-            setIsRefreshing(false)
-            setIsPulling(false)
-            setPullDistance(0)
-            wasAtTopRef.current = false
-          }, 200)
+          setTimeout(() => setIsRefreshing(false), 150)
         }
       } else {
-        // Reset if not enough pull
-        setIsPulling(false)
         setPullDistance(0)
+        pullDistanceRef.current = 0
         wasAtTopRef.current = false
       }
     }
 
-    // Use passive for touchstart and touchend to not block scroll
-    // Only touchmove needs to be non-passive to allow preventDefault
     document.addEventListener('touchstart', handleTouchStart, { passive: true })
     document.addEventListener('touchmove', handleTouchMove, { passive: false })
     document.addEventListener('touchend', handleTouchEnd, { passive: true })
@@ -134,19 +110,20 @@ export default function PullToRefresh({
       document.removeEventListener('touchstart', handleTouchStart)
       document.removeEventListener('touchmove', handleTouchMove)
       document.removeEventListener('touchend', handleTouchEnd)
+      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current)
     }
-  }, [disabled, onRefresh, pullDistance, isRefreshing, scrollContainerRef])
+  }, [disabled, onRefresh, scrollContainerRef])
 
-  const shouldShowIndicator = (isPulling && pullDistance > 20) || isRefreshing
+  const showIndicator = (pullDistance > 12 || isRefreshing)
 
   return (
     <>
-      {shouldShowIndicator && (
+      {showIndicator && (
         <div
-          className="flex items-center justify-center py-3 text-sm text-gray-500 transition-opacity"
-          style={{ minHeight: `${Math.min(pullDistance, threshold * 1.5)}px`, opacity: Math.min(pullDistance / threshold, 1) }}
+          className="flex h-12 flex-shrink-0 items-center justify-center text-sm text-white transition-all duration-150 ease-out"
+          style={{ opacity: Math.min(pullDistance / THRESHOLD, 1) }}
         >
-          {isRefreshing ? 'Vernieuwen...' : pullDistance >= threshold ? 'Los om te vernieuwen' : 'Trek om te vernieuwen'}
+          {isRefreshing ? 'Vernieuwen...' : pullDistance >= THRESHOLD ? 'Los om te vernieuwen' : 'Trek om te vernieuwen'}
         </div>
       )}
       {children}
