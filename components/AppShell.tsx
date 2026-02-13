@@ -87,7 +87,7 @@ export default function AppShell({ initialTab }: { initialTab: TabId }) {
               <h1 className="text-3xl font-bold text-white">Weekmenu</h1>
             </div>
           </header>
-          <div className="-mt-[140px] sm:-mt-[124px] relative z-10 pt-10">
+          <div className="-mt-[172px] sm:-mt-[156px] relative z-10 pt-10">
             <WeekmenuPage />
           </div>
         </div>

@@ -78,7 +78,7 @@ export default function ProfielTabContent() {
         </div>
       </header>
 
-      <main className="-mt-[140px] sm:-mt-[124px] relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-10 pb-8 sm:px-6 sm:pt-10 lg:px-8">
+      <main className="-mt-[172px] sm:-mt-[156px] relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-10 pb-8 sm:px-6 sm:pt-10 lg:px-8">
         <div className="space-y-4">
           <Link
             href="/profiel/naam"

@@ -95,7 +95,7 @@ export default function ProfielNaamPage() {
         </div>
       </header>
 
-      <main className="-mt-[140px] sm:-mt-[124px] relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-10 pb-8 sm:px-6 sm:pt-10 lg:px-8">
+      <main className="-mt-[172px] sm:-mt-[156px] relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-10 pb-8 sm:px-6 sm:pt-10 lg:px-8">
         <div className="rounded-[16px] bg-white p-8 shadow">
           {error && (
             <div className="mb-4 rounded-md bg-red-50 p-4">
