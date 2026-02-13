@@ -361,7 +361,7 @@ export default function WeekmenuPage() {
               >
                 {label}
               </span>
-              <div className="h-6 flex-1 max-w-[200px] rounded bg-gray-100 animate-pulse" />
+              <div className="h-6 flex-1 max-w-[200px] rounded bg-gray-200/50 animate-pulse" />
               </div>
             </React.Fragment>
           ))}

@@ -127,9 +127,9 @@ select {
 .animate-shimmer {
   background: linear-gradient(
     90deg,
-    #f3f4f6 0%,
-    #e5e7eb 50%,
-    #f3f4f6 100%
+    rgb(209 213 219 / 0.5) 0%,
+    rgb(156 163 175 / 0.5) 50%,
+    rgb(209 213 219 / 0.5) 100%
   );
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
@@ -140,9 +140,9 @@ select {
   .animate-shimmer {
     background: linear-gradient(
       90deg,
-      #f3f4f6 0%,
-      #e5e7eb 50%,
-      #f3f4f6 100%
+      rgb(209 213 219 / 0.5) 0%,
+      rgb(156 163 175 / 0.5) 50%,
+      rgb(209 213 219 / 0.5) 100%
     ) !important;
     background-size: 1000px 100%;
   }

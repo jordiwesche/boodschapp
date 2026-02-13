@@ -153,7 +153,7 @@ export default function SearchOverlay({
                   {[1, 2, 3, 4].map((i) => (
                     <div
                       key={i}
-                      className="h-8 w-20 bg-gray-200 rounded-full animate-pulse"
+                      className="h-8 w-20 bg-gray-200/50 rounded-full animate-pulse"
                     />
                   ))}
                 </div>
