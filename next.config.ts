@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_VERSION:
+      process.env.VERCEL_GIT_COMMIT_SHA || process.env.BUILD_ID || 'dev',
+  },
   /* config options here */
   // Optimize production builds
   productionBrowserSourceMaps: false,
