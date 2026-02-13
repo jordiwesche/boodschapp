@@ -52,6 +52,7 @@ function WeekmenuGerechtTextarea({
   placeholder,
   disabled,
   autoFocus,
+  blurIgnoreRef,
 }: {
   value: string
   onChange: (v: string) => void
@@ -60,12 +61,24 @@ function WeekmenuGerechtTextarea({
   placeholder: string
   disabled: boolean
   autoFocus: boolean
+  blurIgnoreRef?: React.RefObject<HTMLElement | null>
 }) {
   const ref = useRef<HTMLTextAreaElement>(null)
 
   const LINE_HEIGHT_PX = 20
   const MIN_HEIGHT_PX = 24
   const PADDING_TOP_PX = (MIN_HEIGHT_PX - LINE_HEIGHT_PX) / 2 // 2px: centreert één regel
+
+  const handleBlur = useCallback(
+    (e: React.FocusEvent<HTMLTextAreaElement>) => {
+      const target = e.relatedTarget as Node | null
+      if (blurIgnoreRef?.current && target && blurIgnoreRef.current.contains(target)) {
+        return
+      }
+      onSubmit()
+    },
+    [onSubmit, blurIgnoreRef]
+  )
 
   const resize = useCallback(() => {
     const el = ref.current
@@ -98,7 +111,7 @@ function WeekmenuGerechtTextarea({
       ref={ref}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      onBlur={() => onSubmit()}
+      onBlur={handleBlur}
       onKeyDown={(e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault()
@@ -135,6 +148,7 @@ export default function WeekmenuPage() {
   const [patching, setPatching] = useState<number | null>(null)
   const urlInputRef = useRef<HTMLInputElement>(null)
   const urlDropdownWrapperRef = useRef<HTMLDivElement | null>(null)
+  const urlButtonContainerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     if (urlDropdownDay === null) return
@@ -451,6 +465,7 @@ export default function WeekmenuPage() {
                         placeholder="Gerecht"
                         disabled={isPatching}
                         autoFocus={isEditing}
+                        blurIgnoreRef={editingDay === day.day_of_week ? urlButtonContainerRef : undefined}
                       />
                       {text.trim().length > 0 && (
                         <button
@@ -474,12 +489,18 @@ export default function WeekmenuPage() {
                       </button>
                     </div>
                     <div
-                      ref={isUrlOpen ? urlDropdownWrapperRef : undefined}
+                      ref={(el) => {
+                        if (editingDay === day.day_of_week) urlButtonContainerRef.current = el
+                        if (isUrlOpen) urlDropdownWrapperRef.current = el
+                      }}
                       className="relative shrink-0 self-center"
                     >
                       <button
                         type="button"
-                        onClick={() => openUrlDropdown(day.day_of_week)}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          openUrlDropdown(day.day_of_week)
+                        }}
                         className={`flex h-9 w-9 items-center justify-center rounded-full ${
                           hasLink
                             ? 'bg-gray-100 text-blue-600 hover:bg-blue-50'
