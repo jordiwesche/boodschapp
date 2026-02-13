@@ -75,7 +75,7 @@ export default function ProductCard({ product, onEdit, onToggleBasic, showPurcha
             <div className="flex-1 min-w-0 flex items-center">
               <div className="flex flex-col gap-0.5 w-full">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-gray-900 truncate">{product.name}</h3>
+                  <h3 className="flex-1 min-w-0 font-medium text-gray-900">{product.name}</h3>
                 </div>
                 {/* Purchase history info - alleen bij sortering op Koopfrequentie */}
                 {showPurchaseInfo && !loadingHistory && purchaseCount > 0 && (

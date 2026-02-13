@@ -4,6 +4,13 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_BUILD_VERSION:
       process.env.VERCEL_GIT_COMMIT_SHA || process.env.BUILD_ID || 'dev',
+    // Deployment-ID zoals in Vercel dashboard (bijv. DaKDywnp1); voor productie fallback naar commit SHA
+    NEXT_PUBLIC_DEPLOYMENT_ID: (() => {
+      const url = process.env.VERCEL_URL || ''
+      const m = url.match(/-([a-zA-Z0-9]+)\./)
+      if (m) return m[1]
+      return process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || process.env.BUILD_ID || 'dev'
+    })(),
   },
   /* config options here */
   // Optimize production builds
