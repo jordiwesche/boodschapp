@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, RotateCcw } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Trash2 } from 'lucide-react'
+import { haptic } from '@/lib/haptics'
 import {
   calculatePurchaseFrequency,
   calculatePurchaseFrequencyStats,
@@ -34,6 +35,89 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
   const [resetting, setResetting] = useState(false)
   const [showResetConfirmModal, setShowResetConfirmModal] = useState(false)
   const [resetMessage, setResetMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [submenuRecordId, setSubmenuRecordId] = useState<string | null>(null)
+  const [deleteModalRecordId, setDeleteModalRecordId] = useState<string | null>(null)
+  const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null)
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const touchStartY = useRef(0)
+
+  const LONG_PRESS_MS = 600
+
+  const clearLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+  }
+
+  const startLongPress = (recordId: string, clientY?: number) => {
+    clearLongPress()
+    if (clientY != null) touchStartY.current = clientY
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = null
+      haptic('medium')
+      setSubmenuRecordId(recordId)
+    }, LONG_PRESS_MS)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const dy = Math.abs(e.touches[0].clientY - touchStartY.current)
+    if (dy > 10) clearLongPress()
+  }
+
+  const handleDeleteRecordClick = (recordId: string) => {
+    haptic('light')
+    setSubmenuRecordId(null)
+    setDeleteModalRecordId(recordId)
+  }
+
+  const handleDeleteRecordConfirm = async () => {
+    const recordId = deleteModalRecordId
+    if (!recordId) return
+    setDeleteModalRecordId(null)
+    setDeletingRecordId(recordId)
+    try {
+      const response = await fetch(`/api/purchase-history/${recordId}`, { method: 'DELETE' })
+      if (response.ok) {
+        setPurchaseHistory((prev) => prev.filter((p) => p.id !== recordId))
+      } else {
+        const err = await response.json().catch(() => ({}))
+        setResetMessage({ type: 'error', text: err.error || 'Kon record niet verwijderen' })
+        setTimeout(() => setResetMessage(null), 5000)
+      }
+    } catch (err) {
+      console.error('Delete purchase record error:', err)
+      setResetMessage({ type: 'error', text: 'Er is een fout opgetreden' })
+      setTimeout(() => setResetMessage(null), 5000)
+    } finally {
+      setDeletingRecordId(null)
+    }
+  }
+
+  useEffect(() => {
+    const closeSubmenu = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node
+      const rows = document.querySelectorAll('[data-purchase-history-row]')
+      const submenus = document.querySelectorAll('[data-purchase-submenu]')
+      const isInside = [...rows, ...submenus].some((el) => el.contains(target))
+      if (isInside) return
+      setSubmenuRecordId(null)
+    }
+    if (submenuRecordId) {
+      document.addEventListener('mousedown', closeSubmenu)
+      document.addEventListener('touchstart', closeSubmenu, { passive: true })
+    }
+    return () => {
+      document.removeEventListener('mousedown', closeSubmenu)
+      document.removeEventListener('touchstart', closeSubmenu)
+    }
+  }, [submenuRecordId])
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     fetchProductData()
@@ -271,10 +355,39 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
                     new Date(a.purchased_at).getTime()
                 )
                 .map((purchase) => (
-                  <div key={purchase.id} className="px-6 py-4">
+                  <div
+                    key={purchase.id}
+                    data-purchase-history-row
+                    className="relative px-6 py-4 select-none"
+                    style={{ WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onMouseDown={() => startLongPress(purchase.id)}
+                    onMouseUp={clearLongPress}
+                    onMouseLeave={clearLongPress}
+                    onTouchStart={(e) => startLongPress(purchase.id, e.touches[0].clientY)}
+                    onTouchEnd={clearLongPress}
+                    onTouchMove={handleTouchMove}
+                  >
                     <p className="text-sm font-medium text-gray-900">
                       {formatDate(purchase.purchased_at)}
                     </p>
+                    {submenuRecordId === purchase.id && (
+                      <div
+                        data-purchase-submenu
+                        className="absolute right-6 top-1/2 z-10 min-w-0 -translate-y-1/2 select-none animate-slide-down"
+                        style={{ WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRecordClick(purchase.id)}
+                          className="flex items-center gap-2 whitespace-nowrap text-left text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+                          aria-label="Verwijderen"
+                        >
+                          <Trash2 className="h-4 w-4 shrink-0" />
+                          Verwijder
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
             </div>
@@ -329,6 +442,37 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
                 className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
               >
                 {resetting ? 'Resetten...' : 'Resetten'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: bevestiging record verwijderen */}
+      {deleteModalRecordId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            aria-hidden
+            onClick={() => setDeleteModalRecordId(null)}
+          />
+          <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
+            <p className="text-gray-900">Weet je zeker dat je dit record wilt verwijderen?</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteModalRecordId(null)}
+                className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              >
+                Annuleren
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteRecordConfirm}
+                disabled={!!deletingRecordId}
+                className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+              >
+                {deletingRecordId ? 'Verwijderen...' : 'Verwijderen'}
               </button>
             </div>
           </div>
