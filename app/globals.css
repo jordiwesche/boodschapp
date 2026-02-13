@@ -73,6 +73,24 @@ select {
   padding-right: 2.5rem;
 }
 
+/* PWA standalone: content iets lager voor correcte marge titel-content */
+@media (display-mode: standalone) {
+  [data-pwa-main="shopping"] {
+    margin-top: -180px !important;
+  }
+  [data-pwa-main="default"] {
+    margin-top: -140px !important;
+  }
+  @media (min-width: 640px) {
+    [data-pwa-main="shopping"] {
+      margin-top: -164px !important;
+    }
+    [data-pwa-main="default"] {
+      margin-top: -124px !important;
+    }
+  }
+}
+
 @media screen and (max-width: 768px) {
   /* Prevent page scrolling when keyboard appears */
   body.keyboard-open {

@@ -308,7 +308,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
         </div>
       </header>
 
-      <main className="-mt-[172px] sm:-mt-[156px] relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-10 pb-8 sm:px-6 sm:pt-10 lg:px-8">
+      <main data-pwa-main="default" className="-mt-[172px] sm:-mt-[156px] relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-10 pb-8 sm:px-6 sm:pt-10 lg:px-8">
         {/* Statistics */}
         <div className="mb-6 rounded-[16px] bg-white p-6 shadow">
           <div className="grid grid-cols-2 gap-4">
