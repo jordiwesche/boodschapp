@@ -25,10 +25,6 @@ export const metadata: Metadata = {
   title: "Boodschapp",
   description: "Samen boodschappen doen met je huishouden",
   manifest: "/manifest.json",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#2563eb" },
-    { media: "(prefers-color-scheme: dark)", color: "#2563eb" },
-  ],
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -46,6 +42,10 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#2563eb" },
+    { media: "(prefers-color-scheme: dark)", color: "#2563eb" },
+  ],
 };
 
 export default function RootLayout({
@@ -56,6 +56,8 @@ export default function RootLayout({
   return (
     <html lang="nl">
       <head>
+        <meta name="theme-color" content="#2563eb" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="preconnect" href="https://medmrhmuhghcozfydxov.supabase.co" />
         <link rel="dns-prefetch" href="https://medmrhmuhghcozfydxov.supabase.co" />
         <link rel="apple-touch-icon" href="/icon-180x180.png" sizes="180x180" />
