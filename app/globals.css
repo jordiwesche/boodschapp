@@ -148,6 +148,22 @@ select {
   }
 }
 
+/* PWA only: fixed blue bar at top for notch + native status bar (transparent bar shows through) */
+@media (display-mode: standalone) {
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top);
+    min-height: 20px;
+    background: #2563eb;
+    z-index: 9999;
+    pointer-events: none;
+  }
+}
+
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   *,
