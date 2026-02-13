@@ -283,7 +283,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 pb-20">
-      <header className="relative min-h-[320px] bg-blue-600 pt-[env(safe-area-inset-top)]">
+      <header className="relative min-h-[320px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
         <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-6 sm:px-6 sm:pt-12 lg:px-8">
           <div className="flex items-center gap-4">
             <button

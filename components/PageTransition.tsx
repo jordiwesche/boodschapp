@@ -52,7 +52,7 @@ export default function PageTransition({ children }: PageTransitionProps) {
       style={{ 
         opacity: 1,
         minHeight: '100vh',
-        background: 'var(--background, #f9fafb)',
+        background: '#2563eb',
       }}
     >
       {children}
