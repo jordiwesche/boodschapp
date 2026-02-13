@@ -56,6 +56,11 @@ export default function RootLayout({
   return (
     <html lang="nl">
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone){document.documentElement.classList.add('pwa-standalone');}`,
+          }}
+        />
         <meta name="theme-color" content="#2563eb" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="preconnect" href="https://medmrhmuhghcozfydxov.supabase.co" />
