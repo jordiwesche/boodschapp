@@ -73,20 +73,20 @@ select {
   padding-right: 2.5rem;
 }
 
-/* PWA standalone: content iets lager voor correcte marge titel-content */
+/* PWA standalone: content 40px lager voor correcte marge titel-content */
 @media (display-mode: standalone) {
   [data-pwa-main="shopping"] {
-    margin-top: -180px !important;
+    margin-top: -172px !important;
   }
   [data-pwa-main="default"] {
-    margin-top: -140px !important;
+    margin-top: -132px !important;
   }
   @media (min-width: 640px) {
     [data-pwa-main="shopping"] {
-      margin-top: -164px !important;
+      margin-top: -156px !important;
     }
     [data-pwa-main="default"] {
-      margin-top: -124px !important;
+      margin-top: -116px !important;
     }
   }
 }
