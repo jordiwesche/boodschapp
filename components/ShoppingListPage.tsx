@@ -1275,8 +1275,10 @@ export default function ShoppingListPage() {
   }, [saveProductModalOpen])
 
   return (
-    <div className="flex min-h-screen flex-col pb-20" style={{ background: 'linear-gradient(to bottom, #2563eb 0%, #2563eb 200px, #f9fafb 400px)' }}>
-      <header className="relative min-h-[320px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
+    <div className="relative flex min-h-screen flex-col pb-20">
+      <div className="absolute inset-0 z-0 min-h-full bg-[#2563eb]" aria-hidden />
+      <div className="absolute inset-0 z-0 min-h-full" style={{ background: 'linear-gradient(180deg, rgba(249, 250, 251, 0) 0%, rgba(249, 250, 251, 1) 28%)' }} aria-hidden />
+      <header className="relative z-10 min-h-[320px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
         <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-2 sm:px-6 sm:pt-12 sm:pb-6 lg:px-8">
           <h1 className="text-3xl font-bold text-white">Boodschappen</h1>
           {!isOnline ? (
@@ -1294,7 +1296,7 @@ export default function ShoppingListPage() {
 
       <main
         ref={scrollContainerRef}
-        className="-mt-48 sm:-mt-40 relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-0 pb-4 sm:px-6 sm:pt-4 sm:pb-4 lg:px-8"
+        className="-mt-[212px] sm:-mt-[196px] relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-6 pb-4 sm:px-6 sm:pt-6 sm:pb-4 lg:px-8"
       >
         <PullToRefresh
           onRefresh={handleRefresh}
