@@ -143,7 +143,6 @@ function WeekmenuGerechtTextarea({
         paddingTop: PADDING_TOP_PX,
         paddingBottom: PADDING_BOTTOM_PX,
       }}
-      className="min-w-0 flex-1 resize-none overflow-hidden border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-500 focus:outline-none box-border"
       onInput={resize}
     />
   )
