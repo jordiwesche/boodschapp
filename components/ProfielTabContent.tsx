@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { RefreshCw } from 'lucide-react'
 import LogoutButton from './LogoutButton'
 
 type ProfileCache = {
@@ -110,7 +111,22 @@ export default function ProfielTabContent() {
             </div>
           </Link>
 
-          <div className="pt-4 flex justify-center">
+          <div className="pt-4 flex flex-col items-center gap-8">
+            <button
+              type="button"
+              onClick={() => {
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.ready.then((reg) => reg.update())
+                }
+                window.location.reload()
+              }}
+              className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
+            >
+              <span className="inline-flex items-center gap-2">
+                <RefreshCw className="h-4 w-4" />
+                App vernieuwen
+              </span>
+            </button>
             <LogoutButton />
           </div>
         </div>
