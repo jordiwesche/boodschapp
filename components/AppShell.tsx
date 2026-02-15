@@ -78,20 +78,7 @@ export default function AppShell({ initialTab }: { initialTab: TabId }) {
   return (
     <>
       {activeTab === 'lijst' && <ShoppingListPage />}
-      {activeTab === 'weekmenu' && (
-        <div className="relative flex min-h-screen flex-col pb-20">
-          <div className="fixed inset-0 z-0 min-h-screen bg-[#2563eb]" aria-hidden />
-          <div className="fixed inset-0 z-0 min-h-screen" style={{ background: 'linear-gradient(180deg, rgba(249, 250, 251, 0) 0%, rgba(249, 250, 251, 1) 28%)' }} aria-hidden />
-          <header className="relative z-10 min-h-[240px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
-            <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-2 sm:px-6 sm:pt-8 sm:pb-4 lg:px-8">
-              <h1 className="text-3xl font-bold text-white">Weekmenu</h1>
-            </div>
-          </header>
-          <div data-pwa-main="default" className="-mt-[172px] sm:-mt-[156px] relative z-10 pt-10">
-            <WeekmenuPage />
-          </div>
-        </div>
-      )}
+      {activeTab === 'weekmenu' && <WeekmenuPage />}
       {activeTab === 'producten' && <ProductenTabContent />}
       {activeTab === 'profiel' && <ProfielTabContent />}
       <BottomNavigation onTabChange={handleTabChange} />

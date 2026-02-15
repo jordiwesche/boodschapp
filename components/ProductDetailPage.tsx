@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, RotateCcw, Trash2 } from 'lucide-react'
 import { haptic } from '@/lib/haptics'
+import PageLayout from './PageLayout'
 import {
   calculatePurchaseFrequency,
   calculatePurchaseFrequencyStats,
@@ -281,35 +282,87 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     )
   }
 
+  const headerContent = (
+    <div className="flex items-center gap-3">
+      <span className="text-3xl">{product.emoji}</span>
+      <div>
+        <h1 className="text-3xl font-bold text-white">{product.name}</h1>
+        {product.category && (
+          <p className="mt-1 text-sm text-white/90">{product.category.name}</p>
+        )}
+      </div>
+    </div>
+  )
+
   return (
-    <div className="relative flex min-h-screen flex-col pb-20">
-      <div className="fixed inset-0 z-0 min-h-screen bg-[#2563eb]" aria-hidden />
-      <div className="fixed inset-0 z-0 min-h-screen" style={{ background: 'linear-gradient(180deg, rgba(249, 250, 251, 0) 0%, rgba(249, 250, 251, 1) 28%)' }} aria-hidden />
-      <header className="relative z-10 min-h-[240px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
-        <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-2 sm:px-6 sm:pt-8 sm:pb-4 lg:px-8">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="text-white/90 hover:text-white"
-              aria-label="Terug"
-            >
-              <ArrowLeft className="h-6 w-6" />
-            </button>
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{product.emoji}</span>
-              <div>
-                <h1 className="text-3xl font-bold text-white">{product.name}</h1>
-                {product.category && (
-                  <p className="mt-1 text-sm text-white/90">{product.category.name}</p>
-                )}
+    <PageLayout
+      title=""
+      headerContent={headerContent}
+      showBackButton
+      onBack={() => router.back()}
+      dataPwaMain="default"
+      afterMain={
+        <>
+          {showResetConfirmModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden onClick={() => setShowResetConfirmModal(false)} />
+              <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
+                <p className="text-gray-900">
+                  Weet je zeker dat je de koophistorie wilt resetten? De frequentie wordt vanaf nu opnieuw berekend.
+                </p>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowResetConfirmModal(false)}
+                    className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                  >
+                    Annuleren
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleReset()}
+                    disabled={resetting}
+                    className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                  >
+                    {resetting ? 'Resetten...' : 'Resetten'}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </header>
-
-      <main data-pwa-main="default" className="-mt-[172px] sm:-mt-[156px] relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-10 pb-8 sm:px-6 sm:pt-10 lg:px-8">
-        {/* Statistics */}
+          )}
+          {deleteModalRecordId && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                aria-hidden
+                onClick={() => setDeleteModalRecordId(null)}
+              />
+              <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
+                <p className="text-gray-900">Weet je zeker dat je dit record wilt verwijderen?</p>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDeleteModalRecordId(null)}
+                    className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                  >
+                    Annuleren
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteRecordConfirm}
+                    disabled={!!deletingRecordId}
+                    className="rounded-[16px] bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {deletingRecordId ? 'Verwijderen...' : 'Verwijderen'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      }
+    >
+      {/* Statistics */}
         <div className="mb-6 rounded-[16px] bg-white p-6 shadow">
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -419,67 +472,6 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
             </button>
           </div>
         )}
-      </main>
-
-      {/* Modal: bevestiging reset koophistorie */}
-      {showResetConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden onClick={() => setShowResetConfirmModal(false)} />
-          <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
-            <p className="text-gray-900">
-              Weet je zeker dat je de koophistorie wilt resetten? De frequentie wordt vanaf nu opnieuw berekend.
-            </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowResetConfirmModal(false)}
-                className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-              >
-                Annuleren
-              </button>
-              <button
-                type="button"
-                onClick={() => handleReset()}
-                disabled={resetting}
-                className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-              >
-                {resetting ? 'Resetten...' : 'Resetten'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: bevestiging record verwijderen */}
-      {deleteModalRecordId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            aria-hidden
-            onClick={() => setDeleteModalRecordId(null)}
-          />
-          <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
-            <p className="text-gray-900">Weet je zeker dat je dit record wilt verwijderen?</p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleteModalRecordId(null)}
-                className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-              >
-                Annuleren
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteRecordConfirm}
-                disabled={!!deletingRecordId}
-                className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-              >
-                {deletingRecordId ? 'Verwijderen...' : 'Verwijderen'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </PageLayout>
   )
 }

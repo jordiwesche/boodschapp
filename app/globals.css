@@ -25,7 +25,7 @@ html {
 
 body {
   /* Blue at top for webapp status bar area, then gray */
-  background: linear-gradient(to bottom, #2563eb 0%, #2563eb 60px, var(--background) 60px);
+  background: linear-gradient(to bottom, #2563eb 0%, var(--background) 360px);
   color: var(--foreground);
   font-family: var(--font-onest), Arial, Helvetica, sans-serif;
   min-height: 100dvh;

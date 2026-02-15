@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import PageLayout from '@/components/PageLayout'
+
 export default function ProfielNaamPage() {
   const router = useRouter()
   const [firstName, setFirstName] = useState('')
@@ -66,37 +68,13 @@ export default function ProfielNaamPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col pb-20">
-      <div className="fixed inset-0 z-0 min-h-screen bg-[#2563eb]" aria-hidden />
-      <div className="fixed inset-0 z-0 min-h-screen" style={{ background: 'linear-gradient(180deg, rgba(249, 250, 251, 0) 0%, rgba(249, 250, 251, 1) 28%)' }} aria-hidden />
-      <header className="relative z-10 min-h-[240px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
-        <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-2 sm:px-6 sm:pt-8 sm:pb-4 lg:px-8">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="text-white/90 hover:text-white"
-            >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-            <h1 className="text-3xl font-bold text-white">Naam wijzigen</h1>
-          </div>
-        </div>
-      </header>
-
-      <main data-pwa-main="default" className="-mt-[172px] sm:-mt-[156px] relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-10 pb-8 sm:px-6 sm:pt-10 lg:px-8">
-        <div className="rounded-[16px] bg-white p-8 shadow">
+    <PageLayout
+      title="Naam wijzigen"
+      showBackButton
+      onBack={() => router.back()}
+      dataPwaMain="default"
+    >
+      <div className="rounded-[16px] bg-white p-8 shadow">
           {error && (
             <div className="mb-4 rounded-md bg-red-50 p-4">
               <p className="text-sm text-red-800">{error}</p>
@@ -138,7 +116,6 @@ export default function ProfielNaamPage() {
             </div>
           </form>
         </div>
-      </main>
-    </div>
+    </PageLayout>
   )
 }

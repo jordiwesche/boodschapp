@@ -28,6 +28,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useScrollRestore } from '@/lib/hooks/use-scroll-restore'
 import { haptic } from '@/lib/haptics'
 import { formatTimeAgo } from '@/lib/format-time-ago'
+import PageLayout from './PageLayout'
 import { predictCategoryAndEmoji } from '@/lib/predict-category-emoji'
 import { findCategoryIdByPredictedName } from '@/lib/category-aliases'
 import { parseProductInput } from '@/lib/annotation-parser'
@@ -1171,6 +1172,7 @@ export default function ShoppingListPage() {
     try {
       const result = await checkItemMutation.mutateAsync(id)
       setLastActivityInStorage()
+      fetchLastUpdate()
       if (result?.item?.product_id) {
         try {
           const res = await fetch(`/api/shopping-list/record-purchase/${id}`, { method: 'POST' })
@@ -1201,6 +1203,7 @@ export default function ShoppingListPage() {
       }
       await uncheckItemMutation.mutateAsync(id)
       setLastActivityInStorage()
+      fetchLastUpdate()
     } catch (error) {
       setErrorMessage('Kon item niet unchecken. Probeer het opnieuw.')
       setTimeout(() => setErrorMessage(null), 5000)
@@ -1274,36 +1277,149 @@ export default function ShoppingListPage() {
     }
   }, [saveProductModalOpen])
 
-  return (
-    <div className="relative flex min-h-screen flex-col pb-20">
-      <div className="fixed inset-0 z-0 min-h-screen bg-[#2563eb]" aria-hidden />
-      <div className="fixed inset-0 z-0 min-h-screen" style={{ background: 'linear-gradient(180deg, rgba(249, 250, 251, 0) 0%, rgba(249, 250, 251, 1) 28%)' }} aria-hidden />
-      <header className="relative z-10 min-h-[320px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
-        <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-2 sm:px-6 sm:pt-12 sm:pb-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-white">Boodschappen</h1>
-          {!isOnline ? (
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-white/90">
-              <WifiOff className="h-4 w-4 shrink-0" />
-              De app is momenteel offline
-            </p>
-          ) : lastUpdate ? (
-            <p className="mt-1 text-sm text-white/80">
-              {lastUpdate.userName} • {formatTimeAgo(lastUpdate.updatedAt)}
-            </p>
-          ) : null}
-        </div>
-      </header>
+  const headerSubtitle = !isOnline ? (
+    <p className="flex items-center gap-1.5 text-white/90">
+      <WifiOff className="h-4 w-4 shrink-0" />
+      De app is momenteel offline
+    </p>
+  ) : lastUpdate ? (
+    <span>
+      {lastUpdate.userName} • {formatTimeAgo(lastUpdate.updatedAt)}
+    </span>
+  ) : null
 
-      <main
-        ref={scrollContainerRef}
-        data-pwa-main="shopping"
-        className="-mt-[212px] sm:-mt-[196px] relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-6 pb-4 sm:px-6 sm:pt-6 sm:pb-4 lg:px-8"
+  return (
+    <PageLayout
+      title="Boodschappen"
+      headerSubtitle={headerSubtitle}
+      mainPadding="compact"
+      mainRef={scrollContainerRef}
+      dataPwaMain="shopping"
+      afterMain={
+        <>
+          <FloatingAddButton onClick={handleOpenEmptyItem} />
+          {errorMessage && (
+            <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 transform">
+              <div className="mx-auto max-w-md rounded-[16px] bg-red-50 border border-red-200 px-4 py-3 shadow-lg">
+                <p className="text-sm font-medium text-red-800">{errorMessage}</p>
+              </div>
+            </div>
+          )}
+          {saveProductModalOpen && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overscroll-contain"
+              style={{ overflow: 'auto' }}
+              onClick={(e) => e.target === e.currentTarget && handleCloseSaveProductModal()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="save-product-modal-title"
+            >
+              <div
+                className="w-full max-w-md rounded-[16px] bg-white p-6 shadow-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 id="save-product-modal-title" className="text-lg font-semibold text-gray-900 mb-4">
+                  Nieuw product opslaan
+                </h2>
+                {saveProductModalError && (
+                  <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
+                    {saveProductModalError}
+                  </div>
+                )}
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="save-product-name" className="block text-sm font-medium text-gray-700">
+                      Naam
+                    </label>
+                    <input
+                      id="save-product-name"
+                      type="text"
+                      value={saveProductModalName}
+                      onChange={(e) => setSaveProductModalName(e.target.value)}
+                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Bijv. Melk"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="save-product-category" className="block text-sm font-medium text-gray-700">
+                      Categorie
+                    </label>
+                    <select
+                      id="save-product-category"
+                      value={saveProductModalCategoryId}
+                      onChange={(e) => setSaveProductModalCategoryId(e.target.value)}
+                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white pl-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Selecteer categorie</option>
+                      {saveProductModalCategories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label id="save-product-emoji-label" className="block text-sm font-medium text-gray-700">
+                      Emoji
+                    </label>
+                    <div className="relative mt-1">
+                      <button
+                        ref={saveProductEmojiButtonRef}
+                        type="button"
+                        id="save-product-emoji"
+                        aria-haspopup="listbox"
+                        aria-expanded={showSaveProductEmojiPicker}
+                        aria-labelledby="save-product-emoji-label"
+                        onClick={() => setShowSaveProductEmojiPicker((v) => !v)}
+                        className="flex h-12 w-full items-center justify-center rounded-md border border-gray-300 bg-white text-2xl shadow-sm hover:bg-gray-50 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {saveProductModalEmoji || '📦'}
+                      </button>
+                      {showSaveProductEmojiPicker &&
+                        createPortal(
+                          <SaveProductEmojiDropdown
+                            emojiSearchQuery={saveProductEmojiSearchQuery}
+                            setEmojiSearchQuery={setSaveProductEmojiSearchQuery}
+                            onSelect={(emoji) => {
+                              setSaveProductModalEmoji(emoji)
+                              setShowSaveProductEmojiPicker(false)
+                            }}
+                            onClose={() => setShowSaveProductEmojiPicker(false)}
+                            anchorRef={saveProductEmojiButtonRef}
+                          />,
+                          document.body
+                        )}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCloseSaveProductModal}
+                    className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    Sluiten
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveProductModalSave}
+                    disabled={saveProductModalSaving}
+                    className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                  >
+                    {saveProductModalSaving ? 'Opslaan...' : 'Opslaan'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      }
+    >
+      <PullToRefresh
+        onRefresh={handleRefresh}
+        scrollContainerRef={scrollContainerRef}
+        disabled={saveProductModalOpen}
       >
-        <PullToRefresh
-          onRefresh={handleRefresh}
-          scrollContainerRef={scrollContainerRef}
-          disabled={saveProductModalOpen}
-        >
           {isLoadingItems ? (
             <ShoppingListSkeleton />
           ) : (
@@ -1465,129 +1581,7 @@ export default function ShoppingListPage() {
               </ShoppingList>
             </div>
           )}
-        </PullToRefresh>
-      </main>
-
-      {/* Floating add button */}
-      <FloatingAddButton onClick={handleOpenEmptyItem} />
-
-      {/* Error message toast */}
-      {errorMessage && (
-        <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 transform">
-          <div className="mx-auto max-w-md rounded-[16px] bg-red-50 border border-red-200 px-4 py-3 shadow-lg">
-            <p className="text-sm font-medium text-red-800">{errorMessage}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Save Product modal (actie 3: add to list + save new product) */}
-      {saveProductModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overscroll-contain"
-          style={{ overflow: 'auto' }}
-          onClick={(e) => e.target === e.currentTarget && handleCloseSaveProductModal()}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="save-product-modal-title"
-        >
-          <div
-            className="w-full max-w-md rounded-[16px] bg-white p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 id="save-product-modal-title" className="text-lg font-semibold text-gray-900 mb-4">
-              Nieuw product opslaan
-            </h2>
-            {saveProductModalError && (
-              <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">
-                {saveProductModalError}
-              </div>
-            )}
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="save-product-name" className="block text-sm font-medium text-gray-700">
-                  Naam
-                </label>
-                <input
-                  id="save-product-name"
-                  type="text"
-                  value={saveProductModalName}
-                  onChange={(e) => setSaveProductModalName(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Bijv. Melk"
-                />
-              </div>
-              <div>
-                <label htmlFor="save-product-category" className="block text-sm font-medium text-gray-700">
-                  Categorie
-                </label>
-                <select
-                  id="save-product-category"
-                  value={saveProductModalCategoryId}
-                  onChange={(e) => setSaveProductModalCategoryId(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white pl-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Selecteer categorie</option>
-                  {saveProductModalCategories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label id="save-product-emoji-label" className="block text-sm font-medium text-gray-700">
-                  Emoji
-                </label>
-                <div className="relative mt-1">
-                  <button
-                    ref={saveProductEmojiButtonRef}
-                    type="button"
-                    id="save-product-emoji"
-                    aria-haspopup="listbox"
-                    aria-expanded={showSaveProductEmojiPicker}
-                    aria-labelledby="save-product-emoji-label"
-                    onClick={() => setShowSaveProductEmojiPicker((v) => !v)}
-                    className="flex h-12 w-full items-center justify-center rounded-md border border-gray-300 bg-white text-2xl shadow-sm hover:bg-gray-50 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {saveProductModalEmoji || '📦'}
-                  </button>
-                  {showSaveProductEmojiPicker &&
-                    createPortal(
-                      <SaveProductEmojiDropdown
-                        emojiSearchQuery={saveProductEmojiSearchQuery}
-                        setEmojiSearchQuery={setSaveProductEmojiSearchQuery}
-                        onSelect={(emoji) => {
-                          setSaveProductModalEmoji(emoji)
-                          setShowSaveProductEmojiPicker(false)
-                        }}
-                        onClose={() => setShowSaveProductEmojiPicker(false)}
-                        anchorRef={saveProductEmojiButtonRef}
-                      />,
-                      document.body
-                    )}
-                </div>
-              </div>
-            </div>
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={handleCloseSaveProductModal}
-                className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                Sluiten
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveProductModalSave}
-                disabled={saveProductModalSaving}
-                className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-              >
-                {saveProductModalSaving ? 'Opslaan...' : 'Opslaan'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      </PullToRefresh>
+    </PageLayout>
   )
 }

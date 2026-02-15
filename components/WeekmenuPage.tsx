@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Link as LinkIcon, CornerDownLeft, X, ExternalLink } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { haptic } from '@/lib/haptics'
+import PageLayout from './PageLayout'
 
 const DAY_LABELS = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'] as const
 
@@ -379,7 +380,7 @@ export default function WeekmenuPage() {
   const todayDayOfWeek = getTodayDayOfWeek()
   if (loading) {
     return (
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-0 pb-6 sm:pt-4">
+      <PageLayout title="Weekmenu" dataPwaMain="default">
         <div className="rounded-[16px] border border-gray-200 bg-white overflow-hidden">
           {DAY_LABELS.map((label, i) => (
             <React.Fragment key={i}>
@@ -397,21 +398,21 @@ export default function WeekmenuPage() {
             </React.Fragment>
           ))}
         </div>
-      </main>
+      </PageLayout>
     )
   }
 
   const orderedDays = [...days].sort((a, b) => a.day_of_week - b.day_of_week)
   if (orderedDays.length === 0) {
     return (
-      <main className="flex-1 px-4 pt-0 pb-8 sm:pt-4">
+      <PageLayout title="Weekmenu" dataPwaMain="default">
         <p className="text-gray-600">Geen weekmenu beschikbaar.</p>
-      </main>
+      </PageLayout>
     )
   }
 
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-4 pt-0 pb-6 sm:pt-4">
+    <PageLayout title="Weekmenu" dataPwaMain="default">
       <div className="rounded-[16px] border border-gray-200 bg-white overflow-visible">
         {orderedDays.map((day, index) => {
           const label = DAY_LABELS[day.day_of_week] ?? `Dag ${day.day_of_week}`
@@ -629,6 +630,6 @@ export default function WeekmenuPage() {
           )
         })}
       </div>
-    </main>
+    </PageLayout>
   )
 }

@@ -63,8 +63,10 @@ export async function PATCH(
       updateData.is_checked = is_checked
       if (is_checked) {
         updateData.checked_at = new Date().toISOString()
+        updateData.checked_by = userId
       } else {
         updateData.checked_at = null
+        updateData.checked_by = null
       }
     }
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { RefreshCw } from 'lucide-react'
 import LogoutButton from './LogoutButton'
+import PageLayout from './PageLayout'
 
 type ProfileCache = {
   user: { first_name: string } | null
@@ -94,17 +95,8 @@ export default function ProfielTabContent() {
   }, [])
 
   return (
-    <div className="relative flex min-h-screen flex-col pb-20">
-      <div className="fixed inset-0 z-0 min-h-screen bg-[#2563eb]" aria-hidden />
-      <div className="fixed inset-0 z-0 min-h-screen" style={{ background: 'linear-gradient(180deg, rgba(249, 250, 251, 0) 0%, rgba(249, 250, 251, 1) 28%)' }} aria-hidden />
-      <header className="relative z-10 min-h-[240px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
-        <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-2 sm:px-6 sm:pt-8 sm:pb-4 lg:px-8">
-          <h1 className="text-3xl font-bold text-white">Profiel</h1>
-        </div>
-      </header>
-
-      <main data-pwa-main="default" className="-mt-[172px] sm:-mt-[156px] relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-10 pb-8 sm:px-6 sm:pt-10 lg:px-8">
-        <div className="space-y-4">
+    <PageLayout title="Profiel" dataPwaMain="default">
+      <div className="space-y-4">
           <Link
             href="/profiel/naam"
             className="block rounded-[16px] border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
@@ -158,7 +150,6 @@ export default function ProfielTabContent() {
             <LogoutButton />
           </div>
         </div>
-      </main>
-    </div>
+    </PageLayout>
   )
 }

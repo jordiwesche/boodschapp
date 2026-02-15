@@ -314,7 +314,35 @@ export default function ShoppingList({
         )}
       </div>
 
-      {/* 2. Afgevinkt */}
+      {/* 2. Later */}
+      {sortedLaterUnchecked.length > 0 && (
+        <div className={cardClass}>
+          <h2 className="mb-2 flex h-8 min-h-8 items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
+            <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+            Later ({sortedLaterUnchecked.length})
+          </h2>
+          <div>
+            {sortedLaterUnchecked.map((item) => (
+              <div
+                key={item.id}
+                data-shopping-list-item
+              >
+                <ShoppingListItem
+                  item={item}
+                  onCheck={onCheck}
+                  onUncheck={onUncheck}
+                  onDelete={onDelete}
+                  onUpdateDescription={onUpdateDescription}
+                  showMoveToMain={true}
+                  onMoveToMain={() => onUpdateDescription(item.id, stripLaterTokenFromDescription(item.description) ?? '')}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 3. Afgevinkt */}
       {checkedItemsCount > 0 && (
         <div className={cardClass}>
           <div className="flex h-8 min-h-8 items-center justify-between gap-2">
@@ -363,40 +391,12 @@ export default function ShoppingList({
         </div>
       )}
 
-      {/* 3. Binnenkort (was Later) */}
-      {sortedLaterUnchecked.length > 0 && (
-        <div className={cardClass}>
-          <h2 className="mb-2 flex h-8 min-h-8 items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
-            <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-            Binnenkort
-          </h2>
-          <div>
-            {sortedLaterUnchecked.map((item) => (
-              <div
-                key={item.id}
-                data-shopping-list-item
-              >
-                <ShoppingListItem
-                  item={item}
-                  onCheck={onCheck}
-                  onUncheck={onUncheck}
-                  onDelete={onDelete}
-                  onUpdateDescription={onUpdateDescription}
-                  showMoveToMain={true}
-                  onMoveToMain={() => onUpdateDescription(item.id, stripLaterTokenFromDescription(item.description) ?? '')}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* 4. Verwacht (op basis van koopfrequentie) */}
       {expectedProducts.length > 0 && (
         <div className={cardClass}>
           <h2 className="mb-2 flex h-8 min-h-8 items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
             <Zap className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-            Verwacht
+            Verwacht ({expectedProducts.length})
           </h2>
           <div>
             {expectedProducts.map((product) => (

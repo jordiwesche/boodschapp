@@ -56,6 +56,7 @@ export async function POST(
       .update({
         is_checked: true,
         checked_at: now,
+        checked_by: userId,
       })
       .eq('id', id)
       .select()

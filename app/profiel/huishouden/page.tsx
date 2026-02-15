@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import PageLayout from '@/components/PageLayout'
 
 interface Member {
   id: string
@@ -234,37 +235,40 @@ export default function ProfielHuishoudenPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col pb-20">
-      <div className="fixed inset-0 z-0 min-h-screen bg-[#2563eb]" aria-hidden />
-      <div className="fixed inset-0 z-0 min-h-screen" style={{ background: 'linear-gradient(180deg, rgba(249, 250, 251, 0) 0%, rgba(249, 250, 251, 1) 28%)' }} aria-hidden />
-      <header className="relative z-10 min-h-[240px] bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
-        <div className="relative z-10 mx-auto max-w-2xl px-4 pt-6 pb-2 sm:px-6 sm:pt-8 sm:pb-4 lg:px-8">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => router.back()}
-              className="text-white/90 hover:text-white"
-            >
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
-            <h1 className="text-3xl font-bold text-white">Huishouden beheren</h1>
+    <PageLayout
+      title="Huishouden beheren"
+      showBackButton
+      onBack={() => router.back()}
+      dataPwaMain="default"
+      afterMain={
+        showRemoveMemberModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden onClick={() => { setShowRemoveMemberModal(false); setMemberToRemove(null) }} />
+            <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
+              <p className="text-gray-900">Weet je zeker dat je dit lid wilt verwijderen?</p>
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowRemoveMemberModal(false); setMemberToRemove(null) }}
+                  className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  Annuleren
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemoveMemberConfirm}
+                  disabled={loading}
+                  className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                >
+                  Verwijderen
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </header>
-
-      <main data-pwa-main="default" className="-mt-[172px] sm:-mt-[156px] relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 pt-10 pb-8 sm:px-6 sm:pt-10 lg:px-8">
-        <div className="space-y-6">
+        )
+      }
+    >
+      <div className="space-y-6">
           {error && (
             <div className="rounded-md bg-red-50 p-4">
               <p className="text-sm text-red-800">{error}</p>
@@ -391,33 +395,6 @@ export default function ProfielHuishoudenPage() {
             </div>
           </div>
         </div>
-      </main>
-
-      {showRemoveMemberModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" aria-hidden onClick={() => { setShowRemoveMemberModal(false); setMemberToRemove(null) }} />
-          <div className="relative rounded-[16px] bg-white p-4 shadow-lg max-w-sm w-full">
-            <p className="text-gray-900">Weet je zeker dat je dit lid wilt verwijderen?</p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => { setShowRemoveMemberModal(false); setMemberToRemove(null) }}
-                className="rounded-[16px] px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-              >
-                Annuleren
-              </button>
-              <button
-                type="button"
-                onClick={handleRemoveMemberConfirm}
-                disabled={loading}
-                className="rounded-[16px] bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
-              >
-                Verwijderen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </PageLayout>
   )
 }
