@@ -77,32 +77,32 @@ select {
 /* display-mode voor Chrome; .pwa-standalone voor Safari iOS (navigator.standalone) */
 @media (display-mode: standalone) {
   [data-pwa-main="shopping"] {
-    margin-top: -44px !important;
+    margin-top: 0 !important;
   }
   [data-pwa-main="default"] {
-    margin-top: -44px !important;
+    margin-top: 0 !important;
   }
   @media (min-width: 640px) {
     [data-pwa-main="shopping"] {
-      margin-top: -40px !important;
+      margin-top: 0 !important;
     }
     [data-pwa-main="default"] {
-      margin-top: -40px !important;
+      margin-top: 0 !important;
     }
   }
 }
 html.pwa-standalone [data-pwa-main="shopping"] {
-  margin-top: -44px !important;
+  margin-top: 0 !important;
 }
 html.pwa-standalone [data-pwa-main="default"] {
-  margin-top: -44px !important;
+  margin-top: 0 !important;
 }
 @media (min-width: 640px) {
   html.pwa-standalone [data-pwa-main="shopping"] {
-    margin-top: -40px !important;
+    margin-top: 0 !important;
   }
   html.pwa-standalone [data-pwa-main="default"] {
-    margin-top: -40px !important;
+    margin-top: 0 !important;
   }
 }
 
