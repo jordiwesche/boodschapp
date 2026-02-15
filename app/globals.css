@@ -73,36 +73,36 @@ select {
   padding-right: 2.5rem;
 }
 
-/* PWA standalone: content 40px lager voor correcte marge titel-content */
+/* PWA standalone: lichte overlap zodat cards onder gradient schuiven, header blijft zichtbaar */
 /* display-mode voor Chrome; .pwa-standalone voor Safari iOS (navigator.standalone) */
 @media (display-mode: standalone) {
   [data-pwa-main="shopping"] {
-    margin-top: -172px !important;
+    margin-top: -44px !important;
   }
   [data-pwa-main="default"] {
-    margin-top: -132px !important;
+    margin-top: -44px !important;
   }
   @media (min-width: 640px) {
     [data-pwa-main="shopping"] {
-      margin-top: -156px !important;
+      margin-top: -40px !important;
     }
     [data-pwa-main="default"] {
-      margin-top: -116px !important;
+      margin-top: -40px !important;
     }
   }
 }
 html.pwa-standalone [data-pwa-main="shopping"] {
-  margin-top: -172px !important;
+  margin-top: -44px !important;
 }
 html.pwa-standalone [data-pwa-main="default"] {
-  margin-top: -132px !important;
+  margin-top: -44px !important;
 }
 @media (min-width: 640px) {
   html.pwa-standalone [data-pwa-main="shopping"] {
-    margin-top: -156px !important;
+    margin-top: -40px !important;
   }
   html.pwa-standalone [data-pwa-main="default"] {
-    margin-top: -116px !important;
+    margin-top: -40px !important;
   }
 }
 
