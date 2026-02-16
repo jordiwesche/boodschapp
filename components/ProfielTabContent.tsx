@@ -117,7 +117,7 @@ export default function ProfielTabContent() {
             className="block rounded-[16px] border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
           >
             <div className="flex items-center justify-between min-w-0">
-              <h2 className="text-lg font-semibold text-gray-900 shrink-0">Huishouden</h2>
+              <h2 className="text-base font-semibold text-gray-900 shrink-0">Huishouden</h2>
               <div className="flex items-center gap-6 min-w-0 justify-end">
                 <span className="text-sm text-gray-600 truncate text-right">{householdName}</span>
                 <svg className="h-5 w-5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
