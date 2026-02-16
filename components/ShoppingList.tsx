@@ -345,7 +345,7 @@ export default function ShoppingList({
             )}
           </div>
         </div>
-        <div className="border-t border-gray-200 pt-4">
+        <div className="border-t border-dashed border-gray-200 pt-4">
         {sortedUncheckedCategories.length > 0 ? (
           sortedUncheckedCategories.map((categoryGroup, index) => {
             const categoryName = categoryGroup.category?.name || ''
@@ -462,7 +462,7 @@ export default function ShoppingList({
             )}
           </div>
           {checkedSectionOpen && (
-            <div className="mt-2 border-t border-gray-200 pt-4">
+            <div className="mt-2 border-t border-dashed border-gray-200 pt-4">
               {sortedCheckedItems.map((item) => (
                 <div key={item.id}>
                   <ShoppingListItem
@@ -487,7 +487,7 @@ export default function ShoppingList({
             <Zap className="h-3.5 w-3.5 shrink-0 text-gray-400" />
             Verwacht
           </h2>
-          <div className="border-t border-gray-200 pt-4">
+          <div className="border-t border-dashed border-gray-200 pt-4">
             {expectedProducts.map((product) => {
               const isAdding = addingIds.has(product.id)
               return (
@@ -537,7 +537,7 @@ export default function ShoppingList({
           </button>
         </div>
         {basicsSectionOpen && (
-          <div className="mt-2 border-t border-gray-200 pt-4">
+          <div className="mt-2 border-t border-dashed border-gray-200 pt-4">
             {basicsNotInList.length > 0 ? (
               basicsNotInList.map((product) => {
                 const isAdding = addingIds.has(product.id)
