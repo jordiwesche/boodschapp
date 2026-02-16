@@ -65,6 +65,9 @@ SUPABASE_SERVICE_ROLE=your_supabase_service_role_key
 # Voor automatische migraties (optioneel voor lokaal)
 SUPABASE_ACCESS_TOKEN=your_supabase_access_token
 SUPABASE_PROJECT_REF=medmrhmuhghcozfydxov
+
+# Template huishouden voor nieuwe registraties (categorieën + producten worden gekopieerd)
+SEED_HOUSEHOLD_ID=94b9062f-3eb0-4baf-9c1f-cf40bcabf7a8
 ```
 
 **Waar te vinden:**
@@ -108,6 +111,10 @@ Open [http://localhost:3000](http://localhost:3000) in je browser.
 
    - **SUPABASE_PROJECT_REF** (optioneel)
      - Value: `medmrhmuhghcozfydxov` (of je project reference ID)
+     - Environment: Production, Preview, Development
+
+   - **SEED_HOUSEHOLD_ID** (optioneel)
+     - Value: UUID van het huishouden waarvan categorieën en producten gekopieerd worden bij nieuwe registraties
      - Environment: Production, Preview, Development
 
 4. Na het toevoegen van de variabelen, redeploy je app

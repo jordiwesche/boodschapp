@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { hashPin, findPendingInvitation } from '@/lib/auth'
+import { copyHouseholdDataFromSeed } from '@/lib/seed-household'
 
 export async function POST(request: NextRequest) {
   try {
@@ -67,6 +68,14 @@ export async function POST(request: NextRequest) {
       }
 
       householdId = household.id
+
+      // Kopieer categorieën en producten van SEED_HOUSEHOLD_ID indien geconfigureerd
+      try {
+        await copyHouseholdDataFromSeed(householdId)
+      } catch (err) {
+        console.error('Seed household data error:', err)
+        // Ga door met registratie; het huishouden is al aangemaakt
+      }
     }
 
     // Hash PIN
