@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { CATEGORY_EMOJI_MAP } from '@/lib/predict-category-emoji'
 
 // GET /api/shopping-list - Get all shopping list items for household
 export async function GET(request: NextRequest) {
@@ -137,7 +138,7 @@ export async function GET(request: NextRequest) {
       id: item.id,
       product_id: item.product_id,
       product_name: item.product_name || (item.product ? item.product.name : null),
-      emoji: item.product ? item.product.emoji : '📦',
+      emoji: item.product ? item.product.emoji : (item.category?.name ? CATEGORY_EMOJI_MAP[item.category.name] ?? '📦' : '📦'),
       quantity: item.quantity,
       description: item.description,
       category_id: item.category_id,
@@ -360,7 +361,7 @@ export async function POST(request: NextRequest) {
       id: item.id,
       product_id: item.product_id,
       product_name: item.product_name || (product ? product.name : null),
-      emoji: product ? product.emoji : '📦',
+      emoji: product ? product.emoji : (categoryData?.name ? CATEGORY_EMOJI_MAP[categoryData.name] ?? '📦' : '📦'),
       quantity: item.quantity,
       description: item.description,
       category_id: item.category_id,

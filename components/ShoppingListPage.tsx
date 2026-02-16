@@ -889,12 +889,13 @@ export default function ShoppingListPage() {
     const parsed = parseProductInput(productName.trim())
     const name = parsed.productName || productName.trim()
     const effectiveDesc = description?.trim() || (parsed.annotation?.fullText ?? null) || null
+    const prediction = predictCategoryAndEmoji(name)
     const tempId = `temp-${Date.now()}`
     const optimisticItem = {
       id: tempId,
       product_id: null,
       product_name: name,
-      emoji: '📦',
+      emoji: prediction.emoji,
       quantity: '1',
       description: effectiveDesc,
       category_id: '',
@@ -918,16 +919,18 @@ export default function ShoppingListPage() {
       }
       const categoryData = await categoryResponse.json()
       const categories = categoryData.categories || []
+      const matchedCategoryId = findCategoryIdByPredictedName(prediction.categoryName, categories)
       const overigCategory = categories.find((c: any) => c.name === 'Overig')
-      if (!overigCategory) {
-        throw new Error('Overig-categorie niet gevonden')
+      const categoryId = matchedCategoryId || overigCategory?.id
+      if (!categoryId) {
+        throw new Error('Kon categorie niet bepalen')
       }
       const addResponse = await fetch('/api/shopping-list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           product_name: name,
-          category_id: overigCategory.id,
+          category_id: categoryId,
           quantity: '1',
           description: effectiveDesc,
         }),

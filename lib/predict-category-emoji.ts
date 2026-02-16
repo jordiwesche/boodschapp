@@ -7,7 +7,7 @@ interface CategoryPrediction {
 }
 
 // Emoji mapping per categorie (keys = exact DB category names)
-const CATEGORY_EMOJI_MAP: Record<string, string> = {
+export const CATEGORY_EMOJI_MAP: Record<string, string> = {
   'Fruit & Groente': '🥬',
   'Vers, Vega, Vlees & Vis': '🥩',
   'Pasta, Oosters & Wereld': '🍝',
