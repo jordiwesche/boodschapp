@@ -122,9 +122,21 @@ export function searchProductsWithScores(
   const required = requiredTokens.length
   const firstToken = requiredTokens[0]
 
+  const queryNorm = normalizeForTokens(trimmed)
+
   for (const product of products) {
     const text = searchableText(product)
     const nameNorm = normalizeForTokens(product.name || '')
+
+    // Exact match: query equals product name → always rank first
+    const exactMatch =
+      queryNorm === nameNorm ||
+      (DUTCH_SINGULAR_PLURAL[queryNorm] && DUTCH_SINGULAR_PLURAL[queryNorm] === nameNorm) ||
+      (DUTCH_SINGULAR_PLURAL[nameNorm] && DUTCH_SINGULAR_PLURAL[nameNorm] === queryNorm)
+    if (exactMatch) {
+      scored.push({ product, score: -1 })
+      continue
+    }
 
     let wordsMatched = 0
     let wordsInName = 0
@@ -139,7 +151,6 @@ export function searchProductsWithScores(
     if (wordsMatched === 0) continue
 
     // No penalty when: first word matches product name, OR query contains product name (e.g. "2 grote zakken spinazie" → Spinazie)
-    const queryNorm = normalizeForTokens(trimmed)
     const nameOrPluralInQuery =
       nameNorm.length >= 2 &&
       (queryNorm.includes(nameNorm) ||

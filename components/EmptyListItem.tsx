@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
-import { X, Check } from 'lucide-react'
+import { X, Check, Loader2 } from 'lucide-react'
 
 interface EmptyListItemProps {
   productName: string
@@ -14,6 +14,8 @@ interface EmptyListItemProps {
   onFocusComplete?: () => void
   /** When returns true, default key handling (Enter, Escape) is skipped */
   onProductKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => boolean | void
+  /** Show spinner while searching */
+  isSearching?: boolean
 }
 
 export default function EmptyListItem({
@@ -26,6 +28,7 @@ export default function EmptyListItem({
   autoFocus = true,
   onFocusComplete,
   onProductKeyDown,
+  isSearching = false,
 }: EmptyListItemProps) {
   const productInputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -112,7 +115,7 @@ export default function EmptyListItem({
         <Check className="h-3 w-3 text-transparent" />
       </div>
 
-      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-1 items-center gap-2 min-w-0">
+      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-1 min-w-0 items-center gap-0.5">
         <input
           ref={inputCallbackRef}
           type="text"
@@ -122,11 +125,21 @@ export default function EmptyListItem({
           onBlur={handleProductBlur}
           enterKeyHint="done"
           placeholder="Product / item"
-          className="min-w-0 flex-1 border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
-          style={{ fontSize: '16px' }}
+          className={`border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none ${
+            isSearching && productName.trim().length >= 2 ? 'flex-none' : 'min-w-0 flex-1'
+          }`}
+          style={{
+            fontSize: '16px',
+            ...(isSearching && productName.trim().length >= 2
+              ? { width: `${Math.max(2, productName.length) + 0.3}ch` }
+              : {}),
+          }}
           autoFocus={autoFocus}
           inputMode="text"
         />
+        {isSearching && productName.trim().length >= 2 && (
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-gray-400" aria-hidden />
+        )}
       </form>
 
       <button

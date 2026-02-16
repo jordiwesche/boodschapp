@@ -652,6 +652,7 @@ export default function ShoppingListPage() {
 
     // Show dropdown immediately (will show "Zoeken..." or cached results)
     setShowEmptyItemDropdown(true)
+    setIsSearchingEmptyItem(true)
 
     // Serve cached results instantly if available
     const cached = searchCacheRef.current.get(normalizedQuery)
@@ -663,7 +664,6 @@ export default function ShoppingListPage() {
 
     // Tiny debounce (0ms) to batch rapid state updates; still feels instant
     searchDebounceTimerRef.current = setTimeout(async () => {
-      setIsSearchingEmptyItem(true)
 
       // Abort any previous request
       if (searchAbortRef.current) {
@@ -1486,6 +1486,7 @@ export default function ShoppingListPage() {
                     autoFocus={shouldFocusEmptyItem}
                     onFocusComplete={() => setShouldFocusEmptyItem(false)}
                     onProductKeyDown={handleEmptyItemProductKeyDown}
+                    isSearching={isSearchingEmptyItem}
                   />
                   {/* Inline search dropdown */}
                   {showEmptyItemDropdown && emptyItemQuery.trim().length >= 2 && (
