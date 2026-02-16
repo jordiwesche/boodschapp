@@ -345,6 +345,7 @@ export default function ShoppingList({
             )}
           </div>
         </div>
+        <div className="border-t border-gray-200 pt-4">
         {sortedUncheckedCategories.length > 0 ? (
           sortedUncheckedCategories.map((categoryGroup, index) => {
             const categoryName = categoryGroup.category?.name || ''
@@ -398,10 +399,12 @@ export default function ShoppingList({
         ) : null}
         {/* Later – onderaan de hoofdlijst */}
         {sortedLaterUnchecked.length > 0 && (
-          <div className={sortedUncheckedCategories.length > 0 ? 'mt-4' : ''}>
+          <div className={`${sortedUncheckedCategories.length > 0 ? 'mt-4 pt-4 border-t border-dashed border-gray-200' : ''}`}>
+            {showCategoryTitles && (
             <h3 className="mb-2 text-xs font-normal uppercase tracking-wide text-gray-500">
               Later
             </h3>
+            )}
             <div>
               {sortedLaterUnchecked.map((item) => (
                 <div
@@ -414,8 +417,6 @@ export default function ShoppingList({
                     onUncheck={onUncheck}
                     onDelete={onDelete}
                     onUpdateDescription={onUpdateDescription}
-                    showMoveToMain={true}
-                    onMoveToMain={() => onUpdateDescription(item.id, stripLaterTokenFromDescription(item.description) ?? '')}
                     showEmoji={showEmojis}
                   />
                 </div>
@@ -426,6 +427,7 @@ export default function ShoppingList({
         {sortedUncheckedCategories.length === 0 && sortedLaterUnchecked.length === 0 && (
           <p className="text-gray-500">Je boodschappenlijst is leeg</p>
         )}
+        </div>
       </div>
 
       {/* 3. Afgevinkt */}
@@ -460,7 +462,7 @@ export default function ShoppingList({
             )}
           </div>
           {checkedSectionOpen && (
-            <div className="mt-2">
+            <div className="mt-2 border-t border-gray-200 pt-4">
               {sortedCheckedItems.map((item) => (
                 <div key={item.id}>
                   <ShoppingListItem
@@ -485,7 +487,7 @@ export default function ShoppingList({
             <Zap className="h-3.5 w-3.5 shrink-0 text-gray-400" />
             Verwacht
           </h2>
-          <div>
+          <div className="border-t border-gray-200 pt-4">
             {expectedProducts.map((product) => {
               const isAdding = addingIds.has(product.id)
               return (
@@ -535,7 +537,7 @@ export default function ShoppingList({
           </button>
         </div>
         {basicsSectionOpen && (
-          <div className="mt-2">
+          <div className="mt-2 border-t border-gray-200 pt-4">
             {basicsNotInList.length > 0 ? (
               basicsNotInList.map((product) => {
                 const isAdding = addingIds.has(product.id)
