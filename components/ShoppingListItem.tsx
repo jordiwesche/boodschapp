@@ -58,6 +58,8 @@ interface ShoppingListItemProps {
   /** Show "move to main list" up arrow (Binnenkort → Hoofdlijst) */
   showMoveToMain?: boolean
   onMoveToMain?: () => void
+  /** Show emoji next to product name (default true) */
+  showEmoji?: boolean
 }
 
 export default function ShoppingListItem({
@@ -68,6 +70,7 @@ export default function ShoppingListItem({
   onUpdateDescription,
   showMoveToMain = false,
   onMoveToMain,
+  showEmoji = true,
 }: ShoppingListItemProps) {
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [editValue, setEditValue] = useState(item.description || '')
@@ -285,7 +288,7 @@ export default function ShoppingListItem({
           {showChecked && <Check className="h-3 w-3 text-white" />}
         </button>
 
-        <span className="text-lg shrink-0">{item.emoji}</span>
+        {showEmoji && <span className="text-lg shrink-0">{item.emoji}</span>}
 
         <div className={isEditingDescription ? 'shrink-0 min-w-0' : 'flex-1 min-w-0'}>
           <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -306,7 +309,7 @@ export default function ShoppingListItem({
               >
                 {item.product_name != null ? (
                   <span
-                    className={`font-medium shrink-0 ${
+                    className={`text-[15px] font-medium shrink-0 ${
                       showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
                     }`}
                   >
@@ -343,7 +346,7 @@ export default function ShoppingListItem({
               <>
                 {item.product_name != null ? (
                   <span
-                    className={`font-medium shrink-0 ${
+                    className={`text-[15px] font-medium shrink-0 ${
                       showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
                     }`}
                   >
@@ -382,7 +385,7 @@ export default function ShoppingListItem({
           </div>
         )}
 
-        {showMoveToMain && onMoveToMain && (
+        {showMoveToMain && onMoveToMain && !isEditingDescription && (
           <button
             type="button"
             onClick={(e) => {

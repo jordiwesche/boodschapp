@@ -1,9 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { haptic } from '@/lib/haptics'
-import { ChevronDown, ChevronRight, Clock, Zap, Plus, Check, Trash2, Star, ShoppingCart, LayoutList, List, Package } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock, Zap, Plus, Check, Trash2, Star, ShoppingCart, MoreVertical, Package } from 'lucide-react'
+
+const STORAGE_KEY_CATEGORY = 'boodschapp-show-category-titles'
+const STORAGE_KEY_EMOJI = 'boodschapp-show-emojis'
+
+function getStoredBool(key: string, defaultValue: boolean): boolean {
+  if (typeof window === 'undefined') return defaultValue
+  const v = localStorage.getItem(key)
+  if (v === null) return defaultValue
+  return v === 'true'
+}
+
+function setStoredBool(key: string, value: boolean) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(key, String(value))
+}
 import ShoppingListItem from './ShoppingListItem'
 import { isFruit } from '@/lib/fruit-groente'
 
@@ -107,8 +122,35 @@ export default function ShoppingList({
   const [checkedSectionOpen, setCheckedSectionOpen] = useState(false)
   const [basicsSectionOpen, setBasicsSectionOpen] = useState(false)
   const [showClearCheckedModal, setShowClearCheckedModal] = useState(false)
-  const [showCategoryTitles, setShowCategoryTitles] = useState(false)
+  const [showCategoryTitles, setShowCategoryTitles] = useState(() => getStoredBool(STORAGE_KEY_CATEGORY, false))
+  const [showEmojis, setShowEmojis] = useState(() => getStoredBool(STORAGE_KEY_EMOJI, true))
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    setStoredBool(STORAGE_KEY_CATEGORY, showCategoryTitles)
+  }, [showCategoryTitles])
+
+  useEffect(() => {
+    setStoredBool(STORAGE_KEY_EMOJI, showEmojis)
+  }, [showEmojis])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('touchstart', handleClickOutside, { passive: true })
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [dropdownOpen])
 
   const handleAddWithAnimation = (id: string, callback: () => void) => {
     haptic('light')
@@ -258,21 +300,50 @@ export default function ShoppingList({
             <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-gray-400" />
             Lijst
           </h2>
-          {sortedUncheckedCategories.length >= 2 && (
+          <div className="relative shrink-0" ref={dropdownRef}>
             <button
               type="button"
-              onClick={() => setShowCategoryTitles((v) => !v)}
-              className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              aria-pressed={showCategoryTitles}
-              aria-label={showCategoryTitles ? 'Lijst compacter maken' : 'Lijst uitgebreider maken'}
+              onClick={() => {
+                haptic('light')
+                setDropdownOpen((v) => !v)
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              aria-expanded={dropdownOpen}
+              aria-label="Lijstopties"
             >
-              {showCategoryTitles ? (
-                <LayoutList className="h-4 w-4" strokeWidth={2} />
-              ) : (
-                <List className="h-4 w-4" strokeWidth={2} />
-              )}
+              <MoreVertical className="h-4 w-4" strokeWidth={2} />
             </button>
-          )}
+            {dropdownOpen && (
+              <div className="absolute right-0 top-full z-20 mt-1 min-w-[200px] rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCategoryTitles((v) => !v)
+                    haptic('light')
+                  }}
+                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <span>Categorienamen</span>
+                  <span className={`relative inline-block h-5 w-9 shrink-0 rounded-full transition-colors ${showCategoryTitles ? 'bg-blue-600' : 'bg-gray-200'}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${showCategoryTitles ? 'left-4' : 'left-0.5'}`} />
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEmojis((v) => !v)
+                    haptic('light')
+                  }}
+                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <span>Emoji&apos;s</span>
+                  <span className={`relative inline-block h-5 w-9 shrink-0 rounded-full transition-colors ${showEmojis ? 'bg-blue-600' : 'bg-gray-200'}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${showEmojis ? 'left-4' : 'left-0.5'}`} />
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         {sortedUncheckedCategories.length > 0 ? (
           sortedUncheckedCategories.map((categoryGroup, index) => {
@@ -316,6 +387,7 @@ export default function ShoppingList({
                         onUncheck={onUncheck}
                         onDelete={onDelete}
                         onUpdateDescription={onUpdateDescription}
+                        showEmoji={showEmojis}
                       />
                     </div>
                   ))}
@@ -344,6 +416,7 @@ export default function ShoppingList({
                     onUpdateDescription={onUpdateDescription}
                     showMoveToMain={true}
                     onMoveToMain={() => onUpdateDescription(item.id, stripLaterTokenFromDescription(item.description) ?? '')}
+                    showEmoji={showEmojis}
                   />
                 </div>
               ))}
@@ -396,6 +469,7 @@ export default function ShoppingList({
                     onUncheck={onUncheck}
                     onDelete={onDelete}
                     onUpdateDescription={onUpdateDescription}
+                    showEmoji={showEmojis}
                   />
                 </div>
               ))}
@@ -419,8 +493,8 @@ export default function ShoppingList({
                   key={product.id}
                   className={`flex items-center gap-3 py-2 rounded-lg transition-colors duration-300 ${isAdding ? 'bg-green-50' : ''}`}
                 >
-                  <span className="text-lg shrink-0">{product.emoji}</span>
-                  <span className="flex-1 min-w-0 font-medium text-gray-900">{product.name}</span>
+                  {showEmojis && <span className="text-lg shrink-0">{product.emoji}</span>}
+                  <span className="flex-1 min-w-0 text-[15px] font-medium text-gray-900">{product.name}</span>
                   <span className="text-sm text-gray-400 shrink-0">
                     {product.days_until_expected === 0 ? 'vandaag' : `over ~ ${product.days_until_expected}d`}
                   </span>
@@ -470,8 +544,8 @@ export default function ShoppingList({
                     key={product.id}
                     className={`flex items-center gap-3 py-2 rounded-lg transition-colors duration-300 ${isAdding ? 'bg-green-50' : ''}`}
                   >
-                    <span className="text-lg shrink-0">{product.emoji}</span>
-                    <span className="flex-1 min-w-0 font-medium text-gray-900">{product.name}</span>
+                    {showEmojis && <span className="text-lg shrink-0">{product.emoji}</span>}
+                    <span className="flex-1 min-w-0 text-[15px] font-medium text-gray-900">{product.name}</span>
                     {onAddBasicToMain && (
                       <button
                         type="button"
