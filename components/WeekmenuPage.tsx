@@ -429,7 +429,7 @@ export default function WeekmenuPage() {
               {index > 0 && (
                 <div className="mx-4 border-t border-gray-200" />
               )}
-              <div className="px-4 py-4">
+              <div className={`py-4 pl-4 ${isEditing ? 'pr-1' : 'pr-4'}`}>
               <div className="flex flex-wrap items-center gap-4">
                 <span
                   className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm leading-none ${
@@ -470,7 +470,7 @@ export default function WeekmenuPage() {
                     }}
                     className="flex min-w-0 flex-1 items-center gap-2"
                   >
-                    <div className="flex min-h-8 min-w-0 flex-1 items-center gap-3 rounded-lg border border-gray-300 bg-white px-3 py-1">
+                    <div className="flex min-h-8 min-w-0 flex-1 items-center gap-3 rounded-lg border border-gray-300 bg-white pl-3 pr-1 py-1">
                       <WeekmenuGerechtTextarea
                         value={text}
                         onChange={(v) =>
