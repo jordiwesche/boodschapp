@@ -36,7 +36,7 @@ export async function POST(
     // Get shopping list item to verify it's still checked
     const { data: item, error: itemError } = await supabase
       .from('shopping_list_items')
-      .select('id, product_id, household_id, is_checked, checked_at')
+      .select('id, product_id, household_id, is_checked, checked_at, created_at, description')
       .eq('id', id)
       .eq('household_id', user.household_id)
       .single()
@@ -61,6 +61,34 @@ export async function POST(
         { error: 'Item heeft geen gekoppeld product' },
         { status: 400 }
       )
+    }
+
+    // Smart detection: items with "check" in description are not real purchases
+    // (user is just checking if they have the item at home)
+    const description = (item.description || '').toLowerCase().trim()
+    if (/(?:^|[\s(])check(?:$|[\s)])/i.test(description)) {
+      console.log(`⏭️ Skipped purchase history for product ${item.product_id}: description contains "check"`)
+      return NextResponse.json({
+        success: true,
+        message: 'Item heeft "check" in toelichting, geen echte aankoop',
+        skipped: true,
+      })
+    }
+
+    // Smart detection: items checked within 10 minutes of being added are likely
+    // not real purchases (accidentally added, already in stock, etc.)
+    const MIN_TIME_ON_LIST_MS = 10 * 60 * 1000 // 10 minutes
+    const checkedAt = item.checked_at ? new Date(item.checked_at).getTime() : Date.now()
+    const createdAt = new Date(item.created_at).getTime()
+    const timeOnListMs = checkedAt - createdAt
+
+    if (timeOnListMs < MIN_TIME_ON_LIST_MS) {
+      console.log(`⏭️ Skipped purchase history for product ${item.product_id}: item was on list for only ${Math.round(timeOnListMs / 1000)}s (< 10 min)`)
+      return NextResponse.json({
+        success: true,
+        message: 'Item te snel afgevinkt na toevoegen, waarschijnlijk geen echte aankoop',
+        skipped: true,
+      })
     }
 
     // Check if there's a recent purchase (< 1 hour ago) for this product

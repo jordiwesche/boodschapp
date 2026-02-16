@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { haptic } from '@/lib/haptics'
-import { ChevronDown, ChevronRight, Clock, Zap, Plus, Trash2, Star, ShoppingCart, LayoutList, List, Package } from 'lucide-react'
+import { ChevronDown, ChevronRight, Clock, Zap, Plus, Check, Trash2, Star, ShoppingCart, LayoutList, List, Package } from 'lucide-react'
 import ShoppingListItem from './ShoppingListItem'
 import { isFruit } from '@/lib/fruit-groente'
 
@@ -108,6 +108,20 @@ export default function ShoppingList({
   const [basicsSectionOpen, setBasicsSectionOpen] = useState(false)
   const [showClearCheckedModal, setShowClearCheckedModal] = useState(false)
   const [showCategoryTitles, setShowCategoryTitles] = useState(false)
+  const [addingIds, setAddingIds] = useState<Set<string>>(new Set())
+
+  const handleAddWithAnimation = (id: string, callback: () => void) => {
+    haptic('light')
+    setAddingIds((prev) => new Set(prev).add(id))
+    setTimeout(() => {
+      callback()
+      setAddingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }, 500)
+  }
   // Separate checked and unchecked items; unchecked split into normal vs "Later" (description = weekday)
   const uncheckedItems = items.filter((item) => !item.is_checked)
   const laterUncheckedItems = uncheckedItems.filter(isLaterItem)
@@ -309,38 +323,37 @@ export default function ShoppingList({
               </div>
             )
           })
-        ) : (
+        ) : null}
+        {/* Later – onderaan de hoofdlijst */}
+        {sortedLaterUnchecked.length > 0 && (
+          <div className={sortedUncheckedCategories.length > 0 ? 'mt-4' : ''}>
+            <h3 className="mb-2 text-xs font-normal uppercase tracking-wide text-gray-500">
+              Later
+            </h3>
+            <div>
+              {sortedLaterUnchecked.map((item) => (
+                <div
+                  key={item.id}
+                  data-shopping-list-item
+                >
+                  <ShoppingListItem
+                    item={item}
+                    onCheck={onCheck}
+                    onUncheck={onUncheck}
+                    onDelete={onDelete}
+                    onUpdateDescription={onUpdateDescription}
+                    showMoveToMain={true}
+                    onMoveToMain={() => onUpdateDescription(item.id, stripLaterTokenFromDescription(item.description) ?? '')}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {sortedUncheckedCategories.length === 0 && sortedLaterUnchecked.length === 0 && (
           <p className="text-gray-500">Je boodschappenlijst is leeg</p>
         )}
       </div>
-
-      {/* 2. Later */}
-      {sortedLaterUnchecked.length > 0 && (
-        <div className={cardClass}>
-          <h2 className="mb-2 flex h-8 min-h-8 items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
-            <Clock className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-            Later ({sortedLaterUnchecked.length})
-          </h2>
-          <div>
-            {sortedLaterUnchecked.map((item) => (
-              <div
-                key={item.id}
-                data-shopping-list-item
-              >
-                <ShoppingListItem
-                  item={item}
-                  onCheck={onCheck}
-                  onUncheck={onUncheck}
-                  onDelete={onDelete}
-                  onUpdateDescription={onUpdateDescription}
-                  showMoveToMain={true}
-                  onMoveToMain={() => onUpdateDescription(item.id, stripLaterTokenFromDescription(item.description) ?? '')}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* 3. Afgevinkt */}
       {checkedItemsCount > 0 && (
@@ -396,31 +409,35 @@ export default function ShoppingList({
         <div className={cardClass}>
           <h2 className="mb-2 flex h-8 min-h-8 items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
             <Zap className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-            Verwacht ({expectedProducts.length})
+            Verwacht
           </h2>
           <div>
-            {expectedProducts.map((product) => (
-              <div
-                key={product.id}
-                className="flex items-center gap-3 py-2"
-              >
-                <span className="text-lg shrink-0">{product.emoji}</span>
-                <span className="flex-1 min-w-0 font-medium text-gray-900">{product.name}</span>
-                <span className="text-sm text-gray-400 shrink-0">
-                  {product.days_until_expected === 0 ? 'vandaag' : `over ${product.days_until_expected}d`}
-                </span>
-                {onAddExpectedToMain && (
-                  <button
-                    type="button"
-                    onClick={() => onAddExpectedToMain(product)}
-                    className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                    aria-label="Toevoegen aan hoofdlijst"
-                  >
-                    <Plus className="h-5 w-5" strokeWidth={2} />
-                  </button>
-                )}
-              </div>
-            ))}
+            {expectedProducts.map((product) => {
+              const isAdding = addingIds.has(product.id)
+              return (
+                <div
+                  key={product.id}
+                  className={`flex items-center gap-3 py-2 rounded-lg transition-colors duration-300 ${isAdding ? 'bg-green-50' : ''}`}
+                >
+                  <span className="text-lg shrink-0">{product.emoji}</span>
+                  <span className="flex-1 min-w-0 font-medium text-gray-900">{product.name}</span>
+                  <span className="text-sm text-gray-400 shrink-0">
+                    {product.days_until_expected === 0 ? 'vandaag' : `over ~ ${product.days_until_expected}d`}
+                  </span>
+                  {onAddExpectedToMain && (
+                    <button
+                      type="button"
+                      onClick={() => !isAdding && handleAddWithAnimation(product.id, () => onAddExpectedToMain(product))}
+                      className={`shrink-0 flex h-8 w-8 items-center justify-center rounded transition-colors duration-300 ${isAdding ? 'bg-green-500 text-white' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                      aria-label="Toevoegen aan hoofdlijst"
+                      disabled={isAdding}
+                    >
+                      {isAdding ? <Check className="h-5 w-5" strokeWidth={2.5} /> : <Plus className="h-5 w-5" strokeWidth={2} />}
+                    </button>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
@@ -446,25 +463,29 @@ export default function ShoppingList({
         {basicsSectionOpen && (
           <div className="mt-2">
             {basicsNotInList.length > 0 ? (
-              basicsNotInList.map((product) => (
-                <div
-                  key={product.id}
-                  className="flex items-center gap-3 py-2"
-                >
-                  <span className="text-lg shrink-0">{product.emoji}</span>
-                  <span className="flex-1 min-w-0 font-medium text-gray-900">{product.name}</span>
-                  {onAddBasicToMain && (
-                    <button
-                      type="button"
-                      onClick={() => onAddBasicToMain(product)}
-                      className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                      aria-label="Toevoegen aan hoofdlijst"
-                    >
-                      <Plus className="h-5 w-5" strokeWidth={2} />
-                    </button>
-                  )}
-                </div>
-              ))
+              basicsNotInList.map((product) => {
+                const isAdding = addingIds.has(product.id)
+                return (
+                  <div
+                    key={product.id}
+                    className={`flex items-center gap-3 py-2 rounded-lg transition-colors duration-300 ${isAdding ? 'bg-green-50' : ''}`}
+                  >
+                    <span className="text-lg shrink-0">{product.emoji}</span>
+                    <span className="flex-1 min-w-0 font-medium text-gray-900">{product.name}</span>
+                    {onAddBasicToMain && (
+                      <button
+                        type="button"
+                        onClick={() => !isAdding && handleAddWithAnimation(product.id, () => onAddBasicToMain(product))}
+                        className={`shrink-0 flex h-8 w-8 items-center justify-center rounded transition-colors duration-300 ${isAdding ? 'bg-green-500 text-white' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        aria-label="Toevoegen aan hoofdlijst"
+                        disabled={isAdding}
+                      >
+                        {isAdding ? <Check className="h-5 w-5" strokeWidth={2.5} /> : <Plus className="h-5 w-5" strokeWidth={2} />}
+                      </button>
+                    )}
+                  </div>
+                )
+              })
             ) : (
               <p className="text-sm text-gray-500">
                 Ga naar{' '}

@@ -7,6 +7,30 @@ import Skeleton from './Skeleton'
 
 const LONG_PRESS_MS = 600
 
+const CHECK_PATTERN = /(?:^|[\s(])(check)(?:$|[\s)])/i
+const LATER_DAY_PATTERN = /(?:^|[\s(])(later|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag|ma|di|wo|do|vr|za|zo)(?:$|[\s)])/i
+
+type DescriptionLabel = { type: 'check' | 'later'; token: string }
+
+function detectDescriptionLabel(description: string | null): DescriptionLabel | null {
+  if (!description) return null
+  const d = description.trim()
+  const checkMatch = d.match(CHECK_PATTERN)
+  if (checkMatch) return { type: 'check', token: checkMatch[1] }
+  const laterMatch = d.match(LATER_DAY_PATTERN)
+  if (laterMatch) return { type: 'later', token: laterMatch[1] }
+  return null
+}
+
+function stripLabelToken(description: string, token: string): string {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return description
+    .replace(new RegExp(`\\(\\s*${escaped}\\s*\\)`, 'i'), '')
+    .replace(new RegExp(`(?:^|\\s)${escaped}(?:$|\\s)`, 'i'), ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 interface ShoppingListItemData {
   id: string
   product_id: string | null
@@ -292,9 +316,27 @@ export default function ShoppingListItem({
                   <Skeleton variant="text" className="h-5 w-24 shrink-0" animation="pulse" />
                 )}
                 <span
-                  className={`text-sm flex-1 min-w-0 min-h-[1.25rem] block ${item.description ? 'text-gray-500' : ''}`}
+                  className={`text-sm flex-1 min-w-0 min-h-[1.25rem] flex items-center gap-1.5 ${item.description ? 'text-gray-500' : ''}`}
                 >
-                  {item.description ?? ''}
+                  {(() => {
+                    const label = detectDescriptionLabel(item.description)
+                    if (!label) return item.description ?? ''
+                    const rest = stripLabelToken(item.description || '', label.token)
+                    return (
+                      <>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-medium leading-none ${
+                            label.type === 'check'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          {label.token.toLowerCase()}
+                        </span>
+                        {rest && <span>{rest}</span>}
+                      </>
+                    )
+                  })()}
                 </span>
               </div>
             ) : (

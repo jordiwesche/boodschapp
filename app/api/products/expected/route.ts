@@ -81,10 +81,18 @@ export async function GET() {
       (a, b) => a.nextPurchaseDate.getTime() - b.nextPurchaseDate.getTime()
     )
 
-    const top5 = dueList.slice(0, 5)
-    const productIds = top5.map((p) => p.product_id)
     const now = Date.now()
     const oneDayMs = 24 * 60 * 60 * 1000
+    const MAX_DAYS_AHEAD = 4
+
+    // Only keep products expected within 1-4 days (including overdue), then cap at 5
+    const upcoming = dueList.filter((p) => {
+      const daysUntil = Math.ceil((p.nextPurchaseDate.getTime() - now) / oneDayMs)
+      return daysUntil <= MAX_DAYS_AHEAD
+    })
+
+    const top5 = upcoming.slice(0, 5)
+    const productIds = top5.map((p) => p.product_id)
     const dueDaysByProductId = new Map(
       top5.map((p) => [
         p.product_id,
