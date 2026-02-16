@@ -81,23 +81,29 @@ export async function GET() {
       (a, b) => a.nextPurchaseDate.getTime() - b.nextPurchaseDate.getTime()
     )
 
-    const now = Date.now()
     const oneDayMs = 24 * 60 * 60 * 1000
     const MAX_DAYS_AHEAD = 4
 
+    /** Dagen tot verwachte datum, gebaseerd op middernacht (update om 00:00), altijd naar boven afronden */
+    const daysUntilAtMidnight = (nextDate: Date): number => {
+      const now = new Date()
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const nextMidnight = new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate())
+      const diffMs = nextMidnight.getTime() - todayMidnight.getTime()
+      const days = diffMs / oneDayMs
+      return Math.max(0, Math.ceil(days))
+    }
+
     // Only keep products expected within 1-4 days (including overdue), then cap at 5
     const upcoming = dueList.filter((p) => {
-      const daysUntil = Math.ceil((p.nextPurchaseDate.getTime() - now) / oneDayMs)
+      const daysUntil = daysUntilAtMidnight(p.nextPurchaseDate)
       return daysUntil <= MAX_DAYS_AHEAD
     })
 
     const top5 = upcoming.slice(0, 5)
     const productIds = top5.map((p) => p.product_id)
     const dueDaysByProductId = new Map(
-      top5.map((p) => [
-        p.product_id,
-        Math.max(0, Math.ceil((p.nextPurchaseDate.getTime() - now) / oneDayMs)),
-      ])
+      top5.map((p) => [p.product_id, daysUntilAtMidnight(p.nextPurchaseDate)])
     )
 
     if (productIds.length === 0) {

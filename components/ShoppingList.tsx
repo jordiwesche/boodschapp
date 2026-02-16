@@ -504,7 +504,7 @@ export default function ShoppingList({
                     <button
                       type="button"
                       onClick={() => !isAdding && handleAddWithAnimation(product.id, () => onAddExpectedToMain(product))}
-                      className={`shrink-0 flex h-8 w-8 items-center justify-center rounded transition-colors duration-300 ${isAdding ? 'bg-green-500 text-white' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                      className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 transition-colors duration-300 ${isAdding ? 'bg-white text-green-800' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
                       aria-label="Toevoegen aan hoofdlijst"
                       disabled={isAdding}
                     >
@@ -552,7 +552,7 @@ export default function ShoppingList({
                       <button
                         type="button"
                         onClick={() => !isAdding && handleAddWithAnimation(product.id, () => onAddBasicToMain(product))}
-                        className={`shrink-0 flex h-8 w-8 items-center justify-center rounded transition-colors duration-300 ${isAdding ? 'bg-green-500 text-white' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 transition-colors duration-300 ${isAdding ? 'bg-white text-green-800' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
                         aria-label="Toevoegen aan hoofdlijst"
                         disabled={isAdding}
                       >

@@ -197,7 +197,7 @@ export function predictNextPurchaseDate(
   frequencyDays: number
 ): Date {
   const nextDate = new Date(lastPurchaseDate)
-  nextDate.setDate(nextDate.getDate() + Math.round(frequencyDays))
+  nextDate.setDate(nextDate.getDate() + Math.ceil(frequencyDays))
   return nextDate
 }
 

@@ -8,19 +8,19 @@ export function formatPurchaseFrequency(frequencyDays: number | null): string | 
     return null
   }
 
-  // Round to nearest integer for display
-  const rounded = Math.round(frequencyDays)
+  // Naar boven afronden voor display
+  const rounded = Math.ceil(frequencyDays)
 
   if (rounded < 7) {
     // Less than a week: show in days
     return `elke ~${rounded} ${rounded === 1 ? 'dag' : 'dagen'}`
   } else if (rounded < 30) {
     // Less than a month: show in weeks
-    const weeks = Math.round(rounded / 7)
+    const weeks = Math.ceil(rounded / 7)
     return `elke ~${weeks} ${weeks === 1 ? 'week' : 'weken'}`
   } else {
-    // A month or more: show in weeks (rounded)
-    const weeks = Math.round(rounded / 7)
+    // A month or more: show in weeks (naar boven afronden)
+    const weeks = Math.ceil(rounded / 7)
     return `elke ~${weeks} ${weeks === 1 ? 'week' : 'weken'}`
   }
 }

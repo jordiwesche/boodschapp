@@ -7,8 +7,8 @@ import { haptic } from '@/lib/haptics'
 import PageLayout from './PageLayout'
 import {
   calculatePurchaseFrequency,
-  calculatePurchaseFrequencyStats,
   getLastPurchaseDate,
+  predictNextPurchaseDate,
 } from '@/lib/prediction'
 import { PurchaseHistory } from '@/types/database'
 
@@ -214,45 +214,61 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     const totalHours = frequencyDays * 24
     const totalMinutes = totalHours * 60
 
-    // Less than 1 hour: show in minutes
+    // Less than 1 hour: show in minutes (naar boven afronden)
     if (totalHours < 1) {
-      const minutes = Math.round(totalMinutes)
+      const minutes = Math.ceil(totalMinutes)
       return `Elke ${minutes} ${minutes === 1 ? 'minuut' : 'minuten'}`
     }
-    // Less than 24 hours: show in hours
+    // Less than 24 hours: show in hours (naar boven afronden)
     else if (frequencyDays < 1) {
-      const hours = Math.round(totalHours)
+      const hours = Math.ceil(totalHours)
       return `Elke ${hours} ${hours === 1 ? 'uur' : 'uur'}`
     }
-    // 1-6 days: show in days
+    // 1-6 days: show in days (naar boven afronden)
     else if (frequencyDays < 7) {
-      const days = Math.round(frequencyDays)
+      const days = Math.ceil(frequencyDays)
       return `Elke ${days} ${days === 1 ? 'dag' : 'dagen'}`
     }
-    // 1-4 weeks: show in weeks
+    // 1-4 weeks: show in weeks (naar boven afronden)
     else if (frequencyDays < 30) {
-      const weeks = Math.round(frequencyDays / 7)
+      const weeks = Math.ceil(frequencyDays / 7)
       return `Elke ${weeks} ${weeks === 1 ? 'week' : 'weken'}`
     }
-    // 1-11 months: show in months
+    // 1-11 months: show in months (naar boven afronden)
     else if (frequencyDays < 365) {
-      const months = Math.round(frequencyDays / 30)
+      const months = Math.ceil(frequencyDays / 30)
       return `Elke ${months} ${months === 1 ? 'maand' : 'maanden'}`
     }
-    // 1+ years: show in years
+    // 1+ years: show in years (naar boven afronden)
     else {
-      const years = Math.round(frequencyDays / 365)
+      const years = Math.ceil(frequencyDays / 365)
       return `Elke ${years} ${years === 1 ? 'jaar' : 'jaren'}`
     }
   }
 
   const frequency = calculatePurchaseFrequency(purchaseHistory)
-  const frequencyStats = calculatePurchaseFrequencyStats(purchaseHistory)
   const totalPurchases = purchaseHistory.length
 
-  const formatDaysLabel = (days: number) => {
-    const rounded = Math.round(days * 10) / 10
-    return `Elke ${rounded} ${rounded === 1 ? 'dag' : 'dagen'}`
+  const lastPurchase = getLastPurchaseDate(purchaseHistory)
+  const expectedDate =
+    frequency != null && lastPurchase
+      ? predictNextPurchaseDate(lastPurchase, frequency)
+      : null
+
+  const formatExpectedDate = (date: Date) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const d = new Date(date)
+    d.setHours(0, 0, 0, 0)
+    const diffDays = Math.round((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    if (diffDays === 0) return 'Vandaag'
+    if (diffDays === 1) return 'Morgen'
+    if (diffDays === -1) return 'Gisteren'
+    if (diffDays > 1 && diffDays <= 7) {
+      const days = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag']
+      return days[date.getDay()]
+    }
+    return formatDate(date.toISOString())
   }
 
   if (loading) {
@@ -370,24 +386,26 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
               <p className="text-2xl font-bold text-gray-900">{totalPurchases}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Gem. frequentie</p>
+              <p className="text-sm text-gray-500">Koopfrequentie</p>
               <p className="text-2xl font-bold text-gray-900">
                 {frequency ? formatFrequency(frequency) : 'Nog niet berekend'}
               </p>
-              {frequencyStats.average !== null && frequencyStats.median !== null && (
-                <div className="mt-2 space-y-1 text-sm text-gray-600">
-                  <p>{formatDaysLabel(frequencyStats.average)} (Gem)</p>
-                  <p>{formatDaysLabel(frequencyStats.median)} (Med)</p>
-                  <p>
-                    {frequencyStats.mode !== null
-                      ? `${formatDaysLabel(frequencyStats.mode)} (Mod)`
-                      : '— (Mod)'}
-                  </p>
-                </div>
+              {frequency != null && (
+                <p className="mt-1 text-xs text-gray-500">
+                  {(Math.round(frequency * 10) / 10).toFixed(1)}
+                </p>
               )}
             </div>
           </div>
         </div>
+
+        {/* Verwacht – wanneer product weer nodig is */}
+        {expectedDate && (
+          <div className="mb-6 rounded-[16px] bg-white p-6 shadow">
+            <h2 className="text-lg font-semibold text-gray-900">Verwacht</h2>
+            <p className="mt-2 text-gray-900">{formatExpectedDate(expectedDate)}</p>
+          </div>
+        )}
 
         {/* Purchase History List */}
         <div className="rounded-[16px] bg-white shadow">
@@ -413,8 +431,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
                   <div
                     key={purchase.id}
                     data-purchase-history-row
-                    className="relative px-6 py-4 select-none"
-                    style={{ WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
+                    className="relative px-6 py-4"
                     onContextMenu={(e) => e.preventDefault()}
                     onMouseDown={() => startLongPress(purchase.id)}
                     onMouseUp={clearLongPress}
