@@ -57,7 +57,7 @@ export default function PageLayout({
         }}
         aria-hidden
       />
-      <header className="relative z-10 shrink-0 bg-gradient-to-b from-blue-600 via-blue-600 to-transparent pt-[env(safe-area-inset-top)]">
+      <header className="relative z-10 shrink-0 pt-[env(safe-area-inset-top)]">
         <div className="relative z-10 flex h-[104px] flex-col justify-start">
           <div className="mx-auto flex w-full max-w-2xl items-start gap-4 px-4 pt-8 sm:px-6 lg:px-8">
             {showBackButton && onBack && (
