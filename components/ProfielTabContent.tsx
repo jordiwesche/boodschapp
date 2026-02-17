@@ -96,7 +96,7 @@ export default function ProfielTabContent() {
 
   return (
     <PageLayout title="Profiel" dataPwaMain="default">
-      <div className="space-y-4">
+      <div className="flex flex-col min-h-[calc(100vh-280px)] space-y-4">
           <Link
             href="/profiel/naam"
             className="block rounded-[16px] border border-gray-200 bg-white p-6 transition-colors hover:bg-gray-50"
@@ -127,7 +127,7 @@ export default function ProfielTabContent() {
             </div>
           </Link>
 
-          <div className="pt-4 flex flex-col items-center gap-8">
+          <div className="mt-auto pt-8 pb-8 flex flex-col items-center gap-8">
             <div className="flex flex-col items-center gap-3">
               <button
                 type="button"
