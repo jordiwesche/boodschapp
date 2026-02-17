@@ -82,12 +82,12 @@ export default function PageLayout({
                 </svg>
               </button>
             )}
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 flex flex-col gap-1">
               {headerContent ?? (
                 <>
                   <h1 className="text-3xl font-bold text-white">{title}</h1>
                   {headerSubtitle && (
-                    <div className="mt-1 text-sm text-white/80">
+                    <div className="h-5 pt-0 mt-1 align-middle text-sm text-white/80">
                       {headerSubtitle}
                     </div>
                   )}
