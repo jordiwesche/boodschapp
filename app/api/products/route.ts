@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
         category_id,
         is_basic,
         is_popular,
+        frequency_correction_factor,
         created_at,
         updated_at,
         product_categories (
@@ -127,6 +128,7 @@ export async function GET(request: NextRequest) {
         } : null,
         is_basic: product.is_basic,
         is_popular: product.is_popular,
+        frequency_correction_factor: product.frequency_correction_factor ?? 1,
         created_at: product.created_at,
         updated_at: product.updated_at,
       }

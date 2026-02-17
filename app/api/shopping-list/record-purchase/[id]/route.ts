@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import {
+  calculatePurchaseFrequency,
+  getLastPurchaseDate,
+} from '@/lib/prediction'
+import { PurchaseHistory } from '@/types/database'
+
+const EMA_ALPHA = 0.9
+const RATIO_MIN = 0.7
+const RATIO_MAX = 1.4
 
 // POST /api/shopping-list/record-purchase/[id] - Record purchase history immediately on check (dedup via 1h window; cancel on quick uncheck)
 export async function POST(
@@ -36,7 +45,7 @@ export async function POST(
     // Get shopping list item to verify it's still checked
     const { data: item, error: itemError } = await supabase
       .from('shopping_list_items')
-      .select('id, product_id, household_id, is_checked, checked_at, created_at, description')
+      .select('id, product_id, household_id, is_checked, checked_at, created_at, description, added_from_verwacht_at')
       .eq('id', id)
       .eq('household_id', user.household_id)
       .single()
@@ -135,6 +144,35 @@ export async function POST(
       
       console.log(`✅ Updated existing purchase history for product ${item.product_id} (within 1 hour)`)
     } else {
+      // Fetch history BEFORE insert (for EMA correction)
+      const addedFromVerwacht = (item as { added_from_verwacht_at?: string | null }).added_from_verwacht_at
+      let emaData: { frequency: number; lastDate: Date } | null = null
+
+      if (addedFromVerwacht) {
+        const { data: historyRows } = await supabase
+          .from('purchase_history')
+          .select('id, household_id, product_id, purchased_at, added_by, created_at')
+          .eq('household_id', user.household_id)
+          .eq('product_id', item.product_id)
+          .order('purchased_at', { ascending: false })
+
+        const purchaseHistory: PurchaseHistory[] = (historyRows || []).map((r) => ({
+          id: r.id,
+          household_id: r.household_id,
+          product_id: r.product_id,
+          shopping_list_item_id: null,
+          purchased_at: r.purchased_at,
+          added_by: r.added_by,
+          created_at: r.created_at,
+        }))
+
+        const frequency = calculatePurchaseFrequency(purchaseHistory)
+        const lastDate = getLastPurchaseDate(purchaseHistory)
+        if (frequency != null && frequency >= 1 && lastDate) {
+          emaData = { frequency, lastDate }
+        }
+      }
+
       // Create new purchase history entry
       const { error: insertError } = await supabase
         .from('purchase_history')
@@ -152,6 +190,28 @@ export async function POST(
           { error: 'Kon purchase history niet aanmaken' },
           { status: 500 }
         )
+      }
+
+      // Apply EMA correction
+      if (emaData) {
+        const nowDate = new Date(now)
+        const observedDays = (nowDate.getTime() - emaData.lastDate.getTime()) / (1000 * 60 * 60 * 24)
+        const ratio = observedDays / emaData.frequency
+        const clamped = Math.max(RATIO_MIN, Math.min(RATIO_MAX, ratio))
+
+        const { data: product } = await supabase
+          .from('products')
+          .select('frequency_correction_factor')
+          .eq('id', item.product_id)
+          .single()
+
+        const currentFactor = (product?.frequency_correction_factor ?? 1) as number
+        const newFactor = EMA_ALPHA * currentFactor + (1 - EMA_ALPHA) * clamped
+
+        await supabase
+          .from('products')
+          .update({ frequency_correction_factor: newFactor })
+          .eq('id', item.product_id)
       }
     }
 

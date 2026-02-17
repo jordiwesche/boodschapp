@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     // 2. Get all products with purchase history
     const { data: allProducts, error: productsError } = await supabase
       .from('products')
-      .select('id, emoji, name')
+      .select('id, emoji, name, frequency_correction_factor')
       .eq('household_id', user.household_id)
 
     if (productsError || !allProducts) {
@@ -131,6 +131,9 @@ export async function GET(request: NextRequest) {
         continue
       }
 
+      const correctionFactor = (product as { frequency_correction_factor?: number }).frequency_correction_factor ?? 1
+      const effectiveFrequency = frequency * correctionFactor
+
       // Get last purchase date
       const lastPurchaseDate = getLastPurchaseDate(
         purchaseHistory as PurchaseHistory[]
@@ -143,11 +146,11 @@ export async function GET(request: NextRequest) {
       // Predict next purchase date
       const nextPurchaseDate = predictNextPurchaseDate(
         lastPurchaseDate,
-        frequency
+        effectiveFrequency
       )
 
       // Check if should show in suggestions
-      if (shouldShowInSuggestions(nextPurchaseDate, frequency)) {
+      if (shouldShowInSuggestions(nextPurchaseDate, effectiveFrequency)) {
         suggestions.push({
           id: product.id,
           emoji: product.emoji,

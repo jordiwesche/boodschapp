@@ -19,6 +19,7 @@ interface Product {
   } | null
   is_basic: boolean
   is_popular: boolean
+  frequency_correction_factor?: number
   created_at: string
   updated_at: string
 }
@@ -58,8 +59,10 @@ export default function ProductCard({ product, onEdit, onToggleBasic, showPurcha
     fetchPurchaseHistory()
   }, [product.id, showPurchaseInfo])
 
-  // Calculate frequency
-  const frequencyDays = calculatePurchaseFrequency(purchaseHistory)
+  // Calculate frequency (apply correction factor for display consistency)
+  const rawFrequency = calculatePurchaseFrequency(purchaseHistory)
+  const correctionFactor = product.frequency_correction_factor ?? 1
+  const frequencyDays = rawFrequency != null ? rawFrequency * correctionFactor : null
   const frequencyText = formatPurchaseFrequency(frequencyDays)
   const purchaseCount = purchaseHistory.length
 

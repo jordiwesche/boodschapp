@@ -1549,6 +1549,18 @@ export default function ShoppingListPage() {
                     console.error('Error adding basic product:', error)
                   }
                 }}
+                onRemoveBasicFromMain={async (product) => {
+                  const item = items.find((i) => i.product_id === product.id)
+                  if (item) {
+                    try {
+                      await deleteItemMutation.mutateAsync(item.id)
+                    } catch (error) {
+                      setErrorMessage('Kon item niet verwijderen. Probeer het opnieuw.')
+                      setTimeout(() => setErrorMessage(null), 5000)
+                      console.error('Error removing basic from list:', error)
+                    }
+                  }
+                }}
               >
                 {/* Klikzone direct onder laatste item: open/sluit leeg item */}
                 <div

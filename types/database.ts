@@ -33,6 +33,7 @@ export type Product = {
   category_id: string
   is_basic: boolean
   is_popular: boolean
+  frequency_correction_factor?: number
   created_at: string
   updated_at: string
 }

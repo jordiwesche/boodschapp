@@ -61,6 +61,20 @@ export async function GET() {
       byProduct.set(row.product_id, list)
     }
 
+    // Fetch correction factors for products with history
+    const productIdsWithHistory = Array.from(byProduct.keys())
+    const { data: productsWithFactor } = await supabase
+      .from('products')
+      .select('id, frequency_correction_factor')
+      .eq('household_id', householdId)
+      .in('id', productIdsWithHistory)
+
+    const correctionByProduct = new Map<string, number>()
+    for (const p of productsWithFactor || []) {
+      const factor = p.frequency_correction_factor ?? 1
+      correctionByProduct.set(p.id, factor)
+    }
+
     // For each product: frequency, last date, next date; keep only with enough data
     type DueProduct = { product_id: string; nextPurchaseDate: Date; frequencyDays: number }
     const dueList: DueProduct[] = []
@@ -69,11 +83,14 @@ export async function GET() {
       const frequency = calculatePurchaseFrequency(purchases)
       if (frequency == null || frequency <= 0) continue
 
+      const correctionFactor = correctionByProduct.get(productId) ?? 1
+      const effectiveFrequency = frequency * correctionFactor
+
       const lastDate = getLastPurchaseDate(purchases)
       if (!lastDate) continue
 
-      const nextDate = predictNextPurchaseDate(lastDate, frequency)
-      dueList.push({ product_id: productId, nextPurchaseDate: nextDate, frequencyDays: frequency })
+      const nextDate = predictNextPurchaseDate(lastDate, effectiveFrequency)
+      dueList.push({ product_id: productId, nextPurchaseDate: nextDate, frequencyDays: effectiveFrequency })
     }
 
     // Sort by next purchase date ascending (most due first)

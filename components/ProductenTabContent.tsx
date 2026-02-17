@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import dynamic from 'next/dynamic'
+import { useCategories, useProducts, type Category, type Product } from '@/lib/hooks/use-products'
 
 const ProductList = dynamic(() => import('@/components/ProductList'), {
   loading: () => <div className="text-gray-500 p-4">Laden...</div>,
@@ -12,86 +13,22 @@ const CategoryList = dynamic(() => import('@/components/CategoryList'), {
   loading: () => <div className="text-gray-500 p-4">Laden...</div>,
 })
 
-interface Category {
-  id: string
-  name: string
-  display_order: number
-  created_at: string
-  updated_at: string
-}
-
-interface Product {
-  id: string
-  emoji: string
-  name: string
-  description?: string | null
-  category_id: string
-  category?: {
-    id: string
-    name: string
-    display_order: number
-  } | null
-  is_basic: boolean
-  is_popular: boolean
-  created_at: string
-  updated_at: string
-  purchase_count?: number
-  last_purchased_at?: string | null
-}
-
 type Tab = 'producten' | 'categorieen'
 
 export default function ProductenTabContent() {
   const [activeTab, setActiveTab] = useState<Tab>('producten')
-  const [categories, setCategories] = useState<Category[]>([])
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const { data: categories = [], isLoading: categoriesLoading, error: categoriesError, refetch: refetchCategories } = useCategories()
+  const { data: products = [], isLoading: productsLoading, error: productsError, refetch: refetchProducts } = useProducts()
 
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch('/api/categories')
-      if (response.ok) {
-        const data = await response.json()
-        setCategories(data.categories || [])
-      } else {
-        setError('Kon categorieën niet ophalen')
-      }
-    } catch (err) {
-      setError('Er is een fout opgetreden bij het ophalen van categorieën')
-    }
-  }
-
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch('/api/products?include=purchase_count')
-      if (response.ok) {
-        const data = await response.json()
-        setProducts(data.products || [])
-      } else {
-        setError('Kon producten niet ophalen')
-      }
-    } catch (err) {
-      setError('Er is een fout opgetreden bij het ophalen van producten')
-    }
-  }
-
-  const fetchData = async () => {
-    setLoading(true)
-    setError('')
-    await Promise.all([fetchCategories(), fetchProducts()])
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    fetchData()
-  }, [])
+  const loading = categoriesLoading || productsLoading
+  const error = categoriesError ? 'Kon categorieën niet ophalen' : productsError ? 'Kon producten niet ophalen' : ''
 
   const handleRefresh = () => {
-    fetchData()
+    refetchCategories()
+    refetchProducts()
   }
 
-  if (loading) {
+  if (loading && categories.length === 0 && products.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, RotateCcw, Trash2 } from 'lucide-react'
 import { haptic } from '@/lib/haptics'
 import PageLayout from './PageLayout'
@@ -11,17 +12,7 @@ import {
   predictNextPurchaseDate,
 } from '@/lib/prediction'
 import { PurchaseHistory } from '@/types/database'
-
-interface Product {
-  id: string
-  emoji: string
-  name: string
-  description?: string | null
-  category?: {
-    id: string
-    name: string
-  } | null
-}
+import { useProduct, useProductPurchaseHistory, queryKeys } from '@/lib/hooks/use-products'
 
 interface ProductDetailPageProps {
   productId: string
@@ -29,10 +20,10 @@ interface ProductDetailPageProps {
 
 export default function ProductDetailPage({ productId }: ProductDetailPageProps) {
   const router = useRouter()
-  const [product, setProduct] = useState<Product | null>(null)
-  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseHistory[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const queryClient = useQueryClient()
+  const { data: product, isLoading: productLoading, error: productError } = useProduct(productId)
+  const { data: purchaseHistory = [], isLoading: historyLoading } = useProductPurchaseHistory(productId)
+
   const [resetting, setResetting] = useState(false)
   const [showResetConfirmModal, setShowResetConfirmModal] = useState(false)
   const [resetMessage, setResetMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -80,7 +71,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     try {
       const response = await fetch(`/api/purchase-history/${recordId}`, { method: 'DELETE' })
       if (response.ok) {
-        setPurchaseHistory((prev) => prev.filter((p) => p.id !== recordId))
+        await queryClient.invalidateQueries({ queryKey: queryKeys.productPurchaseHistory(productId) })
       } else {
         const err = await response.json().catch(() => ({}))
         setResetMessage({ type: 'error', text: err.error || 'Kon record niet verwijderen' })
@@ -120,40 +111,6 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     }
   }, [])
 
-  useEffect(() => {
-    fetchProductData()
-  }, [productId])
-
-  const fetchProductData = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const [productResponse, historyResponse] = await Promise.all([
-        fetch(`/api/products/${productId}`),
-        fetch(`/api/products/${productId}/purchase-history`),
-      ])
-
-      if (!productResponse.ok) {
-        setError('Product niet gevonden')
-        setLoading(false)
-        return
-      }
-
-      const productData = await productResponse.json()
-      setProduct(productData.product)
-
-      if (historyResponse.ok) {
-        const historyData = await historyResponse.json()
-        setPurchaseHistory(historyData.history || [])
-      }
-    } catch (err) {
-      setError('Er is een fout opgetreden')
-      console.error('Error fetching product data:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleReset = async () => {
     setResetting(true)
     try {
@@ -162,7 +119,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
       })
 
       if (response.ok) {
-        setPurchaseHistory([])
+        await queryClient.invalidateQueries({ queryKey: queryKeys.productPurchaseHistory(productId) })
         setShowResetConfirmModal(false)
         setResetMessage({ type: 'success', text: 'Koophistorie is gereset. De frequentie wordt vanaf nu opnieuw berekend.' })
         setTimeout(() => setResetMessage(null), 5000)
@@ -214,45 +171,47 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     const totalHours = frequencyDays * 24
     const totalMinutes = totalHours * 60
 
-    // Less than 1 hour: show in minutes (naar boven afronden)
+    // Less than 1 hour: show in minutes (afronden)
     if (totalHours < 1) {
-      const minutes = Math.ceil(totalMinutes)
+      const minutes = Math.round(totalMinutes)
       return `Elke ${minutes} ${minutes === 1 ? 'minuut' : 'minuten'}`
     }
-    // Less than 24 hours: show in hours (naar boven afronden)
+    // Less than 24 hours: show in hours (afronden)
     else if (frequencyDays < 1) {
-      const hours = Math.ceil(totalHours)
+      const hours = Math.round(totalHours)
       return `Elke ${hours} ${hours === 1 ? 'uur' : 'uur'}`
     }
-    // 1-6 days: show in days (naar boven afronden)
+    // 1-6 days: show in days (afronden)
     else if (frequencyDays < 7) {
-      const days = Math.ceil(frequencyDays)
+      const days = Math.round(frequencyDays)
       return `Elke ${days} ${days === 1 ? 'dag' : 'dagen'}`
     }
-    // 1-4 weeks: show in weeks (naar boven afronden)
+    // 1-4 weeks: show in weeks (afronden)
     else if (frequencyDays < 30) {
-      const weeks = Math.ceil(frequencyDays / 7)
+      const weeks = Math.round(frequencyDays / 7)
       return `Elke ${weeks} ${weeks === 1 ? 'week' : 'weken'}`
     }
-    // 1-11 months: show in months (naar boven afronden)
+    // 1-11 months: show in months (afronden)
     else if (frequencyDays < 365) {
-      const months = Math.ceil(frequencyDays / 30)
+      const months = Math.round(frequencyDays / 30)
       return `Elke ${months} ${months === 1 ? 'maand' : 'maanden'}`
     }
-    // 1+ years: show in years (naar boven afronden)
+    // 1+ years: show in years (afronden)
     else {
-      const years = Math.ceil(frequencyDays / 365)
+      const years = Math.round(frequencyDays / 365)
       return `Elke ${years} ${years === 1 ? 'jaar' : 'jaren'}`
     }
   }
 
   const frequency = calculatePurchaseFrequency(purchaseHistory)
+  const correctionFactor = product?.frequency_correction_factor ?? 1
+  const effectiveFrequency = frequency != null ? frequency * correctionFactor : null
   const totalPurchases = purchaseHistory.length
 
   const lastPurchase = getLastPurchaseDate(purchaseHistory)
   const expectedDate =
-    frequency != null && lastPurchase
-      ? predictNextPurchaseDate(lastPurchase, frequency)
+    effectiveFrequency != null && lastPurchase
+      ? predictNextPurchaseDate(lastPurchase, effectiveFrequency)
       : null
 
   const formatExpectedDate = (date: Date) => {
@@ -271,7 +230,10 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     return formatDate(date.toISOString())
   }
 
-  if (loading) {
+  const loading = productLoading || historyLoading
+  const error = productError ? 'Er is een fout opgetreden' : null
+
+  if (loading && !product && purchaseHistory.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 pb-20">
         <div className="flex flex-col items-center gap-4">
@@ -282,7 +244,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     )
   }
 
-  if (error || !product) {
+  if (error || (!productLoading && !product)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 pb-20">
         <div className="text-center">
@@ -298,13 +260,14 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     )
   }
 
+  const p = product!
   const headerContent = (
     <div className="flex items-center gap-3">
-      <span className="text-3xl">{product.emoji}</span>
+      <span className="text-3xl">{p.emoji}</span>
       <div>
-        <h1 className="text-3xl font-bold text-white">{product.name}</h1>
-        {product.category && (
-          <p className="mt-1 text-sm text-white/90">{product.category.name}</p>
+        <h1 className="text-3xl font-bold text-white">{p.name}</h1>
+        {p.category && (
+          <p className="mt-1 text-sm text-white/90">{p.category.name}</p>
         )}
       </div>
     </div>

@@ -102,6 +102,7 @@ interface ShoppingListProps {
   onClearChecked?: () => void
   onAddExpectedToMain?: (product: ExpectedProduct) => void
   onAddBasicToMain?: (product: BasicProduct) => void
+  onRemoveBasicFromMain?: (product: BasicProduct) => void
   children?: React.ReactNode
 }
 
@@ -116,6 +117,7 @@ export default function ShoppingList({
   onClearChecked,
   onAddExpectedToMain,
   onAddBasicToMain,
+  onRemoveBasicFromMain,
   children,
 }: ShoppingListProps) {
   const checkedItemsCount = items.filter((item) => item.is_checked).length
@@ -245,16 +247,14 @@ export default function ShoppingList({
     return nameA.localeCompare(nameB, 'nl')
   })
 
-  // Basics: exclude products already in list (any section), sort by category then name
+  // Basics: show all, sort by category then name; track which are on the list
   const productIdsInList = new Set(items.map((i) => i.product_id).filter(Boolean))
-  const basicsNotInList = basicProducts
-    .filter((p) => !productIdsInList.has(p.id))
-    .sort((a, b) => {
-      const orderA = a.category?.display_order ?? 999
-      const orderB = b.category?.display_order ?? 999
-      if (orderA !== orderB) return orderA - orderB
-      return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase(), 'nl')
-    })
+  const basicsAll = [...basicProducts].sort((a, b) => {
+    const orderA = a.category?.display_order ?? 999
+    const orderB = b.category?.display_order ?? 999
+    if (orderA !== orderB) return orderA - orderB
+    return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase(), 'nl')
+  })
 
   // Sort checked items by checked_at (most recent first), then alphabetically
   const sortedCheckedItems = [...checkedItems].sort((a, b) => {
@@ -533,35 +533,50 @@ export default function ShoppingList({
               <ChevronRight className="h-4 w-4 shrink-0" />
             )}
             <Star className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-            <span>Basics ({basicsNotInList.length})</span>
+            <span>Basics</span>
           </button>
         </div>
         {basicsSectionOpen && (
           <div className="mt-2 border-t border-dashed border-gray-200 pt-4">
-            {basicsNotInList.length > 0 ? (
-              basicsNotInList.map((product) => {
-                const isAdding = addingIds.has(product.id)
-                return (
-                  <div
-                    key={product.id}
-                    className={`flex items-center gap-3 py-2 rounded-lg transition-colors duration-300 ${isAdding ? 'bg-green-50' : ''}`}
-                  >
-                    {showEmojis && <span className="text-lg shrink-0">{product.emoji}</span>}
-                    <span className="flex-1 min-w-0 text-[15px] font-medium text-gray-900">{product.name}</span>
-                    {onAddBasicToMain && (
-                      <button
-                        type="button"
-                        onClick={() => !isAdding && handleAddWithAnimation(product.id, () => onAddBasicToMain(product))}
-                        className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 transition-colors duration-300 ${isAdding ? 'bg-white text-green-800' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
-                        aria-label="Toevoegen aan hoofdlijst"
-                        disabled={isAdding}
-                      >
-                        {isAdding ? <Check className="h-5 w-5" strokeWidth={2.5} /> : <Plus className="h-5 w-5" strokeWidth={2} />}
-                      </button>
-                    )}
-                  </div>
-                )
-              })
+            {basicsAll.length > 0 ? (
+              <div className="-mx-4">
+                {basicsAll.map((product) => {
+                  const isOnList = productIdsInList.has(product.id)
+                  const isAdding = addingIds.has(product.id)
+                  return (
+                    <div
+                      key={product.id}
+                      className={`flex items-center gap-3 py-2 px-4 transition-colors duration-300 ${isOnList || isAdding ? 'bg-green-50' : ''}`}
+                    >
+                      {showEmojis && <span className="text-lg shrink-0">{product.emoji}</span>}
+                      <span className="flex-1 min-w-0 text-[15px] font-medium text-gray-900">{product.name}</span>
+                      {isOnList && onRemoveBasicFromMain ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            haptic('light')
+                            onRemoveBasicFromMain(product)
+                          }}
+                          className="shrink-0 flex h-8 w-8 items-center justify-center text-green-600 hover:text-green-700"
+                          aria-label="Verwijder van hoofdlijst"
+                        >
+                          <Check className="h-5 w-5" strokeWidth={2.5} />
+                        </button>
+                      ) : onAddBasicToMain ? (
+                        <button
+                          type="button"
+                          onClick={() => !isAdding && handleAddWithAnimation(product.id, () => onAddBasicToMain!(product))}
+                          className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 transition-colors duration-300 ${isAdding ? 'bg-white text-green-800' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                          aria-label="Toevoegen aan hoofdlijst"
+                          disabled={isAdding}
+                        >
+                          {isAdding ? <Check className="h-5 w-5" strokeWidth={2.5} /> : <Plus className="h-5 w-5" strokeWidth={2} />}
+                        </button>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
             ) : (
               <p className="text-sm text-gray-500">
                 Ga naar{' '}

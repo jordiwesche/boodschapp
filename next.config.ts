@@ -142,14 +142,13 @@ if (process.env.NODE_ENV === 'production') {
       },
       {
         urlPattern: /\/api\/.*/i,
-        handler: 'NetworkFirst',
+        handler: 'StaleWhileRevalidate',
         options: {
           cacheName: 'api-cache',
           expiration: {
-            maxEntries: 50,
+            maxEntries: 100,
             maxAgeSeconds: 5 * 60, // 5 minutes
           },
-          networkTimeoutSeconds: 10,
         },
       },
     ],
