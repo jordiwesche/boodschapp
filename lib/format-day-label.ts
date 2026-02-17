@@ -23,6 +23,21 @@ export function formatDayLabel(dateStr: string): string {
   return `${day} ${date} ${month} ${year}`
 }
 
+/** Format week range for weekmenu nav: "ma 16 - zo 22 feb" of "ma 28 feb - zo 6 mrt" */
+export function formatWeekRange(weekStart: string): string {
+  const ma = new Date(weekStart + 'T12:00:00')
+  const zo = new Date(ma)
+  zo.setDate(zo.getDate() + 6)
+  const maDate = ma.getDate()
+  const zoDate = zo.getDate()
+  const maMaand = MONTH_ABBR[ma.getMonth()]
+  const zoMaand = MONTH_ABBR[zo.getMonth()]
+  if (ma.getMonth() === zo.getMonth()) {
+    return `ma ${maDate} - zo ${zoDate} ${zoMaand}`
+  }
+  return `ma ${maDate} ${maMaand} - zo ${zoDate} ${zoMaand}`
+}
+
 /** Return a sortable key for day (today first, then yesterday, then older dates descending) */
 export function daySortKey(dateStr: string): string {
   const d = new Date(dateStr)

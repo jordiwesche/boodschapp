@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Link as LinkIcon, CornerDownLeft, X, ExternalLink } from 'lucide-react'
+import { Link as LinkIcon, CornerDownLeft, X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { haptic } from '@/lib/haptics'
+import { formatWeekRange } from '@/lib/format-day-label'
 import PageLayout from './PageLayout'
 
 const DAY_LABELS = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'] as const
@@ -13,6 +14,27 @@ function getTodayDayOfWeek(): number {
   return (new Date().getDay() + 6) % 7
 }
 
+/** Maandag van de huidige week (YYYY-MM-DD) */
+function getCurrentWeekStart(): string {
+  const d = new Date()
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  const monday = new Date(d.getFullYear(), d.getMonth(), diff)
+  return monday.toISOString().slice(0, 10)
+}
+
+/** week_start + N weken */
+function addWeeks(weekStart: string, delta: number): string {
+  const d = new Date(weekStart + 'T12:00:00')
+  d.setDate(d.getDate() + delta * 7)
+  return d.toISOString().slice(0, 10)
+}
+
+/** Is weekStart de huidige week? */
+function isCurrentWeek(weekStart: string): boolean {
+  return weekStart === getCurrentWeekStart()
+}
+
 interface WeekmenuDayRow {
   day_of_week: number
   menu_text: string | null
@@ -20,8 +42,8 @@ interface WeekmenuDayRow {
   link_title: string | null
 }
 
-/** Cache van het laatst geladen weekmenu: direct tonen bij opnieuw openen, geen skeleton. */
-let weekmenuCache: WeekmenuDayRow[] | null = null
+/** Cache: laatste week + data voor direct tonen bij heropenen */
+let weekmenuCache: { week_start: string; days: WeekmenuDayRow[] } | null = null
 
 /** Prefetch weekmenu (bv. bij app-load) zodat de pagina direct data heeft. */
 export async function prefetchWeekmenu(): Promise<void> {
@@ -30,7 +52,8 @@ export async function prefetchWeekmenu(): Promise<void> {
     if (!res.ok) return
     const data = await res.json()
     const list = (data.days ?? []) as WeekmenuDayRow[]
-    if (list.length) weekmenuCache = list
+    const weekStart = data.week_start ?? getCurrentWeekStart()
+    if (list.length) weekmenuCache = { week_start: weekStart, days: list }
   } catch {
     // ignore
   }
@@ -155,7 +178,15 @@ function WeekmenuGerechtTextarea({
   )
 }
 
-export default function WeekmenuPage() {
+export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }) {
+  const [weekStart, setWeekStart] = useState<string>(() => getCurrentWeekStart())
+
+  // Reset naar huidige week wanneer tab actief wordt
+  useEffect(() => {
+    if (isActive) {
+      setWeekStart(getCurrentWeekStart())
+    }
+  }, [isActive])
   const [days, setDays] = useState<WeekmenuDayRow[]>([])
   const [loading, setLoading] = useState(true)
   const [localText, setLocalText] = useState<Record<number, string>>({})
@@ -168,6 +199,8 @@ export default function WeekmenuPage() {
   const urlButtonTouchedRef = useRef(false)
   const clearButtonTouchedRef = useRef(false)
   const gerechtRowRef = useRef<HTMLDivElement | null>(null)
+  const weekStartRef = useRef(weekStart)
+  weekStartRef.current = weekStart
 
   useEffect(() => {
     if (urlDropdownDay === null) return
@@ -180,12 +213,13 @@ export default function WeekmenuPage() {
     return () => document.removeEventListener('mousedown', handleMouseDown)
   }, [urlDropdownDay])
 
-  const fetchDays = useCallback(async () => {
-    const res = await fetch('/api/weekmenu')
+  const fetchDays = useCallback(async (ws: string) => {
+    const res = await fetch(`/api/weekmenu?week_start=${encodeURIComponent(ws)}`)
     if (!res.ok) return
     const data = await res.json()
     const list = (data.days ?? []) as WeekmenuDayRow[]
-    weekmenuCache = list
+    const resolvedWeek = data.week_start ?? ws
+    weekmenuCache = { week_start: resolvedWeek, days: list }
     setDays(list)
     setLocalText((prev) => {
       const next = { ...prev }
@@ -197,11 +231,12 @@ export default function WeekmenuPage() {
   }, [])
 
   useEffect(() => {
-    if (weekmenuCache?.length) {
-      setDays(weekmenuCache)
+    const cached = weekmenuCache
+    if (cached && cached.week_start === weekStart && cached.days.length) {
+      setDays(cached.days)
       setLocalText((prev) => {
         const next = { ...prev }
-        weekmenuCache!.forEach((d) => {
+        cached.days.forEach((d) => {
           next[d.day_of_week] = d.menu_text ?? ''
         })
         return next
@@ -210,14 +245,14 @@ export default function WeekmenuPage() {
     }
     let cancelled = false
     const run = async () => {
-      await fetchDays()
+      await fetchDays(weekStart)
       if (!cancelled) setLoading(false)
     }
     run()
     return () => {
       cancelled = true
     }
-  }, [fetchDays])
+  }, [weekStart, fetchDays])
 
   useEffect(() => {
     const setupRealtime = async () => {
@@ -237,7 +272,7 @@ export default function WeekmenuPage() {
             table: 'weekmenu',
             filter: `household_id=eq.${userData.household_id}`,
           },
-          () => fetchDays()
+          () => fetchDays(weekStartRef.current)
         )
         .on(
           'postgres_changes',
@@ -247,7 +282,7 @@ export default function WeekmenuPage() {
             table: 'weekmenu',
             filter: `household_id=eq.${userData.household_id}`,
           },
-          () => fetchDays()
+          () => fetchDays(weekStartRef.current)
         )
         .subscribe()
 
@@ -278,7 +313,7 @@ export default function WeekmenuPage() {
         const res = await fetch('/api/weekmenu', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ day_of_week, ...payload }),
+          body: JSON.stringify({ week_start: weekStart, day_of_week, ...payload }),
         })
         if (res.ok) {
           const updated = await res.json()
@@ -302,7 +337,7 @@ export default function WeekmenuPage() {
         setPatching(null)
       }
     },
-    []
+    [weekStart]
   )
 
   const handleSubmit = useCallback(
@@ -376,10 +411,48 @@ export default function WeekmenuPage() {
     }
   }, [])
 
+  const goPrevWeek = useCallback(() => {
+    haptic('light')
+    setWeekStart((ws) => addWeeks(ws, -1))
+  }, [])
+
+  const goNextWeek = useCallback(() => {
+    haptic('light')
+    setWeekStart((ws) => addWeeks(ws, 1))
+  }, [])
+
+  const weekNavSubtitle = (
+    <div className="flex h-8 items-start justify-between">
+      <span className="text-sm text-white/80 pb-0">
+        {formatWeekRange(weekStart)}
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={goPrevWeek}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/50 text-white/90 hover:bg-white/20 hover:text-white transition-colors"
+        aria-label="Vorige week"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          onClick={goNextWeek}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/50 text-white/90 hover:bg-white/20 hover:text-white transition-colors"
+        aria-label="Volgende week"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      </div>
+    </div>
+  )
+
   const todayDayOfWeek = getTodayDayOfWeek()
+  const showTodayHighlight = isCurrentWeek(weekStart)
+
   if (loading) {
     return (
-      <PageLayout title="Weekmenu" dataPwaMain="default">
+      <PageLayout title="Weekmenu" headerSubtitle={weekNavSubtitle} dataPwaMain="default">
         <div className="rounded-[16px] border border-gray-200 bg-white overflow-hidden">
           {DAY_LABELS.map((label, i) => (
             <React.Fragment key={i}>
@@ -387,7 +460,7 @@ export default function WeekmenuPage() {
               <div className="px-4 py-3 flex items-center gap-4">
               <span
                 className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm ${
-                  i === todayDayOfWeek ? 'bg-blue-600 font-bold text-white' : 'bg-gray-100 font-medium text-gray-400'
+                  showTodayHighlight && i === todayDayOfWeek ? 'bg-blue-600 font-bold text-white' : 'bg-gray-100 font-medium text-gray-400'
                 }`}
               >
                 {label}
@@ -404,14 +477,14 @@ export default function WeekmenuPage() {
   const orderedDays = [...days].sort((a, b) => a.day_of_week - b.day_of_week)
   if (orderedDays.length === 0) {
     return (
-      <PageLayout title="Weekmenu" dataPwaMain="default">
+      <PageLayout title="Weekmenu" headerSubtitle={weekNavSubtitle} dataPwaMain="default">
         <p className="text-gray-600">Geen weekmenu beschikbaar.</p>
       </PageLayout>
     )
   }
 
   return (
-    <PageLayout title="Weekmenu" dataPwaMain="default">
+    <PageLayout title="Weekmenu" headerSubtitle={weekNavSubtitle} dataPwaMain="default">
       <div className="rounded-[16px] border border-gray-200 bg-white overflow-visible">
         {orderedDays.map((day, index) => {
           const label = DAY_LABELS[day.day_of_week] ?? `Dag ${day.day_of_week}`
@@ -431,13 +504,13 @@ export default function WeekmenuPage() {
               )}
               <div className={`py-4 pl-4 ${isEditing ? 'pr-1' : 'pr-4'}`}>
               <div className="flex flex-wrap items-center gap-4">
-                <span
-                  className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm leading-none ${
-                    day.day_of_week === todayDayOfWeek
-                      ? 'bg-blue-600 font-bold text-white'
-                      : 'bg-gray-100 font-medium text-gray-600'
-                  }`}
-                >
+              <span
+                className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm leading-none ${
+                  showTodayHighlight && day.day_of_week === todayDayOfWeek
+                    ? 'bg-blue-600 font-bold text-white'
+                    : 'bg-gray-100 font-medium text-gray-600'
+                }`}
+              >
                   {label}
                 </span>
                 {showViewMode ? (

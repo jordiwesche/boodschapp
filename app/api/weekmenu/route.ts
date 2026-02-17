@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+/** Maandag van de huidige week (ISO) */
+function getCurrentWeekStart(): string {
+  const d = new Date()
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  const monday = new Date(d.getFullYear(), d.getMonth(), diff)
+  return monday.toISOString().slice(0, 10)
+}
+
 export async function GET(request: NextRequest) {
   try {
     const uid = request.cookies.get('user_id')?.value
     if (!uid) {
       return NextResponse.json({ error: 'Niet ingelogd' }, { status: 401 })
     }
+
+    const { searchParams } = new URL(request.url)
+    const weekStartParam = searchParams.get('week_start')
+    const weekStart = weekStartParam ?? getCurrentWeekStart()
 
     const supabase = await createClient()
     const { data: user, error: userError } = await supabase
@@ -26,8 +39,9 @@ export async function GET(request: NextRequest) {
 
     const { data: rows, error: fetchError } = await supabase
       .from('weekmenu')
-      .select('id, day_of_week, menu_text, link_url, link_title, created_at, updated_at')
+      .select('id, week_start, day_of_week, menu_text, link_url, link_title, created_at, updated_at')
       .eq('household_id', householdId)
+      .eq('week_start', weekStart)
       .order('day_of_week', { ascending: true })
 
     if (fetchError) {
@@ -44,6 +58,7 @@ export async function GET(request: NextRequest) {
     if (missing.length > 0) {
       const inserts = missing.map((day_of_week) => ({
         household_id: householdId,
+        week_start: weekStart,
         day_of_week,
         menu_text: null,
         link_url: null,
@@ -52,7 +67,7 @@ export async function GET(request: NextRequest) {
       const { data: inserted, error: insertError } = await supabase
         .from('weekmenu')
         .insert(inserts)
-        .select('id, day_of_week, menu_text, link_url, link_title, created_at, updated_at')
+        .select('id, week_start, day_of_week, menu_text, link_url, link_title, created_at, updated_at')
 
       if (insertError) {
         return NextResponse.json(
@@ -63,11 +78,12 @@ export async function GET(request: NextRequest) {
       const combined = [...(rows ?? []), ...(inserted ?? [])].sort(
         (a, b) => a.day_of_week - b.day_of_week
       )
-      return NextResponse.json({ days: combined })
+      return NextResponse.json({ days: combined, week_start: weekStart })
     }
 
     return NextResponse.json({
       days: rows ?? [],
+      week_start: weekStart,
     })
   } catch (error) {
     console.error('Weekmenu GET error:', error)
@@ -86,7 +102,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { day_of_week, menu_text, link_url, link_title } = body as {
+    const { week_start, day_of_week, menu_text, link_url, link_title } = body as {
+      week_start?: string
       day_of_week?: number
       menu_text?: string | null
       link_url?: string | null
@@ -103,6 +120,11 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const weekStart =
+      typeof week_start === 'string' && week_start
+        ? week_start
+        : getCurrentWeekStart()
 
     const supabase = await createClient()
     const { data: user, error: userError } = await supabase
@@ -122,6 +144,7 @@ export async function PATCH(request: NextRequest) {
       .from('weekmenu')
       .select('id, menu_text, link_url, link_title')
       .eq('household_id', user.household_id)
+      .eq('week_start', weekStart)
       .eq('day_of_week', day_of_week)
       .maybeSingle()
 
@@ -139,14 +162,15 @@ export async function PATCH(request: NextRequest) {
       .upsert(
         {
           household_id: user.household_id,
+          week_start: weekStart,
           day_of_week,
           menu_text: merged.menu_text,
           link_url: merged.link_url,
           link_title: merged.link_title,
         },
-        { onConflict: 'household_id,day_of_week' }
+        { onConflict: 'household_id,week_start,day_of_week' }
       )
-      .select('id, day_of_week, menu_text, link_url, link_title, updated_at')
+      .select('id, week_start, day_of_week, menu_text, link_url, link_title, updated_at')
       .single()
 
     if (upsertError) {

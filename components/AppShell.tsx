@@ -95,7 +95,7 @@ export default function AppShell({ initialTab }: { initialTab: TabId }) {
       )}
       {mountedTabs.has('weekmenu') && (
         <div style={{ display: activeTab === 'weekmenu' ? 'block' : 'none' }}>
-          <WeekmenuPage />
+          <WeekmenuPage isActive={activeTab === 'weekmenu'} />
         </div>
       )}
       {mountedTabs.has('producten') && (

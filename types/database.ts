@@ -75,6 +75,7 @@ export type HouseholdInvitation = {
 export type WeekmenuDay = {
   id: string
   household_id: string
+  week_start: string
   day_of_week: number
   menu_text: string | null
   link_url: string | null
