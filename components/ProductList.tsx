@@ -379,7 +379,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
       ) : (
         <div className="space-y-6">
           {sections.map((section, idx) => (
-            <div key={section.label || `flat-${idx}`}>
+            <div key={`${section.label ?? 'flat'}-${idx}`}>
               {section.label ? (
                 <h3 className="mb-3 text-sm font-medium text-gray-500">{section.label}</h3>
               ) : null}

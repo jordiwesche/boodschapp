@@ -81,23 +81,13 @@ export async function GET(request: NextRequest) {
         
         if (hasJoinedProduct) {
           product = item.products[0]
-          // #region agent log
-          console.log(JSON.stringify({location:'shopping-list/route.ts:88',message:'GET using joined product',data:{itemId:item.id,productName:product.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'}));
-          // #endregion
         } else if (item.product_id) {
-          // Product join didn't work, fetch separately
-          // #region agent log
-          console.log(JSON.stringify({location:'shopping-list/route.ts:76',message:'GET fetching product separately',data:{itemId:item.id,productId:item.product_id,hasProducts:!!item.products,productsType:typeof item.products},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'}));
-          // #endregion
           const { data: productData, error: productError } = await supabase
             .from('products')
             .select('id, emoji, name')
             .eq('id', item.product_id)
             .single()
           
-          // #region agent log
-          console.log(JSON.stringify({location:'shopping-list/route.ts:83',message:'GET product fetch result',data:{itemId:item.id,hasProductData:!!productData,productError:productError?.message,productName:productData?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'}));
-          // #endregion
           if (productData) {
             product = productData
           }
@@ -297,14 +287,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Transform response
-    // If product join didn't work, fetch product separately
-    // #region agent log
-    console.log(JSON.stringify({location:'shopping-list/route.ts:262',message:'POST item created',data:{itemId:item.id,productId:item.product_id,hasProducts:!!item.products,productsType:typeof item.products,productsLength:Array.isArray(item.products)?item.products.length:0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'}));
-    // #endregion
+    // Transform response — if product join didn't work, fetch product separately
     let product = null
     
-    // Check if we have a valid product from join
     const hasJoinedProduct = item.products && 
       Array.isArray(item.products) && 
       item.products.length > 0 &&
@@ -312,23 +297,13 @@ export async function POST(request: NextRequest) {
     
     if (hasJoinedProduct) {
       product = item.products[0]
-      // #region agent log
-      console.log(JSON.stringify({location:'shopping-list/route.ts:279',message:'POST using joined product',data:{productName:product.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'}));
-      // #endregion
     } else if (item.product_id) {
-      // Product join didn't work, fetch separately
-      // #region agent log
-      console.log(JSON.stringify({location:'shopping-list/route.ts:265',message:'POST fetching product separately',data:{productId:item.product_id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'}));
-      // #endregion
       const { data: productData, error: productError } = await supabase
         .from('products')
         .select('id, emoji, name')
         .eq('id', item.product_id)
         .single()
       
-      // #region agent log
-      console.log(JSON.stringify({location:'shopping-list/route.ts:272',message:'POST product fetch result',data:{hasProductData:!!productData,productError:productError?.message,productName:productData?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'}));
-      // #endregion
       if (productData) {
         product = productData
       }

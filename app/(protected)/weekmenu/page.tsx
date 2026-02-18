@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
+import AppShell from '@/components/AppShell'
 
 export default function WeekmenuRoute() {
-  redirect('/')
+  return <AppShell initialTab="weekmenu" />
 }

@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
+import AppShell from '@/components/AppShell'
 
-export default function ProductenPage() {
-  redirect('/')
+export default function ProductenRoute() {
+  return <AppShell initialTab="producten" />
 }

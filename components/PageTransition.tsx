@@ -3,16 +3,15 @@
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef } from 'react'
 
-interface PageTransitionProps {
-  children: React.ReactNode
-}
-
-export default function PageTransition({ children }: PageTransitionProps) {
+function PageTransitionEffects() {
   const pathname = usePathname()
   const prevPathnameRef = useRef(pathname)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
 
-  // Scroll to top when pathname changes
+  useEffect(() => {
+    containerRef.current = document.getElementById('page-transition-container') as HTMLDivElement | null
+  }, [])
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.history.scrollRestoration = 'manual'
@@ -21,40 +20,37 @@ export default function PageTransition({ children }: PageTransitionProps) {
   }, [pathname])
 
   useEffect(() => {
-    // Only animate if pathname actually changed (not on initial mount)
-    if (prevPathnameRef.current !== pathname && containerRef.current && prevPathnameRef.current !== '') {
-      // Use a very subtle fade-in only (no fade-out to prevent flashing)
-      // This creates a smooth transition without the black background flash
-      containerRef.current.style.opacity = '0.7'
-      containerRef.current.style.transition = 'opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1)'
-      
-      // Use requestAnimationFrame to ensure the new content is rendered before animating
+    const el = containerRef.current
+    if (prevPathnameRef.current !== pathname && el && prevPathnameRef.current !== '') {
+      el.style.opacity = '0.7'
+      el.style.transition = 'opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1)'
+
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (containerRef.current) {
-            containerRef.current.style.opacity = '1'
-          }
+          if (el) el.style.opacity = '1'
         })
       })
-    } else {
-      // Ensure opacity is 1 on initial mount
-      if (containerRef.current) {
-        containerRef.current.style.opacity = '1'
-      }
+    } else if (el) {
+      el.style.opacity = '1'
     }
-    
+
     prevPathnameRef.current = pathname
   }, [pathname])
 
+  return null
+}
+
+export default function PageTransition({ children }: { children: React.ReactNode }) {
   return (
-    <div 
-      ref={containerRef} 
-      style={{ 
+    <div
+      id="page-transition-container"
+      style={{
         opacity: 1,
         minHeight: '100vh',
         background: 'transparent',
       }}
     >
+      <PageTransitionEffects />
       {children}
     </div>
   )

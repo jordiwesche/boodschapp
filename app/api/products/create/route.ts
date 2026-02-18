@@ -47,26 +47,6 @@ export async function POST(request: NextRequest) {
 
     if (!finalCategoryId) {
       const prediction = predictCategoryAndEmoji(name.trim())
-      // #region agent log
-      try {
-        await fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            location: 'app/api/products/create/route.ts:prediction',
-            message: 'category prediction for new product',
-            data: {
-              productName: name.trim(),
-              predictedCategory: prediction.categoryName,
-              predictedEmoji: prediction.emoji,
-            },
-            timestamp: Date.now(),
-            sessionId: 'debug-session',
-            hypothesisId: 'H2',
-          }),
-        })
-      } catch (_) {}
-      // #endregion
       const predictedNormalized = normalizeCategoryName(prediction.categoryName)
 
       // Fetch all household categories and match by exact name, aliases, or normalized name

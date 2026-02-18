@@ -16,6 +16,10 @@ interface EmptyListItemProps {
   onProductKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => boolean | void
   /** Show spinner while searching */
   isSearching?: boolean
+  /** Show toelichting field (e.g. after fill button click) */
+  showDescriptionField?: boolean
+  /** Ref for description input (parent can focus it) */
+  descriptionInputRef?: React.RefObject<HTMLInputElement | null>
 }
 
 export default function EmptyListItem({
@@ -29,6 +33,8 @@ export default function EmptyListItem({
   onFocusComplete,
   onProductKeyDown,
   isSearching = false,
+  showDescriptionField = false,
+  descriptionInputRef,
 }: EmptyListItemProps) {
   const productInputRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -69,6 +75,23 @@ export default function EmptyListItem({
     }
   }, [autoFocus])
 
+  // Focus toelichting field when it appears (e.g. after fill button)
+  useEffect(() => {
+    if (!showDescriptionField || !descriptionInputRef) return
+    const focus = () => {
+      const target = descriptionInputRef.current
+      if (target) {
+        target.focus()
+        if (window.innerWidth <= 768) target.click()
+      }
+    }
+    requestAnimationFrame(() => {
+      focus()
+      // Fallback: ref may not be set until next frame
+      setTimeout(focus, 50)
+    })
+  }, [showDescriptionField, descriptionInputRef])
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault()
     if (productName.trim()) {
@@ -82,6 +105,16 @@ export default function EmptyListItem({
 
   const handleProductKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (onProductKeyDown?.(e)) return
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleSubmit()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      onCancel()
+    }
+  }
+
+  const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
       handleSubmit()
@@ -115,31 +148,51 @@ export default function EmptyListItem({
         <Check className="h-3 w-3 text-transparent" />
       </div>
 
-      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-1 min-w-0 items-center gap-0.5">
-        <input
-          ref={inputCallbackRef}
-          type="text"
-          value={productName}
-          onChange={(e) => onProductNameChange(e.target.value)}
-          onKeyDown={handleProductKeyDown}
-          onBlur={handleProductBlur}
-          enterKeyHint="done"
-          placeholder="Product / item"
-          className={`border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none ${
-            isSearching && productName.trim().length >= 2 ? 'flex-none' : 'min-w-0 flex-1'
-          }`}
-          style={{
-            fontSize: '16px',
-            ...(isSearching && productName.trim().length >= 2
-              ? { width: `${Math.max(2, productName.length) + 0.3}ch` }
-              : {}),
-          }}
-          autoFocus={autoFocus}
-          inputMode="text"
-        />
-        {isSearching && productName.trim().length >= 2 && (
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-gray-400" aria-hidden />
-        )}
+      <form ref={formRef} onSubmit={handleSubmit} className="flex flex-1 min-w-0 flex-col gap-1">
+        <div className="flex items-center gap-0.5">
+          <input
+            ref={inputCallbackRef}
+            type="text"
+            value={productName}
+            onChange={(e) => onProductNameChange(e.target.value)}
+            onKeyDown={handleProductKeyDown}
+            onBlur={handleProductBlur}
+            enterKeyHint="done"
+            placeholder="Product / item"
+            className={`border-0 bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none ${
+              showDescriptionField
+                ? 'min-w-0 flex-1'
+                : isSearching && productName.trim().length >= 2
+                  ? 'flex-none'
+                  : 'min-w-0 flex-1'
+            }`}
+            style={{
+              fontSize: '16px',
+              ...(isSearching && productName.trim().length >= 2 && !showDescriptionField
+                ? { width: `${Math.max(2, productName.length) + 0.3}ch` }
+                : {}),
+            }}
+            autoFocus={autoFocus}
+            inputMode="text"
+          />
+          {showDescriptionField && (
+            <input
+              ref={descriptionInputRef}
+              type="text"
+              value={description}
+              onChange={(e) => onDescriptionChange(e.target.value)}
+              onKeyDown={handleDescriptionKeyDown}
+              placeholder="Toelichting"
+              data-empty-item-description
+              className="min-w-0 flex-1 border-0 border-l border-gray-200 bg-transparent pl-3 text-base text-gray-600 placeholder:text-gray-400 focus:outline-none"
+              style={{ fontSize: '16px' }}
+              inputMode="text"
+            />
+          )}
+          {isSearching && productName.trim().length >= 2 && !showDescriptionField && (
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-gray-400" aria-hidden />
+          )}
+        </div>
       </form>
 
       <button

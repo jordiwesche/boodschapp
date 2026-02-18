@@ -80,22 +80,6 @@ export function predictCategoryAndEmoji(productName: string): CategoryPrediction
         (nameLower.endsWith('s') && nameLower.slice(0, -1) === termLower) ||
         (termLower.endsWith('s') && termLower.slice(0, -1) === nameLower)
       if (matches) {
-        // #region agent log
-        try {
-          fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              location: 'lib/predict-category-emoji.ts:match',
-              message: 'concept term matched',
-              data: { productName: nameLower, matchedTerm: termLower, categoryName: concept.categoryName },
-              timestamp: Date.now(),
-              sessionId: 'debug-session',
-              hypothesisId: 'H2',
-            }),
-          }).catch(() => {})
-        } catch (_) {}
-        // #endregion
         const emojiFromName = getEmojiByName(nameLower)
         const emojiFromPicker = emojiFromName ?? getEmojiFromPickerList(nameLower) ?? getEmojiFromPickerList(termLower)
         return {

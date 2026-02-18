@@ -103,6 +103,7 @@ interface ShoppingListProps {
   onAddExpectedToMain?: (product: ExpectedProduct) => void
   onAddBasicToMain?: (product: BasicProduct) => void
   onRemoveBasicFromMain?: (product: BasicProduct) => void
+  onMainListHeaderClick?: () => void
   children?: React.ReactNode
 }
 
@@ -118,6 +119,7 @@ export default function ShoppingList({
   onAddExpectedToMain,
   onAddBasicToMain,
   onRemoveBasicFromMain,
+  onMainListHeaderClick,
   children,
 }: ShoppingListProps) {
   const checkedItemsCount = items.filter((item) => item.is_checked).length
@@ -296,10 +298,24 @@ export default function ShoppingList({
       {/* 1. Hoofdlijst – altijd tonen */}
       <div className={mainListCardClass}>
         <div className="mb-2 flex h-8 min-h-8 items-center justify-between gap-2">
-          <h2 className="flex items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
-            <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-            Lijst
-          </h2>
+          {onMainListHeaderClick ? (
+            <button
+              type="button"
+              onClick={() => {
+                haptic('light')
+                onMainListHeaderClick()
+              }}
+              className="flex flex-1 min-w-0 items-center gap-1.5 text-left text-sm font-medium text-gray-500 tracking-wide hover:text-gray-700 transition-colors cursor-pointer -mx-2 px-2 py-1 rounded"
+            >
+              <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+              Lijst
+            </button>
+          ) : (
+            <h2 className="flex flex-1 min-w-0 items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
+              <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+              Lijst
+            </h2>
+          )}
           <div className="relative shrink-0" ref={dropdownRef}>
             <button
               type="button"
@@ -520,22 +536,28 @@ export default function ShoppingList({
 
       {/* 5. Basics (ster-icoon) – altijd tonen */}
       <div className={cardClass}>
-        <div className="flex h-8 min-h-8 items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setBasicsSectionOpen((open) => !open)}
-            className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-sm font-medium text-gray-500 tracking-wide"
-            aria-expanded={basicsSectionOpen}
-          >
+        <button
+          type="button"
+          onClick={() => setBasicsSectionOpen((open) => !open)}
+          className="flex h-8 min-h-8 w-full items-center justify-between gap-2 text-left"
+          aria-expanded={basicsSectionOpen}
+        >
+          <span className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
             {basicsSectionOpen ? (
               <ChevronDown className="h-4 w-4 shrink-0" />
             ) : (
               <ChevronRight className="h-4 w-4 shrink-0" />
             )}
             <Star className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-            <span>Basics</span>
-          </button>
-        </div>
+            Basics
+          </span>
+          <span className="shrink-0 text-xs text-green-600">
+            <span className="font-bold">
+              {basicProducts.filter((p) => productIdsInList.has(p.id) || addingIds.has(p.id)).length}
+            </span>
+            {' op je boodschappenlijst'}
+          </span>
+        </button>
         {basicsSectionOpen && (
           <div className="mt-2 border-t border-dashed border-gray-200 pt-4">
             {basicsAll.length > 0 ? (

@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
+import AppShell from '@/components/AppShell'
 
-export default function ProfielPage() {
-  redirect('/')
+export default function ProfielRoute() {
+  return <AppShell initialTab="profiel" />
 }

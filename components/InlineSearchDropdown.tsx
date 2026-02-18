@@ -1,6 +1,6 @@
 'use client'
 
-import { ListPlus, Database, CornerDownLeft } from 'lucide-react'
+import { ListPlus, Database, CornerDownLeft, ArrowUpLeft } from 'lucide-react'
 import { getQueryRemainderAsDescription } from '@/lib/search'
 
 interface SearchResult {
@@ -29,6 +29,7 @@ interface InlineSearchDropdownProps {
   /** Index of result highlighted by keyboard navigation (arrow keys) */
   highlightedIndex?: number
   onSelect: (result: SearchResult, query: string) => void
+  onFillIntoSearch: (result: SearchResult) => void
   onAddToListOnly: (productName: string, description: string | null) => void
   onAddToListAndSaveProduct: (productName: string, description: string | null) => void
 }
@@ -110,6 +111,7 @@ export default function InlineSearchDropdown({
   isSearching,
   highlightedIndex = 0,
   onSelect,
+  onFillIntoSearch,
   onAddToListOnly,
   onAddToListAndSaveProduct,
 }: InlineSearchDropdownProps) {
@@ -156,24 +158,35 @@ export default function InlineSearchDropdown({
           const effectiveDesc = description?.trim() || queryAnnotation?.trim() || remainderDesc || ''
 
           return (
-            <button
+            <div
               key={result.id}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onSelect(result, query)
-              }}
-              className={`w-full px-4 py-3 text-left transition-colors ${
+              className={`flex items-center gap-3 w-full px-4 py-3 transition-colors ${
                 index === highlightedIndex ? 'bg-blue-50 hover:bg-blue-100' : 'hover:bg-gray-50'
               }`}
             >
-              <div className="flex items-center gap-3 w-full">
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onSelect(result, query)
+                }}
+                className="flex flex-1 min-w-0 items-center gap-3 text-left"
+              >
                 <span className="text-lg shrink-0">{result.emoji}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-medium text-gray-900">
-                      {result.name}
-                    </p>
+                    <span className="inline-flex items-center gap-2">
+                      <p className="font-medium text-gray-900">
+                        {result.name}
+                      </p>
+                      {index === highlightedIndex && index === 0 && (
+                        <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
+                          <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
+                          Enter
+                        </span>
+                      )}
+                    </span>
                     {(effectiveDesc || result.description) && (
                       <span className="text-xs text-gray-500 whitespace-nowrap">
                         {effectiveDesc || result.description}
@@ -186,14 +199,20 @@ export default function InlineSearchDropdown({
                     </p>
                   )}
                 </div>
-                {index === highlightedIndex && (
-                  <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
-                    <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
-                    Enter
-                  </span>
-                )}
-              </div>
-            </button>
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onFillIntoSearch(result)
+                }}
+                className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                aria-label="Vul productnaam in"
+              >
+                <ArrowUpLeft className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </div>
           )
         })}
         </div>

@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState, useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, RotateCcw, Trash2 } from 'lucide-react'
 import { haptic } from '@/lib/haptics'
@@ -18,9 +17,10 @@ interface ProductDetailPageProps {
   productId: string
 }
 
-export default function ProductDetailPage({ productId }: ProductDetailPageProps) {
-  const router = useRouter()
+export default React.memo(function ProductDetailPage({ productId }: ProductDetailPageProps) {
   const queryClient = useQueryClient()
+  const goBack = () => window.history.back()
+
   const { data: product, isLoading: productLoading, error: productError } = useProduct(productId)
   const { data: purchaseHistory = [], isLoading: historyLoading } = useProductPurchaseHistory(productId)
 
@@ -230,10 +230,10 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     return formatDate(date.toISOString())
   }
 
-  const loading = productLoading || historyLoading
   const error = productError ? 'Er is een fout opgetreden' : null
 
-  if (loading && !product && purchaseHistory.length === 0) {
+  // Always gate on product being available — history may come from cache independently
+  if (productLoading && !product) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 pb-20">
         <div className="flex flex-col items-center gap-4">
@@ -244,13 +244,13 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     )
   }
 
-  if (error || (!productLoading && !product)) {
+  if (error || !product) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 pb-20">
         <div className="text-center">
           <p className="text-gray-500">{error || 'Product niet gevonden'}</p>
           <button
-            onClick={() => router.back()}
+            onClick={goBack}
             className="mt-4 text-blue-600 hover:text-blue-700"
           >
             Terug
@@ -260,7 +260,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     )
   }
 
-  const p = product!
+  const p = product
   const headerContent = (
     <div className="flex items-center gap-3">
       <span className="text-3xl">{p.emoji}</span>
@@ -278,7 +278,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
       title=""
       headerContent={headerContent}
       showBackButton
-      onBack={() => router.back()}
+      onBack={goBack}
       dataPwaMain="default"
       afterMain={
         <>
@@ -454,4 +454,4 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
         )}
     </PageLayout>
   )
-}
+})

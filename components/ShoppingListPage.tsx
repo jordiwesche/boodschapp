@@ -23,6 +23,7 @@ import {
   useAddItem,
   useClearChecked,
   queryKeys,
+  type ShoppingListItemData,
 } from '@/lib/hooks/use-shopping-list'
 import { useQueryClient } from '@tanstack/react-query'
 import { useScrollRestore } from '@/lib/hooks/use-scroll-restore'
@@ -281,22 +282,6 @@ function isAcceptableMatch(query: string, candidateName: string, score?: number 
   } else {
     result = overlap >= 0.85
   }
-  // #region agent log
-  if (query !== candidateName) {
-    fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        location: 'ShoppingListPage.tsx:isAcceptableMatch',
-        message: 'match check',
-        data: { query, candidateName, q, c, score, overlap, result },
-        timestamp: Date.now(),
-        sessionId: 'debug-session',
-        hypothesisId: 'H1,H3',
-      }),
-    }).catch(() => {})
-  }
-  // #endregion
   return result
 }
 
@@ -325,6 +310,8 @@ export default function ShoppingListPage() {
   const [showEmptyItemDropdown, setShowEmptyItemDropdown] = useState(false)
   const [emptyItemKey, setEmptyItemKey] = useState(0) // Key to force remount for focus
   const [shouldFocusEmptyItem, setShouldFocusEmptyItem] = useState(false)
+  const [showEmptyItemDescriptionField, setShowEmptyItemDescriptionField] = useState(false)
+  const emptyItemDescriptionInputRef = useRef<HTMLInputElement>(null)
   const searchAbortRef = useRef<AbortController | null>(null)
   const searchCacheRef = useRef<Map<string, SearchResult[]>>(new Map())
   const searchDebounceTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -450,6 +437,7 @@ export default function ShoppingListPage() {
     setIsEmptyItemOpen(false)
     setEmptyItemQuery('')
     setEmptyItemDescription('')
+    setShowEmptyItemDescriptionField(false)
     setEmptyItemSearchResults([])
     setShowEmptyItemDropdown(false)
     setIsSearchingEmptyItem(false)
@@ -549,6 +537,7 @@ export default function ShoppingListPage() {
 
     setEmptyItemQuery('')
     setEmptyItemDescription('')
+    setShowEmptyItemDescriptionField(false)
     setEmptyItemSearchResults([])
     setShowEmptyItemDropdown(false)
 
@@ -724,6 +713,7 @@ export default function ShoppingListPage() {
 
     setEmptyItemQuery('')
     setEmptyItemDescription('')
+    setShowEmptyItemDescriptionField(false)
     setEmptyItemSearchResults([])
     setShowEmptyItemDropdown(false)
 
@@ -738,28 +728,6 @@ export default function ShoppingListPage() {
         if (Array.isArray(searchData.products) && searchData.products.length > 0) {
           const matchedProduct = searchData.products[0]
           const ok = isAcceptableMatch(productName.trim(), matchedProduct.name, matchedProduct.score)
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              location: 'ShoppingListPage.tsx:handleEmptyItemAdd',
-              message: 'search match check',
-              data: {
-                productName: productName.trim(),
-                firstResultName: matchedProduct.name,
-                firstResultCategoryId: matchedProduct.category?.id ?? null,
-                firstResultScore: matchedProduct.score,
-                isAcceptableMatch: ok,
-                willUseMatch: ok,
-                willCreateNew: !ok,
-              },
-              timestamp: Date.now(),
-              sessionId: 'debug-session',
-              hypothesisId: 'H1,H3',
-            }),
-          }).catch(() => {})
-          // #endregion
           if (ok) {
             productId = matchedProduct.id
             categoryId = matchedProduct.category?.id || null
@@ -792,20 +760,6 @@ export default function ShoppingListPage() {
 
       // Fallback: get category if still missing (shouldn't happen, but safety check)
       if (!categoryId) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            location: 'ShoppingListPage.tsx:handleEmptyItemAdd fallback',
-            message: 'categoryId was null, using Overig fallback',
-            data: { productName: productName.trim(), productId },
-            timestamp: Date.now(),
-            sessionId: 'debug-session',
-            hypothesisId: 'H1',
-          }),
-        }).catch(() => {})
-        // #endregion
         const userResponse = await fetch('/api/user/current')
         if (userResponse.ok) {
           const userData = await userResponse.json()
@@ -910,6 +864,7 @@ export default function ShoppingListPage() {
     ])
     setEmptyItemQuery('')
     setEmptyItemDescription('')
+    setShowEmptyItemDescriptionField(false)
     setEmptyItemSearchResults([])
     setShowEmptyItemDropdown(false)
     try {
@@ -959,6 +914,15 @@ export default function ShoppingListPage() {
       setErrorMessage('Kon item niet toevoegen.')
       setTimeout(() => setErrorMessage(null), 5000)
     }
+  }
+
+  // Fill product name into search bar + show toelichting field (invulknop)
+  const handleFillIntoSearch = (result: SearchResult) => {
+    haptic('light')
+    setEmptyItemQuery(result.name)
+    setEmptyItemDescription('')
+    setShowEmptyItemDescriptionField(true)
+    // Focus happens in EmptyListItem via useEffect when showDescriptionField becomes true
   }
 
   // Handle search result select from dropdown: keep description from toelichting, result, parsed query, or query remainder (e.g. "ongebrande hazelnoten" → product Hazelnoten, description "ongebrande")
@@ -1011,6 +975,7 @@ export default function ShoppingListPage() {
 
     setEmptyItemQuery('')
     setEmptyItemDescription('')
+    setShowEmptyItemDescriptionField(false)
     setEmptyItemSearchResults([])
     setShowEmptyItemDropdown(false)
 
@@ -1440,34 +1405,6 @@ export default function ShoppingListPage() {
                     description={emptyItemDescription}
                     onDescriptionChange={setEmptyItemDescription}
                     onAdd={(name, desc) => {
-                      // #region agent log
-                      const firstResult = emptyItemSearchResults[0]
-                      const acceptable = firstResult
-                        ? isAcceptableMatch(name.trim(), firstResult.name, firstResult.score)
-                        : null
-                      fetch('http://127.0.0.1:7242/ingest/4e8afde7-201f-450c-b739-0857f7f9dd6a', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          location: 'ShoppingListPage.tsx:onAdd',
-                          message: 'onAdd branch',
-                          data: {
-                            query: name.trim(),
-                            resultsLength: emptyItemSearchResults.length,
-                            firstResultName: firstResult?.name,
-                            firstResultCategoryId: firstResult?.category?.id ?? null,
-                            isAcceptableMatch: acceptable,
-                            willCallListOnly:
-                              showEmptyItemDropdown &&
-                              emptyItemSearchResults.length === 0 &&
-                              name.trim().length >= 2,
-                          },
-                          timestamp: Date.now(),
-                          sessionId: 'debug-session',
-                          hypothesisId: 'H1,H3',
-                        }),
-                      }).catch(() => {})
-                      // #endregion
                       const trimmed = name.trim()
                       const matchLevel =
                         emptyItemSearchResults.length === 0
@@ -1487,6 +1424,8 @@ export default function ShoppingListPage() {
                     onFocusComplete={() => setShouldFocusEmptyItem(false)}
                     onProductKeyDown={handleEmptyItemProductKeyDown}
                     isSearching={isSearchingEmptyItem}
+                    showDescriptionField={showEmptyItemDescriptionField}
+                    descriptionInputRef={emptyItemDescriptionInputRef}
                   />
                   {/* Inline search dropdown */}
                   {showEmptyItemDropdown && emptyItemQuery.trim().length >= 2 && (
@@ -1504,6 +1443,7 @@ export default function ShoppingListPage() {
                       isSearching={isSearchingEmptyItem}
                       highlightedIndex={highlightedResultIndex}
                       onSelect={handleEmptyItemResultSelect}
+                      onFillIntoSearch={handleFillIntoSearch}
                       onAddToListOnly={handleAddToListOnly}
                       onAddToListAndSaveProduct={handleOpenSaveProductModal}
                     />
@@ -1515,6 +1455,7 @@ export default function ShoppingListPage() {
                 expectedProducts={expectedProducts}
                 basicProducts={basicProducts}
                 onCheck={handleCheck}
+                onMainListHeaderClick={handleOpenEmptyItem}
                 onUncheck={handleUncheck}
                 onDelete={handleDelete}
                 onUpdateDescription={handleUpdateDescription}
@@ -1551,14 +1492,19 @@ export default function ShoppingListPage() {
                 }}
                 onRemoveBasicFromMain={async (product) => {
                   const item = items.find((i) => i.product_id === product.id)
-                  if (item) {
-                    try {
-                      await deleteItemMutation.mutateAsync(item.id)
-                    } catch (error) {
-                      setErrorMessage('Kon item niet verwijderen. Probeer het opnieuw.')
-                      setTimeout(() => setErrorMessage(null), 5000)
-                      console.error('Error removing basic from list:', error)
-                    }
+                  if (!item) return
+                  if (item.id.startsWith('temp-')) {
+                    queryClient.setQueryData(queryKeys.shoppingListItems, (old: ShoppingListItemData[] = []) =>
+                      old.filter((i) => i.id !== item.id)
+                    )
+                    return
+                  }
+                  try {
+                    await deleteItemMutation.mutateAsync(item.id)
+                  } catch (error) {
+                    setErrorMessage('Kon item niet verwijderen. Probeer het opnieuw.')
+                    setTimeout(() => setErrorMessage(null), 5000)
+                    console.error('Error removing basic from list:', error)
                   }
                 }}
               >
