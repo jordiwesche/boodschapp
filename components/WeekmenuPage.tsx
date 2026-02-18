@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Link as LinkIcon, CornerDownLeft, X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Link as LinkIcon, CornerDownLeft, X, ExternalLink, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { haptic } from '@/lib/haptics'
 import { formatWeekRange } from '@/lib/format-day-label'
@@ -421,29 +421,48 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
     setWeekStart((ws) => addWeeks(ws, 1))
   }, [])
 
+  const goToCurrentWeek = useCallback(() => {
+    haptic('light')
+    setWeekStart(getCurrentWeekStart())
+  }, [])
+
   const weekNavSubtitle = (
-    <div className="flex h-8 items-start justify-between">
-      <span className="text-sm text-white/80 pb-0">
-        {formatWeekRange(weekStart)}
-      </span>
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={goPrevWeek}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/50 text-white/90 hover:bg-white/20 hover:text-white transition-colors"
+    <span className="text-sm text-white/80 pb-0">
+      {formatWeekRange(weekStart)}
+    </span>
+  )
+
+  const isOnCurrentWeek = isCurrentWeek(weekStart)
+  const weekNavButtons = (
+    <div className="flex items-center justify-center gap-4 mt-6">
+      <button
+        type="button"
+        onClick={goPrevWeek}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-gray-600 hover:bg-gray-100 transition-colors"
         aria-label="Vorige week"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <button
-          type="button"
-          onClick={goNextWeek}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/50 text-white/90 hover:bg-white/20 hover:text-white transition-colors"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <button
+        type="button"
+        onClick={goToCurrentWeek}
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors ${
+          isOnCurrentWeek
+            ? 'bg-gray-100 text-gray-400'
+            : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+        }`}
+        aria-label="Ga naar huidige week"
+      >
+        <CalendarDays className="h-5 w-5" />
+      </button>
+      <button
+        type="button"
+        onClick={goNextWeek}
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-gray-600 hover:bg-gray-100 transition-colors"
         aria-label="Volgende week"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      </div>
+      >
+        <ChevronRight className="h-5 w-5" />
+      </button>
     </div>
   )
 
@@ -453,6 +472,7 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
   if (loading) {
     return (
       <PageLayout title="Weekmenu" headerSubtitle={weekNavSubtitle} dataPwaMain="default">
+        <div>
         <div className="rounded-[16px] border border-gray-200 bg-white overflow-hidden">
           {DAY_LABELS.map((label, i) => (
             <React.Fragment key={i}>
@@ -470,6 +490,8 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
             </React.Fragment>
           ))}
         </div>
+        {weekNavButtons}
+        </div>
       </PageLayout>
     )
   }
@@ -478,13 +500,17 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
   if (orderedDays.length === 0) {
     return (
       <PageLayout title="Weekmenu" headerSubtitle={weekNavSubtitle} dataPwaMain="default">
-        <p className="text-gray-600">Geen weekmenu beschikbaar.</p>
+        <div>
+          <p className="text-gray-600">Geen weekmenu beschikbaar.</p>
+          {weekNavButtons}
+        </div>
       </PageLayout>
     )
   }
 
   return (
     <PageLayout title="Weekmenu" headerSubtitle={weekNavSubtitle} dataPwaMain="default">
+      <div>
       <div className="rounded-[16px] border border-gray-200 bg-white overflow-visible">
         {orderedDays.map((day, index) => {
           const label = DAY_LABELS[day.day_of_week] ?? `Dag ${day.day_of_week}`
@@ -701,6 +727,8 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
             </React.Fragment>
           )
         })}
+      </div>
+      {weekNavButtons}
       </div>
     </PageLayout>
   )

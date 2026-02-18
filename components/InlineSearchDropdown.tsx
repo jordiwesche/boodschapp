@@ -176,25 +176,23 @@ export default function InlineSearchDropdown({
                 <span className="text-lg shrink-0">{result.emoji}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-flex items-center gap-2">
-                      <p className="font-medium text-gray-900">
-                        {result.name}
-                      </p>
-                      {index === highlightedIndex && index === 0 && (
-                        <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
-                          <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
-                          Enter
-                        </span>
-                      )}
-                    </span>
+                    <p className="font-medium text-gray-900">
+                      {result.name}
+                    </p>
                     {(effectiveDesc || result.description) && (
-                      <span className="text-xs text-gray-500 whitespace-nowrap">
+                      <span className="text-[14px] text-gray-500 whitespace-nowrap">
                         {effectiveDesc || result.description}
+                      </span>
+                    )}
+                    {index === highlightedIndex && index === 0 && (
+                      <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
+                        <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
+                        Enter
                       </span>
                     )}
                   </div>
                   {result.category && (
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-gray-400 mt-0.5">
                       {result.category.name}
                     </p>
                   )}

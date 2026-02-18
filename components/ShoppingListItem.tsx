@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Check, Trash2, CornerDownLeft, Plus } from 'lucide-react'
+import { Check, Trash2, Plus, X } from 'lucide-react'
 import { haptic } from '@/lib/haptics'
 import Skeleton from './Skeleton'
 
@@ -220,7 +220,14 @@ export default function ShoppingListItem({
     setEditValue(item.description || '')
   }
 
+  const editAreaRef = useRef<HTMLDivElement>(null)
   const handleSaveDescription = () => {
+    onUpdateDescription(item.id, editValue.trim())
+    setIsEditingDescription(false)
+  }
+  const handleEditAreaBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    const next = e.relatedTarget as Node | null
+    if (next && editAreaRef.current?.contains(next)) return
     onUpdateDescription(item.id, editValue.trim())
     setIsEditingDescription(false)
   }
@@ -361,13 +368,12 @@ export default function ShoppingListItem({
         </div>
 
         {isEditingDescription && (
-          <div className="flex-1 flex items-center gap-2 min-w-0">
+          <div ref={editAreaRef} onBlur={handleEditAreaBlur} className="flex-1 flex items-center gap-2 min-w-0">
             <div className="h-5 w-px shrink-0 bg-gray-200 self-center" aria-hidden />
             <input
               type="text"
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
-              onBlur={handleSaveDescription}
               onKeyDown={handleKeyDown}
               placeholder="Toelichting"
               className="flex-1 min-w-0 rounded bg-transparent px-2 py-1 text-left text-gray-600 placeholder:text-gray-400 focus:outline-none placeholder:text-[14px]"
@@ -376,11 +382,14 @@ export default function ShoppingListItem({
             />
             <button
               type="button"
-              onClick={handleSaveDescription}
-              className="shrink-0 flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors"
-              aria-label="Opslaan"
+              onClick={() => {
+                haptic('light')
+                setEditValue('')
+              }}
+              className="shrink-0 flex h-8 w-8 items-center justify-center rounded p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              aria-label="Toelichting wissen"
             >
-              <CornerDownLeft className="h-4 w-4" strokeWidth={2} />
+              <X className="h-4 w-4" />
             </button>
           </div>
         )}
