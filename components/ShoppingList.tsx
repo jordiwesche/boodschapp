@@ -249,8 +249,8 @@ export default function ShoppingList({
     return nameA.localeCompare(nameB, 'nl')
   })
 
-  // Basics: show all, sort by category then name; track which are on the list
-  const productIdsInList = new Set(items.map((i) => i.product_id).filter(Boolean))
+  // Basics: show all, sort by category then name; track which are on the list (unchecked only – checked items don't count)
+  const productIdsInList = new Set(items.filter((i) => !i.is_checked).map((i) => i.product_id).filter(Boolean))
   const basicsAll = [...basicProducts].sort((a, b) => {
     const orderA = a.category?.display_order ?? 999
     const orderB = b.category?.display_order ?? 999
@@ -551,10 +551,8 @@ export default function ShoppingList({
             <Star className="h-3.5 w-3.5 shrink-0 text-gray-400" />
             Basics
           </span>
-          <span className="shrink-0 text-xs text-green-600">
-            <span className="font-bold">
-              {basicProducts.filter((p) => productIdsInList.has(p.id) || addingIds.has(p.id)).length}
-            </span>
+          <span className="shrink-0 text-sm text-green-600">
+            {basicProducts.filter((p) => productIdsInList.has(p.id) || addingIds.has(p.id)).length}
             {' op je boodschappenlijst'}
           </span>
         </button>
