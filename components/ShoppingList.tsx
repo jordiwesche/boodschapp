@@ -307,12 +307,12 @@ export default function ShoppingList({
               }}
               className="flex flex-1 min-w-0 items-center gap-1.5 text-left text-sm font-medium text-gray-500 tracking-wide hover:text-gray-700 transition-colors cursor-pointer -mx-2 px-2 py-1 rounded"
             >
-              <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+              <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-gray-500" />
               Lijst
             </button>
           ) : (
             <h2 className="flex flex-1 min-w-0 items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
-              <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+              <ShoppingCart className="h-3.5 w-3.5 shrink-0 text-gray-500" />
               Lijst
             </h2>
           )}
@@ -323,7 +323,7 @@ export default function ShoppingList({
                 haptic('light')
                 setDropdownOpen((v) => !v)
               }}
-              className="flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              className="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               aria-expanded={dropdownOpen}
               aria-label="Lijstopties"
             >
@@ -457,9 +457,9 @@ export default function ShoppingList({
               aria-expanded={checkedSectionOpen}
             >
               {checkedSectionOpen ? (
-                <ChevronDown className="h-4 w-4 shrink-0" />
+                <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
               ) : (
-                <ChevronRight className="h-4 w-4 shrink-0" />
+                <ChevronRight className="h-4 w-4 shrink-0 text-gray-500" />
               )}
               <span>Afgevinkt ({checkedItemsCount})</span>
             </button>
@@ -470,7 +470,7 @@ export default function ShoppingList({
                   haptic('light')
                   setShowClearCheckedModal(true)
                 }}
-                className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                 aria-label="Wis alle afgevinkte items"
               >
                 <Trash2 className="h-4 w-4" strokeWidth={2} />
@@ -500,7 +500,7 @@ export default function ShoppingList({
       {expectedProducts.length > 0 && (
         <div className={cardClass}>
           <h2 className="mb-2 flex h-8 min-h-8 items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
-            <Zap className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+            <Zap className="h-3.5 w-3.5 shrink-0 text-gray-500" />
             Verwacht
           </h2>
           <div className="border-t border-dashed border-gray-200 pt-4">
@@ -520,7 +520,7 @@ export default function ShoppingList({
                     <button
                       type="button"
                       onClick={() => !isAdding && handleAddWithAnimation(product.id, () => onAddExpectedToMain(product))}
-                      className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 transition-colors duration-300 ${isAdding ? 'bg-white text-green-800' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                      className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 transition-colors duration-300 ${isAdding ? 'bg-white text-green-800' : 'text-gray-500 hover:text-gray-600 hover:bg-gray-50'}`}
                       aria-label="Toevoegen aan hoofdlijst"
                       disabled={isAdding}
                     >
@@ -544,15 +544,17 @@ export default function ShoppingList({
         >
           <span className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-medium text-gray-500 tracking-wide">
             {basicsSectionOpen ? (
-              <ChevronDown className="h-4 w-4 shrink-0" />
+              <ChevronDown className="h-4 w-4 shrink-0 text-gray-500" />
             ) : (
-              <ChevronRight className="h-4 w-4 shrink-0" />
+              <ChevronRight className="h-4 w-4 shrink-0 text-gray-500" />
             )}
-            <Star className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+            <Star className="h-3.5 w-3.5 shrink-0 text-gray-500" />
             Basics
           </span>
           <span className="shrink-0 text-sm text-green-600">
-            {basicProducts.filter((p) => productIdsInList.has(p.id) || addingIds.has(p.id)).length}
+            <span className="font-bold">
+              {basicProducts.filter((p) => productIdsInList.has(p.id) || addingIds.has(p.id)).length}
+            </span>
             {' op je boodschappenlijst'}
           </span>
         </button>
@@ -586,7 +588,7 @@ export default function ShoppingList({
                         <button
                           type="button"
                           onClick={() => !isAdding && handleAddWithAnimation(product.id, () => onAddBasicToMain!(product))}
-                          className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 transition-colors duration-300 ${isAdding ? 'bg-white text-green-800' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                          className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 transition-colors duration-300 ${isAdding ? 'bg-white text-green-800' : 'text-gray-500 hover:text-gray-600 hover:bg-gray-50'}`}
                           aria-label="Toevoegen aan hoofdlijst"
                           disabled={isAdding}
                         >
@@ -605,7 +607,7 @@ export default function ShoppingList({
                   Producten
                 </Link>
                 {' '}en markeer producten als Basic{' '}
-                <Star className="inline-block h-4 w-4 shrink-0 align-middle text-gray-400" />
+                <Star className="inline-block h-4 w-4 shrink-0 align-middle text-gray-500" />
                 {' '}om ze altijd snel terug te vinden.
               </p>
             )}
