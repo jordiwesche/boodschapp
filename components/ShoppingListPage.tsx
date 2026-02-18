@@ -1406,6 +1406,7 @@ export default function ShoppingListPage() {
                     onDescriptionChange={setEmptyItemDescription}
                     onAdd={(name, desc) => {
                       const trimmed = name.trim()
+                      const firstResult = emptyItemSearchResults[0]
                       const matchLevel =
                         emptyItemSearchResults.length === 0
                           ? 3
