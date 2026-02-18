@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { saveSessionToCache } from '@/lib/session-persistence'
+import { queryClient } from '@/lib/query-client'
+import { householdQueryKey } from '@/lib/hooks/use-household'
 
 function PinVerification() {
   const router = useRouter()
@@ -67,8 +69,10 @@ function PinVerification() {
       const data = await response.json()
 
       if (response.ok) {
-        // Backup voor Safari PWA: cookies kunnen verdwijnen bij sluiten app
         await saveSessionToCache(data.user.id)
+        if (data.user.household_id) {
+          queryClient.setQueryData(householdQueryKey, data.user.household_id)
+        }
         router.push('/')
         router.refresh()
       } else {

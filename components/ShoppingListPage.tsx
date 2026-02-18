@@ -25,6 +25,7 @@ import {
   queryKeys,
   type ShoppingListItemData,
 } from '@/lib/hooks/use-shopping-list'
+import { useHouseholdId } from '@/lib/hooks/use-household'
 import { useQueryClient } from '@tanstack/react-query'
 import { useScrollRestore } from '@/lib/hooks/use-scroll-restore'
 import { haptic } from '@/lib/haptics'
@@ -290,7 +291,9 @@ export default function ShoppingListPage() {
   const { data: items = [], isLoading: isLoadingItems, refetch: refetchItems } = useShoppingListItems()
   const { data: expectedProducts = [] } = useExpectedProducts()
   const { data: basicProducts = [] } = useBasicProducts()
+  const { householdId } = useHouseholdId()
   const queryClient = useQueryClient()
+  const listKey = [...queryKeys.shoppingListItems, householdId]
 
   // Mutations
   const checkItemMutation = useCheckItem()
@@ -533,7 +536,7 @@ export default function ShoppingListPage() {
       checked_at: null,
       created_at: new Date().toISOString(),
     }
-    queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => [optimisticItem, ...old])
+    queryClient.setQueryData(listKey, (old: any[] = []) => [optimisticItem, ...old])
 
     setEmptyItemQuery('')
     setEmptyItemDescription('')
@@ -570,13 +573,13 @@ export default function ShoppingListPage() {
         }),
       })
       if (!addRes.ok) {
-        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+        queryClient.setQueryData(listKey, (old: any[] = []) =>
           old.filter((item: { id: string }) => item.id !== tempId)
         )
         throw new Error('Kon item niet aan de lijst toevoegen')
       }
       const addData = await addRes.json()
-      queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => {
+      queryClient.setQueryData(listKey, (old: any[] = []) => {
         const filtered = old.filter((item: { id: string }) => item.id !== tempId)
         return [addData.item, ...filtered]
       })
@@ -585,7 +588,7 @@ export default function ShoppingListPage() {
       setShouldFocusEmptyItem(true)
       setEmptyItemKey((prev) => prev + 1)
     } catch (err) {
-      queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+      queryClient.setQueryData(listKey, (old: any[] = []) =>
         old.filter((item: { id: string }) => item.id !== tempId)
       )
       setSaveProductModalError(err instanceof Error ? err.message : 'Er is een fout opgetreden')
@@ -706,7 +709,7 @@ export default function ShoppingListPage() {
       created_at: new Date().toISOString(),
     }
 
-    queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => [
+    queryClient.setQueryData(listKey, (old: any[] = []) => [
       optimisticItem,
       ...old,
     ])
@@ -778,7 +781,7 @@ export default function ShoppingListPage() {
       // Ensure we have a category_id before proceeding
       if (!categoryId) {
         // Remove optimistic item on error
-        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+        queryClient.setQueryData(listKey, (old: any[] = []) =>
           old.filter((item) => item.id !== tempId)
         )
         setErrorMessage('Kon categorie niet vinden. Probeer het opnieuw.')
@@ -805,7 +808,7 @@ export default function ShoppingListPage() {
         const newItem = addData.item
 
         // Replace optimistic item with real item
-        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => {
+        queryClient.setQueryData(listKey, (old: any[] = []) => {
           const filtered = old.filter((item) => item.id !== tempId)
           return [newItem, ...filtered]
         })
@@ -816,7 +819,7 @@ export default function ShoppingListPage() {
         setEmptyItemKey((prev) => prev + 1)
       } else {
         // Error: remove optimistic item
-        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+        queryClient.setQueryData(listKey, (old: any[] = []) =>
           old.filter((item) => item.id !== tempId)
         )
         setErrorMessage('Kon product niet toevoegen. Probeer het opnieuw.')
@@ -825,7 +828,7 @@ export default function ShoppingListPage() {
     } catch (error) {
       console.error('Error adding product:', error)
       // Remove optimistic item on error
-      queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+      queryClient.setQueryData(listKey, (old: any[] = []) =>
         old.filter((item) => item.id !== tempId)
       )
       setErrorMessage('Kon product niet toevoegen. Probeer het opnieuw.')
@@ -858,7 +861,7 @@ export default function ShoppingListPage() {
       checked_at: null,
       created_at: new Date().toISOString(),
     }
-    queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => [
+    queryClient.setQueryData(listKey, (old: any[] = []) => [
       optimisticItem,
       ...old,
     ])
@@ -892,7 +895,7 @@ export default function ShoppingListPage() {
       })
       if (addResponse.ok) {
         const addData = await addResponse.json()
-        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => {
+        queryClient.setQueryData(listKey, (old: any[] = []) => {
           const filtered = old.filter((item) => item.id !== tempId)
           return [addData.item, ...filtered]
         })
@@ -900,7 +903,7 @@ export default function ShoppingListPage() {
         setShouldFocusEmptyItem(true)
         setEmptyItemKey((prev) => prev + 1)
       } else {
-        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+        queryClient.setQueryData(listKey, (old: any[] = []) =>
           old.filter((item) => item.id !== tempId)
         )
         setErrorMessage('Kon item niet toevoegen.')
@@ -908,7 +911,7 @@ export default function ShoppingListPage() {
       }
     } catch (error) {
       console.error('Error adding list-only item:', error)
-      queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+      queryClient.setQueryData(listKey, (old: any[] = []) =>
         old.filter((item) => item.id !== tempId)
       )
       setErrorMessage('Kon item niet toevoegen.')
@@ -968,7 +971,7 @@ export default function ShoppingListPage() {
       created_at: new Date().toISOString(),
     }
 
-    queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => [
+    queryClient.setQueryData(listKey, (old: any[] = []) => [
       optimisticItem,
       ...old,
     ])
@@ -996,7 +999,7 @@ export default function ShoppingListPage() {
       if (response.ok) {
         const data = await response.json()
         // Replace optimistic item
-        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) => {
+        queryClient.setQueryData(listKey, (old: any[] = []) => {
           const filtered = old.filter((item) => item.id !== tempId)
           return [data.item, ...filtered]
         })
@@ -1006,7 +1009,7 @@ export default function ShoppingListPage() {
         setEmptyItemKey((prev) => prev + 1)
       } else {
         // Remove optimistic item on error
-        queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+        queryClient.setQueryData(listKey, (old: any[] = []) =>
           old.filter((item) => item.id !== tempId)
         )
         setErrorMessage('Kon product niet toevoegen')
@@ -1014,7 +1017,7 @@ export default function ShoppingListPage() {
       }
     } catch (error) {
       console.error('Error adding product:', error)
-      queryClient.setQueryData(queryKeys.shoppingListItems, (old: any[] = []) =>
+      queryClient.setQueryData(listKey, (old: any[] = []) =>
         old.filter((item) => item.id !== tempId)
       )
       setErrorMessage('Kon product niet toevoegen')
@@ -1495,7 +1498,7 @@ export default function ShoppingListPage() {
                   const item = items.find((i) => i.product_id === product.id)
                   if (!item) return
                   if (item.id.startsWith('temp-')) {
-                    queryClient.setQueryData(queryKeys.shoppingListItems, (old: ShoppingListItemData[] = []) =>
+                    queryClient.setQueryData(listKey, (old: ShoppingListItemData[] = []) =>
                       old.filter((i) => i.id !== item.id)
                     )
                     return

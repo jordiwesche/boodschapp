@@ -2,6 +2,8 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { queryClient } from '@/lib/query-client'
+import { householdQueryKey } from '@/lib/hooks/use-household'
 
 function OnboardingForm() {
   const router = useRouter()
@@ -61,6 +63,9 @@ function OnboardingForm() {
       if (response.ok) {
         const { saveSessionToCache } = await import('@/lib/session-persistence')
         await saveSessionToCache(data.user.id)
+        if (data.user.household_id) {
+          queryClient.setQueryData(householdQueryKey, data.user.household_id)
+        }
         router.push('/')
         router.refresh()
       } else {
