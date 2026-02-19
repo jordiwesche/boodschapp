@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     if (!hasZsm || !hasLater) {
       const toInsert: { household_id: string; name: string; color: string; type: string; slug: string; display_order: number }[] = []
-      if (!hasZsm) toInsert.push({ household_id: user.household_id, name: 'z.s.m.', color: 'purple', type: 'smart', slug: 'zsm', display_order: 0 })
+      if (!hasZsm) toInsert.push({ household_id: user.household_id, name: 'z.s.m.', color: 'amber', type: 'smart', slug: 'zsm', display_order: 0 })
       if (!hasLater) toInsert.push({ household_id: user.household_id, name: 'later', color: 'gray', type: 'smart', slug: 'later', display_order: 1 })
 
       const { error: insertError } = await supabase.from('labels').insert(toInsert)

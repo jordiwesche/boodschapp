@@ -25,6 +25,15 @@ function getLabelClasses(label: Label | ItemLabel, isSelected: boolean) {
   return c.light
 }
 
+const LABEL_ICON_COLORS: Record<string, { light: string; filled: string }> = {
+  purple: { light: 'text-purple-700', filled: 'text-purple-600' },
+  gray: { light: 'text-gray-500', filled: 'text-gray-600' },
+  blue: { light: 'text-blue-700', filled: 'text-blue-600' },
+  green: { light: 'text-green-700', filled: 'text-green-600' },
+  amber: { light: 'text-amber-700', filled: 'text-amber-600' },
+  red: { light: 'text-red-700', filled: 'text-red-600' },
+}
+
 interface LabelDropdownProps {
   itemId: string
   itemLabels: ItemLabel[]
@@ -392,7 +401,7 @@ export default function LabelDropdown({
                                 setEditLabelColor(CUSTOM_COLORS.includes(label.color as (typeof CUSTOM_COLORS)[number]) ? label.color : 'blue')
                               }
                             }}
-                            className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/80 text-blue-600"
+                            className={`ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/80 ${(LABEL_ICON_COLORS[label.color] || LABEL_ICON_COLORS.gray)[isSelected ? 'filled' : 'light']}`}
                           >
                             <Pencil className="h-4 w-4" />
                           </span>

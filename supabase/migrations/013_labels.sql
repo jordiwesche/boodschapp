@@ -51,7 +51,7 @@ END $$;
 
 -- 6. Seed smart labels for all existing households
 INSERT INTO labels (household_id, name, color, type, slug, display_order)
-SELECT h.id, 'z.s.m.', 'purple', 'smart', 'zsm', 0
+SELECT h.id, 'z.s.m.', 'amber', 'smart', 'zsm', 0
 FROM households h
 WHERE NOT EXISTS (SELECT 1 FROM labels l WHERE l.household_id = h.id AND l.slug = 'zsm');
 
