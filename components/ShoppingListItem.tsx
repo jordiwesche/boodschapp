@@ -253,6 +253,7 @@ export default function ShoppingListItem({
   const editAreaRef = useRef<HTMLDivElement>(null)
   const descriptionInputRef = useRef<HTMLInputElement>(null)
   const clearButtonTouchedRef = useRef(false)
+  const labelButtonTouchedRef = useRef(false)
   const handleSaveDescription = () => {
     onUpdateDescription(item.id, editValue.trim())
     setIsEditingDescription(false)
@@ -260,9 +261,13 @@ export default function ShoppingListItem({
   const handleEditAreaBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     const next = e.relatedTarget as Node | null
     if (next && (editAreaRef.current?.contains(next) || labelDropdownRef.current?.contains(next))) return
-    // Mobile: relatedTarget is vaak null; fallback op flag van pointerdown op kruisje
+    // Mobile: relatedTarget is vaak null; fallback op flag van pointerdown op kruisje/labelknop
     if (clearButtonTouchedRef.current) {
       clearButtonTouchedRef.current = false
+      return
+    }
+    if (labelButtonTouchedRef.current) {
+      labelButtonTouchedRef.current = false
       return
     }
     onUpdateDescription(item.id, editValue.trim())
@@ -453,6 +458,8 @@ export default function ShoppingListItem({
             <button
               ref={labelButtonRef}
               type="button"
+              onPointerDown={() => { labelButtonTouchedRef.current = true }}
+              onTouchStart={() => { labelButtonTouchedRef.current = true }}
               onClick={(e) => {
                 e.stopPropagation()
                 haptic('light')
