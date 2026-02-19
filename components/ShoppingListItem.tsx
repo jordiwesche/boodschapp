@@ -221,6 +221,7 @@ export default function ShoppingListItem({
   }
 
   const editAreaRef = useRef<HTMLDivElement>(null)
+  const clearButtonTouchedRef = useRef(false)
   const handleSaveDescription = () => {
     onUpdateDescription(item.id, editValue.trim())
     setIsEditingDescription(false)
@@ -228,6 +229,11 @@ export default function ShoppingListItem({
   const handleEditAreaBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     const next = e.relatedTarget as Node | null
     if (next && editAreaRef.current?.contains(next)) return
+    // Mobile: relatedTarget is vaak null; fallback op flag van pointerdown op kruisje
+    if (clearButtonTouchedRef.current) {
+      clearButtonTouchedRef.current = false
+      return
+    }
     onUpdateDescription(item.id, editValue.trim())
     setIsEditingDescription(false)
   }
@@ -311,7 +317,7 @@ export default function ShoppingListItem({
                     setEditValue(item.description || '')
                   }
                 }}
-                className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                className="flex flex-nowrap items-center gap-2 min-w-0 flex-1 cursor-pointer"
                 aria-label="Toelichting bewerken"
               >
                 {item.product_name != null ? (
@@ -326,7 +332,7 @@ export default function ShoppingListItem({
                   <Skeleton variant="text" className="h-5 w-24 shrink-0" animation="pulse" />
                 )}
                 <span
-                  className={`text-sm flex-1 min-w-0 min-h-[1.25rem] flex items-center gap-1.5 ${item.description ? 'text-gray-500' : ''}`}
+                  className={`text-sm flex-1 min-w-0 min-h-[1.25rem] flex flex-nowrap items-center gap-1.5 overflow-hidden ${item.description ? 'text-gray-500' : ''}`}
                 >
                   {(() => {
                     const label = detectDescriptionLabel(item.description)
@@ -382,6 +388,9 @@ export default function ShoppingListItem({
             />
             <button
               type="button"
+              onPointerDown={() => {
+                clearButtonTouchedRef.current = true
+              }}
               onClick={() => {
                 haptic('light')
                 setEditValue('')
