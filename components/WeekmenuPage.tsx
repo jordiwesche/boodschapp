@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Link as LinkIcon, CornerDownLeft, X, ExternalLink, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
+import { Link as LinkIcon, X, ExternalLink, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { haptic } from '@/lib/haptics'
 import { formatWeekRange } from '@/lib/format-day-label'
@@ -448,8 +448,8 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
         onClick={goToCurrentWeek}
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors ${
           isOnCurrentWeek
-            ? 'bg-gray-100 text-gray-400'
-            : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+            ? 'bg-white text-gray-300'
+            : 'bg-white text-blue-600 hover:bg-gray-100'
         }`}
         aria-label="Ga naar huidige week"
       >
@@ -528,7 +528,7 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
               {index > 0 && (
                 <div className="mx-4 border-t border-gray-200" />
               )}
-              <div className={`py-4 pl-4 ${isEditing ? 'pr-1' : 'pr-4'}`}>
+              <div className="py-4 px-4">
               <div className="flex flex-wrap items-center gap-4">
               <span
                 className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm leading-none ${
@@ -607,15 +607,6 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
                           <X className="h-4 w-4" />
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => handleSubmit(day.day_of_week)}
-                        disabled={isPatching}
-                        className="shrink-0 ml-auto flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
-                        aria-label="Opslaan"
-                      >
-                        <CornerDownLeft className="h-4 w-4" strokeWidth={2} />
-                      </button>
                     </div>
                     <div
                       ref={(el) => {
@@ -633,10 +624,10 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
                           e.preventDefault()
                           openUrlDropdown(day.day_of_week)
                         }}
-                        className={`flex h-9 w-9 items-center justify-center rounded-full ${
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white transition-colors ${
                           hasLink
-                            ? 'bg-gray-100 text-blue-600 hover:bg-blue-50'
-                            : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600'
+                            ? 'text-blue-600 hover:bg-gray-50 hover:border-gray-300'
+                            : 'text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-600'
                         }`}
                         aria-label={hasLink ? 'URL beheren' : 'URL toevoegen'}
                       >

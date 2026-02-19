@@ -2,10 +2,11 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { haptic } from '@/lib/haptics'
-import { Search } from 'lucide-react'
+import { Search, List, TrendingUp, Calendar, ChevronDown, ChevronUp } from 'lucide-react'
 import ProductCard from './ProductCard'
 import ProductForm from './ProductForm'
 import { formatDayLabel, daySortKey } from '@/lib/format-day-label'
+import { useQuery } from '@tanstack/react-query'
 
 interface Category {
   id: string
@@ -36,14 +37,27 @@ interface ProductListProps {
   products: Product[]
   categories: Category[]
   onRefresh: () => void
+  error?: string
 }
 
-type SortOption = 'alfabetisch' | 'koopfrequentie' | 'laatst_gekocht' | 'categorie'
+type ViewType = 'alle' | 'vaak' | 'laatst'
 
-export default function ProductList({ products, categories, onRefresh }: ProductListProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>('')
+export default function ProductList({ products, categories, onRefresh, error: errorProp }: ProductListProps) {
+  const { data: purchaseHistoryData } = useQuery({
+    queryKey: ['purchase-history-laatst-gekocht'],
+    queryFn: async () => {
+      const res = await fetch('/api/purchase-history/laatst-gekocht')
+      if (!res.ok) throw new Error('Failed to fetch')
+      const data = await res.json()
+      return data.items as { id: string; product_name: string; emoji: string; purchased_at: string }[]
+    },
+    staleTime: 2 * 60 * 1000,
+  })
+  const purchaseHistoryItems = purchaseHistoryData ?? []
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortBy, setSortBy] = useState<SortOption>('categorie')
+  const [view, setView] = useState<ViewType>('alle')
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set())
+  const [hasInitialExpanded, setHasInitialExpanded] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null)
@@ -70,27 +84,27 @@ export default function ProductList({ products, categories, onRefresh }: Product
     })
   }, [products])
 
-  const filteredByCategory = selectedCategory
-    ? products.filter((p) => p.category_id === selectedCategory)
-    : products
-
   const filteredProducts = searchQuery.trim()
-    ? filteredByCategory.filter((p) => {
+    ? products.filter((p) => {
         const q = searchQuery.toLowerCase().trim()
         const name = (p.name || '').toLowerCase()
         const desc = (p.description || '').toLowerCase()
         return name.includes(q) || desc.includes(q)
       })
-    : filteredByCategory
+    : products
+
+  const filteredPurchaseHistory = useMemo(() => {
+    if (!searchQuery.trim()) return purchaseHistoryItems
+    const q = searchQuery.toLowerCase().trim()
+    return purchaseHistoryItems.filter(
+      (i) => (i.product_name || '').toLowerCase().includes(q)
+    )
+  }, [purchaseHistoryItems, searchQuery])
 
   type Section = { label: string; products: Product[] }
 
   const sections = useMemo((): Section[] => {
-    if (sortBy === 'alfabetisch') {
-      const sorted = [...filteredProducts].sort((a, b) => a.name.localeCompare(b.name, 'nl'))
-      return [{ label: '', products: sorted }]
-    }
-    if (sortBy === 'koopfrequentie') {
+    if (view === 'vaak') {
       const sorted = [...filteredProducts].sort((a, b) => {
         const cA = a.purchase_count ?? 0
         const cB = b.purchase_count ?? 0
@@ -99,32 +113,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
       })
       return [{ label: '', products: sorted }]
     }
-    if (sortBy === 'laatst_gekocht') {
-      const withDate: Product[] = []
-      const noDate: Product[] = []
-      for (const p of filteredProducts) {
-        if (p.last_purchased_at) withDate.push(p)
-        else noDate.push(p)
-      }
-      withDate.sort((a, b) => {
-        const tA = new Date(a.last_purchased_at!).getTime()
-        const tB = new Date(b.last_purchased_at!).getTime()
-        return tB - tA
-      })
-      const byDay = new Map<string, Product[]>()
-      for (const p of withDate) {
-        const label = formatDayLabel(p.last_purchased_at!)
-        if (!byDay.has(label)) byDay.set(label, [])
-        byDay.get(label)!.push(p)
-      }
-      const dayLabels = Array.from(byDay.keys()).sort(
-        (a, b) => daySortKey(byDay.get(a)![0].last_purchased_at!).localeCompare(daySortKey(byDay.get(b)![0].last_purchased_at!))
-      )
-      const result: Section[] = dayLabels.map((label) => ({ label, products: byDay.get(label)! }))
-      if (noDate.length) result.push({ label: '', products: noDate.sort((a, b) => a.name.localeCompare(b.name, 'nl')) })
-      return result
-    }
-    if (sortBy === 'categorie') {
+    if (view === 'alle') {
       const byCat = filteredProducts.reduce((acc, product) => {
         const categoryId = product.category_id
         const category = categories.find((c) => c.id === categoryId)
@@ -141,8 +130,38 @@ export default function ProductList({ products, categories, onRefresh }: Product
           products: g.products.sort((a, b) => a.name.localeCompare(b.name, 'nl')),
         }))
     }
-    return [{ label: '', products: filteredProducts }]
-  }, [sortBy, filteredProducts, categories])
+    return []
+  }, [view, filteredProducts, categories])
+
+  type DateSection = { label: string; sortKey: string; items: { id: string; product_name: string; emoji: string }[] }
+  const dateSections = useMemo((): DateSection[] => {
+    if (view !== 'laatst') return []
+    const byDay = new Map<string, { items: { id: string; product_name: string; emoji: string }[]; purchasedAt: string }>()
+    for (const item of filteredPurchaseHistory) {
+      const label = formatDayLabel(item.purchased_at)
+      if (!byDay.has(label)) byDay.set(label, { items: [], purchasedAt: item.purchased_at })
+      byDay.get(label)!.items.push({ id: item.id, product_name: item.product_name, emoji: item.emoji })
+    }
+    return Array.from(byDay.entries())
+      .sort(([, a], [, b]) => daySortKey(a.purchasedAt).localeCompare(daySortKey(b.purchasedAt)))
+      .map(([label, { items, purchasedAt }]) => ({
+        label,
+        sortKey: daySortKey(purchasedAt),
+        items,
+      }))
+  }, [view, filteredPurchaseHistory])
+
+  useEffect(() => {
+    if (view === 'laatst' && dateSections.length > 0 && !hasInitialExpanded) {
+      setExpandedDates((prev) => {
+        const next = new Set(prev)
+        next.add(dateSections[0].label)
+        return next
+      })
+      setHasInitialExpanded(true)
+    }
+    if (view !== 'laatst') setHasInitialExpanded(false)
+  }, [view, dateSections, hasInitialExpanded])
 
   const handleAdd = () => {
     setEditingProduct(null)
@@ -317,42 +336,41 @@ export default function ProductList({ products, categories, onRefresh }: Product
   return (
     <>
     <div className="space-y-4 pb-20">
-      {error && (
-        <div className="rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>
+      {(errorProp || error) && (
+        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800">{errorProp || error}</div>
       )}
       {success && (
-        <div className="rounded-md bg-green-50 p-3 text-sm text-green-800">{success}</div>
+        <div className="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-800">{success}</div>
       )}
 
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-row gap-4">
-          <select
-            id="categoryFilter"
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            aria-label="Filter op categorie"
-            className="min-w-0 flex-1 rounded-md border-gray-300 bg-white pl-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:min-w-[140px]"
+      {/* View tabs - icoon boven tekst, in witte wrapper */}
+      <div className="flex gap-2">
+        {[
+          { id: 'alle' as const, label: 'Alle producten', icon: List },
+          { id: 'vaak' as const, label: 'Vaak gekocht', icon: TrendingUp },
+          { id: 'laatst' as const, label: 'Laatst gekocht', icon: Calendar },
+        ].map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => {
+              haptic('light')
+              setView(id)
+            }}
+            className={`flex flex-1 flex-col items-center justify-center gap-1 rounded-lg border-2 px-2 py-2.5 text-sm font-medium transition-colors ${
+              view === id
+                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+            aria-pressed={view === id}
           >
-            <option value="" className="text-gray-500">Alle categorieën</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-          <select
-            id="sortBy"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            aria-label="Sorteren"
-            className="min-w-0 flex-1 rounded-md border-gray-300 bg-white pl-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:min-w-[140px]"
-          >
-            <option value="categorie">Categorie</option>
-            <option value="alfabetisch">Alfabetisch</option>
-            <option value="koopfrequentie">Vaak gekocht</option>
-            <option value="laatst_gekocht">Laatst gekocht</option>
-          </select>
-        </div>
+            <Icon className="h-4 w-4 shrink-0" />
+            <span className="truncate text-center text-xs leading-tight">{label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-col gap-6">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
@@ -361,19 +379,77 @@ export default function ProductList({ products, categories, onRefresh }: Product
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Product zoeken..."
-            className="block w-full rounded-md border-[#dbdee3] bg-[#eceef1] py-2 pl-10 pr-3 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:bg-white focus:ring-blue-500"
+            className="block w-full rounded-[40px] border-[#dbdee3] bg-[#eceef1] py-2 pl-10 pr-3 text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:bg-white focus:ring-blue-500"
           />
         </div>
-      </div>
 
-      {filteredProducts.length === 0 ? (
+      {view === 'laatst' ? (
+        dateSections.length === 0 ? (
+          <div className="rounded-[16px] bg-white p-8 text-center shadow">
+            <p className="text-gray-600">
+              {searchQuery.trim()
+                ? 'Geen aankopen gevonden voor je zoekopdracht'
+                : 'Nog geen aankopen. Vink producten op je lijst aan om ze hier te zien.'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {dateSections.map((section) => {
+              const isExpanded = expandedDates.has(section.label)
+              return (
+                <div
+                  key={section.label}
+                  className="rounded-lg border border-gray-200 bg-white overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      haptic('light')
+                      setExpandedDates((prev) => {
+                        const next = new Set(prev)
+                        if (next.has(section.label)) next.delete(section.label)
+                        else next.add(section.label)
+                        return next
+                      })
+                    }}
+                    className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-gray-50"
+                  >
+                    <span>{section.label}</span>
+                    <span className="flex shrink-0 items-center gap-4 text-gray-400">
+                      {section.items.length} producten
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4 shrink-0 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 shrink-0 text-gray-400" />
+                      )}
+                    </span>
+                  </button>
+                  {isExpanded && (
+                    <div className="border-t border-gray-100 px-4 py-3">
+                      <ul className="space-y-2">
+                        {section.items.map((item) => (
+                          <li
+                            key={item.id}
+                            className="flex items-center gap-2 text-sm text-gray-700"
+                          >
+                            <span className="text-lg shrink-0">{item.emoji}</span>
+                            <span>{item.product_name || 'Onbekend product'}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )
+      ) : filteredProducts.length === 0 ? (
         <div className="rounded-[16px] bg-white p-8 text-center shadow">
           <p className="text-gray-600">
             {searchQuery.trim()
               ? 'Geen producten gevonden voor je zoekopdracht'
-              : selectedCategory
-                ? 'Geen producten in deze categorie'
-                : 'Nog geen producten. Voeg je eerste product toe!'}
+              : 'Nog geen producten. Voeg je eerste product toe!'}
           </p>
         </div>
       ) : (
@@ -396,7 +472,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
                       onEdit={handleEdit}
                       onToggleBasic={handleToggleBasic}
                       onDelete={handleDeleteFromList}
-                      showPurchaseInfo={sortBy === 'koopfrequentie'}
+                      showPurchaseInfo={view === 'vaak'}
                     />
                   )
                 })}
@@ -405,6 +481,7 @@ export default function ProductList({ products, categories, onRefresh }: Product
           ))}
         </div>
       )}
+      </div>
 
       {showDeleteConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

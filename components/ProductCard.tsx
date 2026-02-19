@@ -82,7 +82,7 @@ export default function ProductCard({ product, onEdit, onToggleBasic, showPurcha
                 </div>
                 {/* Purchase history info - alleen bij sortering op Koopfrequentie */}
                 {showPurchaseInfo && !loadingHistory && purchaseCount > 0 && (
-                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <div className="flex items-center gap-1.5 text-sm text-gray-500">
                     <ShoppingCart className="h-3 w-3 shrink-0" />
                     <span>
                       {purchaseCount}x

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Search, WifiOff } from 'lucide-react'
 import FloatingAddButton from './FloatingAddButton'
@@ -321,6 +321,8 @@ export default function ShoppingListPage() {
   const emptyItemContainerRef = useRef<HTMLDivElement>(null)
   const emptyItemJustClosedRef = useRef(false)
   const emptyItemJustAddedRef = useRef(false)
+  const [isClosingEmptyItem, setIsClosingEmptyItem] = useState(false)
+  const [emptyItemEntering, setEmptyItemEntering] = useState(false)
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<{ userName: string; updatedAt: string } | null>(null)
@@ -416,6 +418,7 @@ export default function ShoppingListPage() {
   // Empty item handlers
   const handleOpenEmptyItem = () => {
     setIsEmptyItemOpen(true)
+    setEmptyItemEntering(true)
     setEmptyItemQuery('')
     setEmptyItemSearchResults([])
     setShowEmptyItemDropdown(false)
@@ -436,8 +439,9 @@ export default function ShoppingListPage() {
     setHighlightedResultIndex(0)
   }, [emptyItemSearchResults])
 
-  const handleCloseEmptyItem = () => {
+  const performCloseEmptyItem = useCallback(() => {
     setIsEmptyItemOpen(false)
+    setIsClosingEmptyItem(false)
     setEmptyItemQuery('')
     setEmptyItemDescription('')
     setShowEmptyItemDescriptionField(false)
@@ -452,7 +456,24 @@ export default function ShoppingListPage() {
       clearTimeout(searchDebounceTimerRef.current)
       searchDebounceTimerRef.current = null
     }
+  }, [])
+
+  const handleCloseEmptyItem = () => {
+    setIsClosingEmptyItem(true)
   }
+
+  // Opening animation: start at opacity 0, then transition to 1
+  useEffect(() => {
+    if (isEmptyItemOpen && !isClosingEmptyItem) {
+      setEmptyItemEntering(true)
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setEmptyItemEntering(false))
+      })
+      return () => cancelAnimationFrame(id)
+    } else {
+      setEmptyItemEntering(false)
+    }
+  }, [isEmptyItemOpen, isClosingEmptyItem])
 
   // Open Save Product modal (actie 3) – pre-fill name, category, emoji; parse e.g. "4 appels" → name "appels", description "4"
   const handleOpenSaveProductModal = async (productName: string, description: string | null) => {
@@ -928,6 +949,12 @@ export default function ShoppingListPage() {
     // Focus happens in EmptyListItem via useEffect when showDescriptionField becomes true
   }
 
+  // No match: show toelichting field for query (invulknop)
+  const handleFillForQuery = () => {
+    haptic('light')
+    setShowEmptyItemDescriptionField(true)
+  }
+
   // Handle search result select from dropdown: keep description from toelichting, result, parsed query, or query remainder (e.g. "ongebrande hazelnoten" → product Hazelnoten, description "ongebrande")
   const handleEmptyItemResultSelect = async (result: SearchResult, query: string) => {
     haptic('light')
@@ -1396,8 +1423,21 @@ export default function ShoppingListPage() {
           ) : (
             <div className="flex flex-col">
               {/* Empty item at top + dropdown (wrapper for click-outside) */}
-              {isEmptyItemOpen && (
-                <div ref={emptyItemContainerRef} className="mb-4">
+              {(isEmptyItemOpen || isClosingEmptyItem) && (
+                <div
+                  ref={emptyItemContainerRef}
+                  className="mb-4 transition-all duration-200 ease-out"
+                  style={{
+                    opacity: emptyItemEntering || isClosingEmptyItem ? 0 : 1,
+                    transform:
+                      emptyItemEntering || isClosingEmptyItem
+                        ? 'translateY(12px)'
+                        : 'translateY(0)',
+                  }}
+                  onTransitionEnd={() => {
+                    if (isClosingEmptyItem) performCloseEmptyItem()
+                  }}
+                >
                   <EmptyListItem
                     key={emptyItemKey}
                     productName={emptyItemQuery}
@@ -1448,6 +1488,7 @@ export default function ShoppingListPage() {
                       highlightedIndex={highlightedResultIndex}
                       onSelect={handleEmptyItemResultSelect}
                       onFillIntoSearch={handleFillIntoSearch}
+                      onFillForQuery={handleFillForQuery}
                       onAddToListOnly={handleAddToListOnly}
                       onAddToListAndSaveProduct={handleOpenSaveProductModal}
                     />

@@ -276,6 +276,48 @@ async function fetchBasicProducts(householdId: string): Promise<BasicProduct[]> 
   })
 }
 
+// Fetch only checked items (for Laatst gekocht view) - ensures we get all dates
+async function fetchCheckedItems(householdId: string): Promise<ShoppingListItemData[]> {
+  if (!householdId) return []
+  const supabase = createClient()
+  const { data: items, error } = await supabase
+    .from('shopping_list_items')
+    .select(`
+      id, product_id, product_name, quantity, description,
+      category_id, is_checked, checked_at, added_by, created_at, updated_at,
+      product_categories ( id, name, display_order ),
+      products ( id, emoji, name )
+    `)
+    .eq('household_id', householdId)
+    .eq('is_checked', true)
+    .not('checked_at', 'is', null)
+    .order('checked_at', { ascending: false })
+
+  if (error || !items) return []
+
+  return items.map((item) => {
+    const rp = item.products
+    const product = rp && (Array.isArray(rp) ? rp[0] : rp) as { id: string; emoji: string; name: string } | null
+    const emoji = product?.emoji ?? '📦'
+    const rawCat = item.product_categories
+    const category = rawCat && (Array.isArray(rawCat) ? rawCat[0] : rawCat) as { id: string; name: string; display_order: number } | null
+    return {
+      id: item.id,
+      product_id: item.product_id,
+      product_name: (item.product_name || product?.name) ?? null,
+      emoji,
+      quantity: item.quantity,
+      description: item.description,
+      category_id: item.category_id,
+      category: category ? { id: category.id, name: category.name, display_order: category.display_order } : null,
+      is_checked: true,
+      checked_at: item.checked_at,
+      created_at: item.created_at,
+      labels: [],
+    }
+  })
+}
+
 // Hooks
 export function useShoppingListItems() {
   const { householdId } = useHouseholdId()
@@ -285,6 +327,16 @@ export function useShoppingListItems() {
     queryFn: () => fetchShoppingListItems(householdId!),
     enabled: !!householdId,
     staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useCheckedItems() {
+  const { householdId } = useHouseholdId()
+  return useQuery({
+    queryKey: ['checked-items', householdId],
+    queryFn: () => fetchCheckedItems(householdId!),
+    enabled: !!householdId,
+    staleTime: 2 * 60 * 1000,
   })
 }
 

@@ -265,7 +265,7 @@ export default React.memo(function ProductDetailPage({ productId }: ProductDetai
     <div className="flex items-center gap-3">
       <span className="text-3xl">{p.emoji}</span>
       <div>
-        <h1 className="text-3xl font-bold text-white">{p.name}</h1>
+        <h1 className="text-2xl font-bold text-white">{p.name}</h1>
         {p.category && (
           <p className="mt-1 text-sm text-white/90">{p.category.name}</p>
         )}

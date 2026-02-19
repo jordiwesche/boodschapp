@@ -1,7 +1,8 @@
 'use client'
 
-import { ListPlus, Database, CornerDownLeft, ArrowUpLeft } from 'lucide-react'
+import { CornerDownLeft, ArrowUpLeft } from 'lucide-react'
 import { getQueryRemainderAsDescription } from '@/lib/search'
+import { predictCategoryAndEmoji } from '@/lib/predict-category-emoji'
 
 interface SearchResult {
   id: string
@@ -32,71 +33,123 @@ interface InlineSearchDropdownProps {
   onFillIntoSearch: (result: SearchResult) => void
   onAddToListOnly: (productName: string, description: string | null) => void
   onAddToListAndSaveProduct: (productName: string, description: string | null) => void
+  /** When no match: show toelichting field (invulknop) */
+  onFillForQuery?: () => void
 }
 
 function ActionButtons({
   q,
   desc,
+  emoji,
   addToListOnlyIndex,
   addAndSaveIndex,
   highlightedIndex,
   onAddToListOnly,
   onAddToListAndSaveProduct,
+  onFillForQuery,
 }: {
   q: string
   desc: string | null
-  /** Index of "Zet op lijst" in the full dropdown item list */
+  /** Predicted emoji when no match (matchLevel 3) */
+  emoji?: string
   addToListOnlyIndex: number
-  /** Index of "Zet op lijst en voeg toe" in the full dropdown item list */
   addAndSaveIndex: number
   highlightedIndex: number
   onAddToListOnly: (productName: string, description: string | null) => void
   onAddToListAndSaveProduct: (productName: string, description: string | null) => void
+  /** Show toelichting field (invulknop) when no match */
+  onFillForQuery?: () => void
 }) {
   const isAddToListHighlighted = highlightedIndex === addToListOnlyIndex
   const isAddAndSaveHighlighted = highlightedIndex === addAndSaveIndex
   const highlightClasses = 'bg-blue-50 hover:bg-blue-100'
   const defaultClasses = 'hover:bg-gray-50'
+  const hasNoMatch = !!emoji && !!onFillForQuery
+
+  const AddToListRow = () => (
+    <div className="flex items-center gap-2 min-w-0 flex-1">
+      {hasNoMatch && <span className="text-lg shrink-0">{emoji}</span>}
+      <span className="min-w-0 truncate">&quot;{q}&quot; toevoegen</span>
+      {isAddToListHighlighted && (
+        <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
+          <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
+          Enter
+        </span>
+      )}
+    </div>
+  )
+
+  const AddAndSaveRow = () => (
+    <div className="flex items-center gap-2 min-w-0 flex-1">
+      {hasNoMatch && <span className="text-lg shrink-0">{emoji}</span>}
+      <span className="min-w-0 truncate">&quot;{q}&quot; toevoegen en opslaan</span>
+      {isAddAndSaveHighlighted && (
+        <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
+          <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
+          Enter
+        </span>
+      )}
+    </div>
+  )
+
   return (
     <div className="divide-y divide-gray-100">
-      <button
-        onMouseDown={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          onAddToListOnly(q, desc)
-        }}
-        className={`flex w-full items-center gap-2 text-left text-sm font-medium text-gray-900 py-3 px-4 transition-colors ${
-          isAddToListHighlighted ? highlightClasses : defaultClasses
-        }`}
-      >
-        <ListPlus className="h-4 w-4 shrink-0 text-gray-500" />
-        <span className="flex-1">Zet &quot;{q}&quot; op de lijst</span>
-        {isAddToListHighlighted && (
-          <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
-            <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
-            Enter
-          </span>
+      <div className={`flex items-center gap-2 py-3 px-4 transition-colors ${
+        isAddToListHighlighted ? highlightClasses : defaultClasses
+      }`}>
+        <button
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onAddToListOnly(q, desc)
+          }}
+          className="flex flex-1 min-w-0 items-center gap-2 text-left text-sm font-medium text-gray-900"
+        >
+          <AddToListRow />
+        </button>
+        {hasNoMatch && (
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onFillForQuery!()
+            }}
+            className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            aria-label="Vul toelichting in"
+          >
+            <ArrowUpLeft className="h-4 w-4" strokeWidth={2} />
+          </button>
         )}
-      </button>
-      <button
-        onMouseDown={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          onAddToListAndSaveProduct(q, desc)
-        }}
-        className={`flex w-full items-center gap-2 text-left text-sm font-medium py-3 px-4 transition-colors ${
-          isAddAndSaveHighlighted ? `${highlightClasses} text-blue-700` : `${defaultClasses} text-blue-600 hover:text-blue-700`
-        }`}
-      >
-        <Database className="h-4 w-4 shrink-0 text-gray-500" />
-        <span className="flex-1">Zet &quot;{q}&quot; op de lijst en voeg toe aan producten</span>
-        {isAddAndSaveHighlighted && (
-          <span className="inline-flex items-center gap-1 shrink-0 rounded border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-xs font-normal text-gray-500">
-            <CornerDownLeft className="h-3.5 w-3.5" strokeWidth={2} />
-            Enter
-          </span>
+      </div>
+      <div className={`flex items-center gap-2 py-3 px-4 transition-colors ${
+        isAddAndSaveHighlighted ? `${highlightClasses} text-blue-700` : `${defaultClasses} text-blue-600 hover:text-blue-700`
+      }`}>
+        <button
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onAddToListAndSaveProduct(q, desc)
+          }}
+          className="flex flex-1 min-w-0 items-center gap-2 text-left text-sm font-medium"
+        >
+          <AddAndSaveRow />
+        </button>
+        {hasNoMatch && (
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onFillForQuery!()
+            }}
+            className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            aria-label="Vul toelichting in"
+          >
+            <ArrowUpLeft className="h-4 w-4" strokeWidth={2} />
+          </button>
         )}
-      </button>
+      </div>
     </div>
   )
 }
@@ -114,6 +167,7 @@ export default function InlineSearchDropdown({
   onFillIntoSearch,
   onAddToListOnly,
   onAddToListAndSaveProduct,
+  onFillForQuery,
 }: InlineSearchDropdownProps) {
   if (!isVisible || !query || query.trim().length < 2) {
     return null
@@ -131,16 +185,19 @@ export default function InlineSearchDropdown({
   const desc = description?.trim() || null
 
   if (matchLevel === 3) {
+    const predicted = predictCategoryAndEmoji(q)
     return (
       <div className="mb-2 rounded-[16px] bg-white shadow-lg overflow-hidden">
         <ActionButtons
           q={q}
           desc={desc}
+          emoji={predicted.emoji}
           addToListOnlyIndex={0}
           addAndSaveIndex={1}
           highlightedIndex={highlightedIndex}
           onAddToListOnly={onAddToListOnly}
           onAddToListAndSaveProduct={onAddToListAndSaveProduct}
+          onFillForQuery={onFillForQuery}
         />
       </div>
     )

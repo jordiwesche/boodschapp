@@ -141,6 +141,7 @@ export default function ShoppingList({
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set())
+  const [activeLabelItemId, setActiveLabelItemId] = useState<string | null>(null)
 
   useEffect(() => {
     setStoredBool(STORAGE_KEY_CATEGORY, showCategoryTitles)
@@ -312,7 +313,9 @@ export default function ShoppingList({
   })
 
   const cardClass = 'rounded-[16px] border-2 border-white bg-white p-4'
-  const mainListCardClass = 'rounded-[16px] border-2 border-gray-200 bg-white p-4'
+  const mainListCardClass = `rounded-[16px] border-2 border-gray-200 p-4 transition-colors duration-200 ${
+    activeLabelItemId ? 'bg-gray-100' : 'bg-white'
+  }`
 
   return (
     <div className="pb-16 flex flex-col flex-1 min-h-0 gap-4">
@@ -401,6 +404,8 @@ export default function ShoppingList({
                     onDelete={onDelete}
                     onUpdateDescription={onUpdateDescription}
                     showEmoji={showEmojis}
+                    activeLabelItemId={activeLabelItemId}
+                    onLabelDropdownOpenChange={setActiveLabelItemId}
                   />
                 </div>
               ))}
@@ -450,6 +455,8 @@ export default function ShoppingList({
                         onDelete={onDelete}
                         onUpdateDescription={onUpdateDescription}
                         showEmoji={showEmojis}
+                        activeLabelItemId={activeLabelItemId}
+                        onLabelDropdownOpenChange={setActiveLabelItemId}
                       />
                     </div>
                   ))}
@@ -479,6 +486,8 @@ export default function ShoppingList({
                     onDelete={onDelete}
                     onUpdateDescription={onUpdateDescription}
                     showEmoji={showEmojis}
+                    activeLabelItemId={activeLabelItemId}
+                    onLabelDropdownOpenChange={setActiveLabelItemId}
                   />
                 </div>
               ))}

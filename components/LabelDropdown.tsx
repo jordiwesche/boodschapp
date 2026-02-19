@@ -41,6 +41,7 @@ interface LabelDropdownProps {
   anchorRef: React.RefObject<HTMLButtonElement | null>
   dropdownRef?: React.RefObject<HTMLDivElement | null>
   isOpen: boolean
+  isClosing?: boolean
   onClose: () => void
   onPendingLabelsChange?: (labels: ItemLabel[]) => void
   onMigrateLater?: () => void
@@ -54,6 +55,7 @@ export default function LabelDropdown({
   anchorRef,
   dropdownRef: dropdownRefProp,
   isOpen,
+  isClosing = false,
   onClose,
   onPendingLabelsChange,
   onMigrateLater,
@@ -225,7 +227,7 @@ export default function LabelDropdown({
     }
   }
 
-  if (!isOpen) return null
+  if (!isOpen && !isClosing) return null
 
   const setRef = (el: HTMLDivElement | null) => {
     dropdownRefInternal.current = el
@@ -235,21 +237,23 @@ export default function LabelDropdown({
   return (
     <div
       ref={setRef}
-      className="mt-2 w-full max-w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden flex flex-col"
+      className={`mt-2 w-full max-w-full rounded-xl overflow-hidden flex flex-col bg-white ${
+        isClosing ? 'animate-label-dropdown-collapse' : 'animate-label-dropdown-expand'
+      }`}
       style={{ maxHeight: 'min(400px, 70vh)' }}
     >
-      <div className="overflow-y-auto flex-1 p-4">
+      <div className="overflow-y-auto flex-1 border-t border-gray-100 px-4 py-4">
         {isLoading ? (
           <div className="py-6 text-center text-sm text-gray-500">Laden...</div>
         ) : (
           <>
             {/* Prioriteit */}
             {smartLabels.length > 0 && (
-              <div className="mb-4">
-                <h4 className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-y-2 gap-x-2">
+                <h4 className="shrink-0 text-xs font-medium uppercase tracking-wide text-gray-500">
                   Prioriteit
                 </h4>
-                <div className="flex flex-row flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 justify-end">
                   {smartLabels.map((label) => {
                     const isSelected = selectedIds.has(label.id)
                     const Icon = label.slug === 'zsm' ? Zap : Clock
@@ -258,10 +262,10 @@ export default function LabelDropdown({
                         key={label.id}
                         type="button"
                         onClick={() => handleToggleLabel(label)}
-                        className={`inline-flex h-10 w-fit items-center gap-2 rounded-[80px] py-[8px] transition-colors ${getLabelClasses(label, isSelected)}`}
-                        style={{ paddingLeft: 16, paddingRight: 16 }}
+                        className={`inline-flex h-8 w-fit items-center gap-1.5 rounded-full px-3 py-1.5 transition-colors ${getLabelClasses(label, isSelected)}`}
+                        style={{ fontSize: 14 }}
                       >
-                        <Icon className="h-5 w-5 shrink-0 opacity-80" />
+                        <Icon className="h-3.5 w-3.5 shrink-0 opacity-80" />
                         <span className="font-medium">{label.name}</span>
                       </button>
                     )
@@ -271,12 +275,13 @@ export default function LabelDropdown({
             )}
 
             {/* Mijn labels */}
-            <div>
-              <h4 className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-                Mijn labels
-              </h4>
+            <div className="mb-4">
               {isAddingLabel ? (
-                <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
+                <>
+                  <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Mijn labels
+                  </h4>
+                  <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
                   <input
                     type="text"
                     value={newLabelName}
@@ -322,13 +327,20 @@ export default function LabelDropdown({
                     </button>
                   </div>
                 </div>
-              ) : isEditingMijnLabels ? (
-                <div className="flex flex-wrap gap-2">
+                </>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-2">
+                  <h4 className="shrink-0 text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Mijn labels
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5 justify-end">
+                  {isEditingMijnLabels ? (
+                    <>
                   {customLabels.map((label) => {
                     const isSelected = selectedIds.has(label.id)
                     const isEditing = editingLabelId === label.id
                     return isEditing ? (
-                      <div key={label.id} className="w-full space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <div key={label.id} className="min-w-full basis-full space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
                         <input
                           type="text"
                           value={editLabelName}
@@ -377,8 +389,8 @@ export default function LabelDropdown({
                         key={label.id}
                         type="button"
                         onClick={() => handleToggleLabel(label)}
-                        className={`inline-flex h-10 w-fit min-w-0 items-center gap-3 rounded-[80px] transition-colors ${getLabelClasses(label, isSelected)}`}
-                        style={{ paddingLeft: 16, paddingTop: 2, paddingBottom: 2, paddingRight: 4 }}
+                        className={`inline-flex h-8 w-fit min-w-0 items-center gap-2 rounded-full pl-3 pr-1.5 py-1.5 transition-colors ${getLabelClasses(label, isSelected)}`}
+                        style={{ fontSize: 14 }}
                       >
                         <span className="font-medium truncate">{label.name}</span>
                         {label.type === 'custom' && (
@@ -401,9 +413,9 @@ export default function LabelDropdown({
                                 setEditLabelColor(CUSTOM_COLORS.includes(label.color as (typeof CUSTOM_COLORS)[number]) ? label.color : 'blue')
                               }
                             }}
-                            className={`ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/80 ${(LABEL_ICON_COLORS[label.color] || LABEL_ICON_COLORS.gray)[isSelected ? 'filled' : 'light']}`}
+                            className={`ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/80 ${(LABEL_ICON_COLORS[label.color] || LABEL_ICON_COLORS.gray)[isSelected ? 'filled' : 'light']}`}
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Pencil className="h-3 w-3" />
                           </span>
                         )}
                       </button>
@@ -412,13 +424,13 @@ export default function LabelDropdown({
                   <button
                     type="button"
                     onClick={() => setIsAddingLabel(true)}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-gray-200 text-gray-500 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-gray-200 text-gray-500 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3.5 w-3.5" />
                   </button>
-                </div>
+                </>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <>
                   {customLabels.map((label) => {
                     const isSelected = selectedIds.has(label.id)
                     return (
@@ -426,13 +438,16 @@ export default function LabelDropdown({
                         key={label.id}
                         type="button"
                         onClick={() => handleToggleLabel(label)}
-                        className={`inline-flex h-10 w-fit min-w-0 items-center gap-3 rounded-[80px] py-[8px] transition-colors ${getLabelClasses(label, isSelected)}`}
-                        style={{ paddingLeft: 16, paddingRight: 16 }}
+                        className={`inline-flex h-8 w-fit min-w-0 items-center gap-2 rounded-full px-3 py-1.5 transition-colors ${getLabelClasses(label, isSelected)}`}
+                        style={{ fontSize: 14 }}
                       >
                         <span className="font-medium truncate">{label.name}</span>
                       </button>
                     )
                   })}
+                </>
+              )}
+                  </div>
                 </div>
               )}
             </div>

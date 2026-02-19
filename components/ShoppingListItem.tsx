@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Check, Trash2, Plus, X, Tag, Zap, Clock } from 'lucide-react'
+import { Check, Trash2, Plus, X, Tag, Zap, Clock, ChevronDown, ChevronUp } from 'lucide-react'
 import { haptic } from '@/lib/haptics'
 import Skeleton from './Skeleton'
 import LabelDropdown from './LabelDropdown'
@@ -84,6 +84,10 @@ interface ShoppingListItemProps {
   onMoveToMain?: () => void
   /** Show emoji next to product name (default true) */
   showEmoji?: boolean
+  /** When set, another item has label dropdown open; used for dimming */
+  activeLabelItemId?: string | null
+  /** Called when this item opens/closes its label dropdown */
+  onLabelDropdownOpenChange?: (itemId: string | null) => void
 }
 
 export default function ShoppingListItem({
@@ -95,6 +99,8 @@ export default function ShoppingListItem({
   showMoveToMain = false,
   onMoveToMain,
   showEmoji = true,
+  activeLabelItemId = null,
+  onLabelDropdownOpenChange,
 }: ShoppingListItemProps) {
   const [isEditingDescription, setIsEditingDescription] = useState(false)
   const [editValue, setEditValue] = useState(item.description || '')
@@ -113,6 +119,7 @@ export default function ShoppingListItem({
   const longPressJustTriggeredRef = useRef(false)
   const submenuOpenedAtRef = useRef<number>(0)
   const [showLabelDropdown, setShowLabelDropdown] = useState(false)
+  const [labelDropdownClosing, setLabelDropdownClosing] = useState(false)
   const [pendingLabels, setPendingLabels] = useState<ItemLabel[] | null>(null)
   const labelButtonRef = useRef<HTMLButtonElement>(null)
   const labelDropdownRef = useRef<HTMLDivElement>(null)
@@ -293,16 +300,40 @@ export default function ShoppingListItem({
 
   const showChecked = item.is_checked || isChecking
 
+  const showLabelDropdownArea = showLabelDropdown || labelDropdownClosing
+  const isLabelDropdownActive = activeLabelItemId === item.id
+
+  const handleLabelDropdownClose = () => {
+    setLabelDropdownClosing(true)
+    setTimeout(() => {
+      setShowLabelDropdown(false)
+      setPendingLabels(null)
+      setLabelDropdownClosing(false)
+      onLabelDropdownOpenChange?.(null)
+      if (isEditingDescription) handleSaveDescription()
+    }, 150)
+  }
+
+  const getRowBgClass = () => {
+    if (showChecked) return 'bg-transparent opacity-90'
+    if (activeLabelItemId) {
+      return isLabelDropdownActive ? 'bg-transparent' : 'bg-gray-100'
+    }
+    return 'bg-white'
+  }
+
   return (
     <div className="relative" data-shopping-list-item>
-      {/* Row */}
-      <div
-        ref={itemRef}
-        className={`relative flex select-none items-center gap-3 py-2 transition-transform duration-150 ${
-          showChecked ? 'bg-transparent opacity-90' : 'bg-white'
-        } ${isChecking ? 'scale-[0.98]' : ''} ${
-          isPressing ? 'scale-[0.99]' : pressActive ? 'scale-[0.97]' : ''
-        }`}
+      {/* White wrapper when this item has dropdown open; row + dropdown inside */}
+      <div className={showLabelDropdownArea ? 'rounded-xl bg-white -mx-2 px-2 pt-2 pb-2' : ''}>
+        {/* Row */}
+        <div
+          ref={itemRef}
+          className={`relative flex select-none items-center gap-3 py-2 transition-colors duration-200 transition-transform duration-150 ${
+            getRowBgClass()
+          } ${isChecking ? 'scale-[0.98]' : ''} ${
+            isPressing ? 'scale-[0.99]' : pressActive ? 'scale-[0.97]' : ''
+          }`}
         style={{ WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
         onContextMenu={(e) => e.preventDefault()}
         onClick={(e) => {
@@ -339,22 +370,22 @@ export default function ShoppingListItem({
 
         {showEmoji && <span className="text-lg shrink-0">{item.emoji}</span>}
 
-        <div className={isEditingDescription ? 'shrink-0 min-w-0' : 'flex-1 min-w-0'}>
+        <div className={isEditingDescription && !showLabelDropdownArea ? 'shrink-0 min-w-0' : 'flex-1 min-w-0'}>
           <div className="flex h-6 items-center gap-2 min-w-0 flex-1">
             {!isEditingDescription ? (
               <div
-                role="button"
-                tabIndex={0}
-                onClick={handleEditClick}
-                onKeyDown={(e) => {
+                role={showChecked ? undefined : 'button'}
+                tabIndex={showChecked ? undefined : 0}
+                onClick={showChecked ? undefined : handleEditClick}
+                onKeyDown={showChecked ? undefined : (e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault()
                     setIsEditingDescription(true)
                     setEditValue(item.description || '')
                   }
                 }}
-                className="flex h-6 min-w-0 flex-1 cursor-pointer flex-nowrap items-center gap-2"
-                aria-label="Toelichting bewerken"
+                className={`flex h-6 min-w-0 flex-1 flex-nowrap items-center gap-2 ${showChecked ? '' : 'cursor-pointer'}`}
+                aria-label={showChecked ? undefined : 'Toelichting bewerken'}
               >
                 {item.product_name != null ? (
                   <span
@@ -377,7 +408,9 @@ export default function ShoppingListItem({
                   })()}
                 </span>
                 <span className="ml-auto flex h-6 shrink-0 flex-nowrap items-center gap-1.5">
-                  {displayLabels.map((l) => {
+                  {[...displayLabels]
+                    .sort((a, b) => (a.type === 'smart' ? 1 : 0) - (b.type === 'smart' ? 1 : 0))
+                    .map((l) => {
                     const Icon = l.type === 'smart' ? (l.slug === 'zsm' ? Zap : Clock) : null
                     return (
                       <span
@@ -419,13 +452,33 @@ export default function ShoppingListItem({
                 ) : (
                   <Skeleton variant="text" className="h-6 w-24 shrink-0" animation="pulse" />
                 )}
+                {showLabelDropdownArea && (
+                  <span className="ml-auto flex h-6 shrink-0 flex-nowrap items-center gap-1.5">
+                    {[...displayLabels]
+                      .sort((a, b) => (a.type === 'smart' ? 1 : 0) - (b.type === 'smart' ? 1 : 0))
+                      .map((l) => {
+                        const Icon = l.type === 'smart' ? (l.slug === 'zsm' ? Zap : Clock) : null
+                        return (
+                          <span
+                            key={l.id}
+                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium leading-none ${LABEL_COLOR_CLASSES[l.color] || LABEL_COLOR_CLASSES.gray}`}
+                          >
+                            {Icon && <Icon className="h-3 w-3 shrink-0 opacity-80" />}
+                            {l.name}
+                          </span>
+                        )
+                      })}
+                  </span>
+                )}
               </>
             )}
           </div>
         </div>
 
-        {isEditingDescription && (
-          <div ref={editAreaRef} onBlur={handleEditAreaBlur} className="flex h-6 flex-1 items-center gap-2 min-w-0">
+        {isEditingDescription && !showChecked && (
+          <div ref={editAreaRef} onBlur={handleEditAreaBlur} className={`flex h-6 items-center gap-2 min-w-0 ${showLabelDropdownArea ? 'shrink-0' : 'flex-1'}`}>
+            {!showLabelDropdownArea && (
+              <>
             <input
               ref={descriptionInputRef}
               type="text"
@@ -455,6 +508,8 @@ export default function ShoppingListItem({
             >
               <X className="h-4 w-4" />
             </button>
+            </>
+            )}
             <button
               ref={labelButtonRef}
               type="button"
@@ -464,19 +519,25 @@ export default function ShoppingListItem({
                 e.stopPropagation()
                 haptic('light')
                 setShowLabelDropdown((v) => {
-                  if (!v) setPendingLabels([...(item.labels ?? [])])
-                  else setPendingLabels(null)
+                  if (!v) {
+                    setPendingLabels([...(item.labels ?? [])])
+                    onLabelDropdownOpenChange?.(item.id)
+                  } else {
+                    setPendingLabels(null)
+                    onLabelDropdownOpenChange?.(null)
+                  }
                   return !v
                 })
               }}
-              className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${
-                displayLabels.length > 0
-                  ? 'border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700'
-                  : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50'
-              }`}
+              className="shrink-0 flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full border border-gray-200 px-1.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
               aria-label="Labels"
             >
               <Tag className="h-4 w-4" />
+              {showLabelDropdown ? (
+                <ChevronUp className="h-3.5 w-3.5 shrink-0" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+              )}
             </button>
           </div>
         )}
@@ -516,28 +577,26 @@ export default function ShoppingListItem({
         </div>
       )}
 
-      {showLabelDropdown && (
-      <LabelDropdown
-        itemId={item.id}
-        itemLabels={item.labels ?? []}
-        isEditMode={isEditingDescription}
-        anchorRef={labelButtonRef}
-        dropdownRef={labelDropdownRef}
-        isOpen={showLabelDropdown}
-        onClose={() => {
-          setShowLabelDropdown(false)
-          setPendingLabels(null)
-          if (isEditingDescription) handleSaveDescription()
-        }}
-        onPendingLabelsChange={setPendingLabels}
-        hasLaterInDescription={hasLaterDayToken(item.description)}
-        onMigrateLater={
-          hasLaterDayToken(item.description)
-            ? () => onUpdateDescription(item.id, stripLaterTokenFromDescription(item.description) ?? '')
-            : undefined
-        }
-      />
-      )}
+        {(showLabelDropdown || labelDropdownClosing) && (
+          <LabelDropdown
+            itemId={item.id}
+            itemLabels={item.labels ?? []}
+            isEditMode={isEditingDescription}
+            anchorRef={labelButtonRef}
+            dropdownRef={labelDropdownRef}
+            isOpen={showLabelDropdown}
+            isClosing={labelDropdownClosing}
+            onClose={handleLabelDropdownClose}
+            onPendingLabelsChange={setPendingLabels}
+            hasLaterInDescription={hasLaterDayToken(item.description)}
+            onMigrateLater={
+              hasLaterDayToken(item.description)
+                ? () => onUpdateDescription(item.id, stripLaterTokenFromDescription(item.description) ?? '')
+                : undefined
+            }
+          />
+        )}
+      </div>
 
       {/* Modal: bevestiging item verwijderen */}
       {showDeleteModal && (

@@ -143,7 +143,7 @@ export default function EmptyListItem({
   }
 
   return (
-    <div className="mb-2 flex items-center gap-3 rounded-[16px] border border-gray-200 bg-white px-4 py-3">
+    <div className="mb-2 flex items-center gap-3 rounded-full border border-gray-200 bg-white px-4 py-3">
       <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-gray-300">
         <Check className="h-3 w-3 text-transparent" />
       </div>
