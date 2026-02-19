@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Check, Trash2, Plus, X } from 'lucide-react'
+import { Check, Trash2, Plus, X, Tag, Zap, Clock } from 'lucide-react'
 import { haptic } from '@/lib/haptics'
 import Skeleton from './Skeleton'
+import LabelDropdown from './LabelDropdown'
+import type { ItemLabel } from '@/lib/hooks/use-shopping-list'
 
 const LONG_PRESS_MS = 600
 
@@ -31,6 +33,27 @@ function stripLabelToken(description: string, token: string): string {
     .trim()
 }
 
+function hasLaterDayToken(description: string | null): boolean {
+  const d = description?.trim()
+  return !!d && LATER_DAY_PATTERN.test(d)
+}
+
+function stripLaterTokenFromDescription(description: string | null): string | null {
+  const d = description?.trim()
+  if (!d) return null
+  const cleaned = d.replace(LATER_DAY_PATTERN, '').replace(/\s+/g, ' ').trim()
+  return cleaned === '' ? null : cleaned
+}
+
+const LABEL_COLOR_CLASSES: Record<string, string> = {
+  purple: 'bg-purple-100 text-purple-700',
+  gray: 'bg-gray-100 text-gray-500',
+  blue: 'bg-blue-100 text-blue-700',
+  green: 'bg-green-100 text-green-700',
+  amber: 'bg-amber-100 text-amber-700',
+  red: 'bg-red-100 text-red-700',
+}
+
 interface ShoppingListItemData {
   id: string
   product_id: string | null
@@ -47,6 +70,7 @@ interface ShoppingListItemData {
   is_checked: boolean
   checked_at: string | null
   created_at: string
+  labels?: ItemLabel[]
 }
 
 interface ShoppingListItemProps {
@@ -88,6 +112,12 @@ export default function ShoppingListItem({
   const touchStartY = useRef<number>(0)
   const longPressJustTriggeredRef = useRef(false)
   const submenuOpenedAtRef = useRef<number>(0)
+  const [showLabelDropdown, setShowLabelDropdown] = useState(false)
+  const [pendingLabels, setPendingLabels] = useState<ItemLabel[] | null>(null)
+  const labelButtonRef = useRef<HTMLButtonElement>(null)
+  const labelDropdownRef = useRef<HTMLDivElement>(null)
+
+  const displayLabels = showLabelDropdown && pendingLabels !== null ? pendingLabels : (item.labels ?? [])
 
   const handleCheck = async () => {
     if (longPressJustTriggeredRef.current) {
@@ -229,7 +259,7 @@ export default function ShoppingListItem({
   }
   const handleEditAreaBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     const next = e.relatedTarget as Node | null
-    if (next && editAreaRef.current?.contains(next)) return
+    if (next && (editAreaRef.current?.contains(next) || labelDropdownRef.current?.contains(next))) return
     // Mobile: relatedTarget is vaak null; fallback op flag van pointerdown op kruisje
     if (clearButtonTouchedRef.current) {
       clearButtonTouchedRef.current = false
@@ -318,12 +348,12 @@ export default function ShoppingListItem({
                     setEditValue(item.description || '')
                   }
                 }}
-                className="flex h-6 flex-nowrap items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                className="flex h-6 min-w-0 flex-1 cursor-pointer flex-nowrap items-center gap-2"
                 aria-label="Toelichting bewerken"
               >
                 {item.product_name != null ? (
                   <span
-                    className={`flex h-6 items-center text-[15px] font-medium shrink-0 ${
+                    className={`flex h-6 shrink-0 items-center text-[15px] font-medium ${
                       showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
                     }`}
                   >
@@ -333,25 +363,40 @@ export default function ShoppingListItem({
                   <Skeleton variant="text" className="h-6 w-24 shrink-0" animation="pulse" />
                 )}
                 <span
-                  className={`text-sm flex h-6 flex-1 min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden ${item.description ? 'text-gray-500' : ''}`}
+                  className={`text-sm flex h-6 min-w-0 flex-1 flex-nowrap items-center overflow-hidden truncate ${item.description ? 'text-gray-500' : ''}`}
                 >
                   {(() => {
                     const label = detectDescriptionLabel(item.description)
                     if (!label) return item.description ?? ''
-                    const rest = stripLabelToken(item.description || '', label.token)
+                    return stripLabelToken(item.description || '', label.token) ?? ''
+                  })()}
+                </span>
+                <span className="ml-auto flex h-6 shrink-0 flex-nowrap items-center gap-1.5">
+                  {displayLabels.map((l) => {
+                    const Icon = l.type === 'smart' ? (l.slug === 'zsm' ? Zap : Clock) : null
                     return (
-                      <>
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-medium leading-none ${
-                            label.type === 'check'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-gray-100 text-gray-500'
-                          }`}
-                        >
-                          {label.token.toLowerCase()}
-                        </span>
-                        {rest && <span>{rest}</span>}
-                      </>
+                      <span
+                        key={l.id}
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium leading-none ${LABEL_COLOR_CLASSES[l.color] || LABEL_COLOR_CLASSES.gray}`}
+                      >
+                        {Icon && <Icon className="h-3 w-3 shrink-0 opacity-80" />}
+                        {l.name}
+                      </span>
+                    )
+                  })}
+                  {(() => {
+                    const label = detectDescriptionLabel(item.description)
+                    if (!label) return null
+                    return (
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-medium leading-none shrink-0 ${
+                          label.type === 'check'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-gray-100 text-gray-500'
+                        }`}
+                      >
+                        {label.token.toLowerCase()}
+                      </span>
                     )
                   })()}
                 </span>
@@ -376,7 +421,6 @@ export default function ShoppingListItem({
 
         {isEditingDescription && (
           <div ref={editAreaRef} onBlur={handleEditAreaBlur} className="flex h-6 flex-1 items-center gap-2 min-w-0">
-            <div className="h-5 w-px shrink-0 bg-gray-200 self-center" aria-hidden />
             <input
               ref={descriptionInputRef}
               type="text"
@@ -405,6 +449,27 @@ export default function ShoppingListItem({
               aria-label="Toelichting wissen"
             >
               <X className="h-4 w-4" />
+            </button>
+            <button
+              ref={labelButtonRef}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                haptic('light')
+                setShowLabelDropdown((v) => {
+                  if (!v) setPendingLabels([...(item.labels ?? [])])
+                  else setPendingLabels(null)
+                  return !v
+                })
+              }}
+              className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${
+                displayLabels.length > 0
+                  ? 'border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700'
+                  : 'border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+              }`}
+              aria-label="Labels"
+            >
+              <Tag className="h-4 w-4" />
             </button>
           </div>
         )}
@@ -442,6 +507,29 @@ export default function ShoppingListItem({
             Verwijder
           </button>
         </div>
+      )}
+
+      {showLabelDropdown && (
+      <LabelDropdown
+        itemId={item.id}
+        itemLabels={item.labels ?? []}
+        isEditMode={isEditingDescription}
+        anchorRef={labelButtonRef}
+        dropdownRef={labelDropdownRef}
+        isOpen={showLabelDropdown}
+        onClose={() => {
+          setShowLabelDropdown(false)
+          setPendingLabels(null)
+          if (isEditingDescription) handleSaveDescription()
+        }}
+        onPendingLabelsChange={setPendingLabels}
+        hasLaterInDescription={hasLaterDayToken(item.description)}
+        onMigrateLater={
+          hasLaterDayToken(item.description)
+            ? () => onUpdateDescription(item.id, stripLaterTokenFromDescription(item.description) ?? '')
+            : undefined
+        }
+      />
       )}
 
       {/* Modal: bevestiging item verwijderen */}

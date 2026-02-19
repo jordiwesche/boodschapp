@@ -5,6 +5,14 @@ import { createClient } from '@/lib/supabase/client'
 import { useHouseholdId } from '@/lib/hooks/use-household'
 
 // Types
+export interface ItemLabel {
+  id: string
+  name: string
+  color: string
+  type: 'smart' | 'custom'
+  slug: string | null
+}
+
 export interface ShoppingListItemData {
   id: string
   product_id: string | null
@@ -21,6 +29,7 @@ export interface ShoppingListItemData {
   is_checked: boolean
   checked_at: string | null
   created_at: string
+  labels?: ItemLabel[]
 }
 
 export interface Suggestion {
@@ -80,6 +89,38 @@ async function fetchShoppingListItems(householdId: string): Promise<ShoppingList
   if (error || !items) {
     console.error('Failed to fetch shopping list items:', error)
     return []
+  }
+
+  // Fetch item labels
+  const itemIds = items.map((i) => i.id)
+  const labelsByItem: Record<string, ItemLabel[]> = {}
+  if (itemIds.length > 0) {
+    const { data: itemLabels } = await supabase
+      .from('shopping_list_item_labels')
+      .select('item_id, labels(id, name, color, type, slug)')
+      .in('item_id', itemIds)
+
+    if (itemLabels) {
+      for (const row of itemLabels) {
+        const raw = row.labels
+        let label: { id: string; name: string; color: string; type: string; slug: string | null } | null = null
+        if (Array.isArray(raw) && raw.length > 0 && raw[0]) {
+          label = raw[0] as { id: string; name: string; color: string; type: string; slug: string | null }
+        } else if (raw && typeof raw === 'object' && !Array.isArray(raw) && 'id' in raw) {
+          label = raw as unknown as { id: string; name: string; color: string; type: string; slug: string | null }
+        }
+        if (label?.id) {
+          if (!labelsByItem[row.item_id]) labelsByItem[row.item_id] = []
+          labelsByItem[row.item_id].push({
+            id: label.id,
+            name: label.name,
+            color: label.color,
+            type: label.type as 'smart' | 'custom',
+            slug: label.slug ?? null,
+          })
+        }
+      }
+    }
   }
 
   // Collect IDs where joins failed so we can batch-fetch fallbacks
@@ -171,6 +212,7 @@ async function fetchShoppingListItems(householdId: string): Promise<ShoppingList
       is_checked: item.is_checked,
       checked_at: item.checked_at,
       created_at: item.created_at,
+      labels: labelsByItem[item.id] || [],
     }
   })
 }

@@ -1,0 +1,39 @@
+---
+description: Performance is the top priority for this app. Every feature must feel instant.
+alwaysApply: true
+---
+
+# Performance First
+
+This is a mobile-first grocery app (Boodschapp). Perceived speed is critical — every interaction must feel instant.
+
+## Principles
+
+1. **Optimistic UI**: Update the UI immediately, sync with the server in the background. Never block the UI waiting for a server response.
+2. **Direct Supabase**: Use the browser Supabase client (`@/lib/supabase/client`) for reads and writes. Never route through Next.js API routes (`/api/...`) for client-side data — the extra hop adds hundreds of milliseconds.
+3. **Optimistic cache updates**: Use TanStack Query's `onMutate` to update the cache before the server responds. Roll back in `onError`. Only `invalidateQueries` in `onSettled` for eventual consistency.
+4. **Close/dismiss first**: When a modal, dropdown, or overlay triggers a mutation, close it immediately — don't wait for `onSuccess`.
+5. **Minimize sequential queries**: Batch or parallelize Supabase calls where possible. Avoid waterfalls of sequential `.select()` calls.
+
+## Pattern
+
+```typescript
+useMutation({
+  mutationFn: async (vars) => {
+    const supabase = createClient()
+    // Direct Supabase call — no API route
+  },
+  onMutate: async (vars) => {
+    // 1. Cancel in-flight queries
+    // 2. Snapshot previous data
+    // 3. Optimistically update cache
+    return { previousData }
+  },
+  onError: (_err, _vars, context) => {
+    // Roll back on failure
+  },
+  onSettled: () => {
+    // Background refetch for consistency
+  },
+})
+```

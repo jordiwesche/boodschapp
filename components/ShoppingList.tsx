@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { haptic } from '@/lib/haptics'
 import { ChevronDown, ChevronRight, Clock, Zap, Plus, Check, Trash2, Star, ShoppingCart, MoreVertical, Package } from 'lucide-react'
+import type { ItemLabel } from '@/lib/hooks/use-shopping-list'
 
 const STORAGE_KEY_CATEGORY = 'boodschapp-show-category-titles'
 const STORAGE_KEY_EMOJI = 'boodschapp-show-emojis'
@@ -44,8 +45,16 @@ function getLaterDayFromDescription(description: string | null): string | null {
   return m ? m[1].toLowerCase() : null
 }
 
-function isLaterItem(item: { description: string | null }): boolean {
-  return hasLaterDayToken(item.description)
+function hasZsmLabel(item: { labels?: ItemLabel[] }): boolean {
+  return (item.labels ?? []).some((l) => l.slug === 'zsm')
+}
+
+function hasLaterLabel(item: { labels?: ItemLabel[] }): boolean {
+  return (item.labels ?? []).some((l) => l.slug === 'later')
+}
+
+function isLaterItem(item: { description: string | null; labels?: ItemLabel[] }): boolean {
+  return hasLaterLabel(item) || hasLaterDayToken(item.description)
 }
 
 /** Remove day/later token from description; if token was in parens e.g. "(wo)", remove parens too. */
@@ -72,6 +81,7 @@ interface ShoppingListItemData {
   is_checked: boolean
   checked_at: string | null
   created_at: string
+  labels?: ItemLabel[]
 }
 
 export interface ExpectedProduct {
@@ -168,10 +178,11 @@ export default function ShoppingList({
       })
     }, 500)
   }
-  // Separate checked and unchecked items; unchecked split into normal vs "Later" (description = weekday)
+  // Separate checked and unchecked items; split into z.s.m. | normal | Later
   const uncheckedItems = items.filter((item) => !item.is_checked)
-  const laterUncheckedItems = uncheckedItems.filter(isLaterItem)
-  const normalUncheckedItems = uncheckedItems.filter((item) => !isLaterItem(item))
+  const zsmUncheckedItems = uncheckedItems.filter(hasZsmLabel)
+  const laterUncheckedItems = uncheckedItems.filter((item) => !hasZsmLabel(item) && isLaterItem(item))
+  const normalUncheckedItems = uncheckedItems.filter((item) => !hasZsmLabel(item) && !isLaterItem(item))
   const checkedItems = items.filter((item) => item.is_checked)
 
   // Group all items by category
@@ -232,6 +243,16 @@ export default function ShoppingList({
     if (orderA !== orderB) {
       return orderA - orderB
     }
+    const nameA = (a.product_name || '').toLowerCase()
+    const nameB = (b.product_name || '').toLowerCase()
+    return nameA.localeCompare(nameB, 'nl')
+  })
+
+  // Sort z.s.m. items by category then name
+  const sortedZsmUnchecked = [...zsmUncheckedItems].sort((a, b) => {
+    const orderA = a.category?.display_order ?? 999
+    const orderB = b.category?.display_order ?? 999
+    if (orderA !== orderB) return orderA - orderB
     const nameA = (a.product_name || '').toLowerCase()
     const nameB = (b.product_name || '').toLowerCase()
     return nameA.localeCompare(nameB, 'nl')
@@ -362,6 +383,30 @@ export default function ShoppingList({
           </div>
         </div>
         <div className="border-t border-dashed border-gray-200 pt-4">
+        {/* z.s.m. – bovenaan de hoofdlijst */}
+        {sortedZsmUnchecked.length > 0 && (
+          <div className="mb-4 pb-4 border-b border-dashed border-gray-200">
+            {showCategoryTitles && (
+              <h3 className="mb-2 text-xs font-normal uppercase tracking-wide text-gray-500">
+                z.s.m.
+              </h3>
+            )}
+            <div>
+              {sortedZsmUnchecked.map((item) => (
+                <div key={item.id} data-shopping-list-item>
+                  <ShoppingListItem
+                    item={item}
+                    onCheck={onCheck}
+                    onUncheck={onUncheck}
+                    onDelete={onDelete}
+                    onUpdateDescription={onUpdateDescription}
+                    showEmoji={showEmojis}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {sortedUncheckedCategories.length > 0 ? (
           sortedUncheckedCategories.map((categoryGroup, index) => {
             const categoryName = categoryGroup.category?.name || ''
@@ -440,7 +485,7 @@ export default function ShoppingList({
             </div>
           </div>
         )}
-        {sortedUncheckedCategories.length === 0 && sortedLaterUnchecked.length === 0 && (
+        {sortedZsmUnchecked.length === 0 && sortedUncheckedCategories.length === 0 && sortedLaterUnchecked.length === 0 && (
           <p className="text-gray-500">Je boodschappenlijst is leeg</p>
         )}
         </div>
@@ -551,11 +596,11 @@ export default function ShoppingList({
             <Star className="h-3.5 w-3.5 shrink-0 text-gray-500" />
             Basics
           </span>
-          <span className="shrink-0 text-sm text-green-600">
-            <span className="font-bold">
+          <span className="flex shrink-0 items-center gap-2 text-sm text-green-600">
+            <ShoppingCart className="h-4 w-4" />
+            <span className="font-medium">
               {basicProducts.filter((p) => productIdsInList.has(p.id) || addingIds.has(p.id)).length}
             </span>
-            {' op je boodschappenlijst'}
           </span>
         </button>
         {basicsSectionOpen && (
