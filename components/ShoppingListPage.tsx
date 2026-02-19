@@ -1178,6 +1178,7 @@ export default function ShoppingListPage() {
             const data = await res.json()
             if (data.success) {
               queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
+              queryClient.invalidateQueries({ queryKey: ['purchase-history-laatst-gekocht'] })
             }
           }
         } catch (err) {
