@@ -221,6 +221,7 @@ export default function ShoppingListItem({
   }
 
   const editAreaRef = useRef<HTMLDivElement>(null)
+  const descriptionInputRef = useRef<HTMLInputElement>(null)
   const clearButtonTouchedRef = useRef(false)
   const handleSaveDescription = () => {
     onUpdateDescription(item.id, editValue.trim())
@@ -304,7 +305,7 @@ export default function ShoppingListItem({
         {showEmoji && <span className="text-lg shrink-0">{item.emoji}</span>}
 
         <div className={isEditingDescription ? 'shrink-0 min-w-0' : 'flex-1 min-w-0'}>
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex h-6 items-center gap-2 min-w-0 flex-1">
             {!isEditingDescription ? (
               <div
                 role="button"
@@ -317,22 +318,22 @@ export default function ShoppingListItem({
                     setEditValue(item.description || '')
                   }
                 }}
-                className="flex flex-nowrap items-center gap-2 min-w-0 flex-1 cursor-pointer"
+                className="flex h-6 flex-nowrap items-center gap-2 min-w-0 flex-1 cursor-pointer"
                 aria-label="Toelichting bewerken"
               >
                 {item.product_name != null ? (
                   <span
-                    className={`text-[15px] font-medium shrink-0 ${
+                    className={`flex h-6 items-center text-[15px] font-medium shrink-0 ${
                       showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
                     }`}
                   >
                     {item.product_name}
                   </span>
                 ) : (
-                  <Skeleton variant="text" className="h-5 w-24 shrink-0" animation="pulse" />
+                  <Skeleton variant="text" className="h-6 w-24 shrink-0" animation="pulse" />
                 )}
                 <span
-                  className={`text-sm flex-1 min-w-0 min-h-[1.25rem] flex flex-nowrap items-center gap-1.5 overflow-hidden ${item.description ? 'text-gray-500' : ''}`}
+                  className={`text-sm flex h-6 flex-1 min-w-0 flex-nowrap items-center gap-1.5 overflow-hidden ${item.description ? 'text-gray-500' : ''}`}
                 >
                   {(() => {
                     const label = detectDescriptionLabel(item.description)
@@ -359,14 +360,14 @@ export default function ShoppingListItem({
               <>
                 {item.product_name != null ? (
                   <span
-                    className={`text-[15px] font-medium shrink-0 ${
+                    className={`flex h-6 items-center text-[15px] font-medium shrink-0 ${
                       showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
                     }`}
                   >
                     {item.product_name}
                   </span>
                 ) : (
-                  <Skeleton variant="text" className="h-5 w-24 shrink-0" animation="pulse" />
+                  <Skeleton variant="text" className="h-6 w-24 shrink-0" animation="pulse" />
                 )}
               </>
             )}
@@ -374,9 +375,10 @@ export default function ShoppingListItem({
         </div>
 
         {isEditingDescription && (
-          <div ref={editAreaRef} onBlur={handleEditAreaBlur} className="flex-1 flex items-center gap-2 min-w-0">
+          <div ref={editAreaRef} onBlur={handleEditAreaBlur} className="flex h-6 flex-1 items-center gap-2 min-w-0">
             <div className="h-5 w-px shrink-0 bg-gray-200 self-center" aria-hidden />
             <input
+              ref={descriptionInputRef}
               type="text"
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
@@ -394,6 +396,10 @@ export default function ShoppingListItem({
               onClick={() => {
                 haptic('light')
                 setEditValue('')
+                // Focus terug op input zodat toetsenbord open blijft op mobiel
+                requestAnimationFrame(() => {
+                  descriptionInputRef.current?.focus()
+                })
               }}
               className="shrink-0 flex h-8 w-8 items-center justify-center rounded p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               aria-label="Toelichting wissen"

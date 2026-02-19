@@ -291,7 +291,7 @@ export default function ShoppingListPage() {
   const { data: items = [], isLoading: isLoadingItems, refetch: refetchItems } = useShoppingListItems()
   const { data: expectedProducts = [] } = useExpectedProducts()
   const { data: basicProducts = [] } = useBasicProducts()
-  const { householdId } = useHouseholdId()
+  const { householdId, isPending: isLoadingHousehold } = useHouseholdId()
   const queryClient = useQueryClient()
   const listKey = [...queryKeys.shoppingListItems, householdId]
 
@@ -1391,7 +1391,7 @@ export default function ShoppingListPage() {
         scrollContainerRef={scrollContainerRef}
         disabled={saveProductModalOpen}
       >
-          {isLoadingItems ? (
+          {isLoadingHousehold || isLoadingItems ? (
             <ShoppingListSkeleton />
           ) : (
             <div className="flex flex-col">
