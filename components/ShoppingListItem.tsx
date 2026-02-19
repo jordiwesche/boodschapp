@@ -518,16 +518,15 @@ export default function ShoppingListItem({
               onClick={(e) => {
                 e.stopPropagation()
                 haptic('light')
-                setShowLabelDropdown((v) => {
-                  if (!v) {
-                    setPendingLabels([...(item.labels ?? [])])
-                    onLabelDropdownOpenChange?.(item.id)
-                  } else {
-                    setPendingLabels(null)
-                    onLabelDropdownOpenChange?.(null)
-                  }
-                  return !v
-                })
+                const nextValue = !showLabelDropdown
+                setShowLabelDropdown(nextValue)
+                if (nextValue) {
+                  setPendingLabels([...(item.labels ?? [])])
+                  onLabelDropdownOpenChange?.(item.id)
+                } else {
+                  setPendingLabels(null)
+                  onLabelDropdownOpenChange?.(null)
+                }
               }}
               className="shrink-0 flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full border border-gray-200 px-1.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
               aria-label="Labels"
