@@ -6,6 +6,7 @@ import { haptic } from '@/lib/haptics'
 import Skeleton from './Skeleton'
 import LabelDropdown from './LabelDropdown'
 import type { ItemLabel } from '@/lib/hooks/use-shopping-list'
+import { useLabels, useSetItemLabels, type Label } from '@/lib/hooks/use-labels'
 
 const LONG_PRESS_MS = 600
 
@@ -43,6 +44,36 @@ function stripLaterTokenFromDescription(description: string | null): string | nu
   if (!d) return null
   const cleaned = d.replace(LATER_DAY_PATTERN, '').replace(/\s+/g, ' ').trim()
   return cleaned === '' ? null : cleaned
+}
+
+/** Words that match check/later patterns - exclude from exact-label matching to avoid duplicates */
+function isDescriptionLabelToken(word: string): boolean {
+  return CHECK_PATTERN.test(` ${word} `) || LATER_DAY_PATTERN.test(` ${word} `)
+}
+
+function getDescriptionMatchedLabels(
+  description: string | null,
+  labels: Label[]
+): { matched: ItemLabel[]; strippedDescription: string } {
+  const d = description?.trim() ?? ''
+  if (!d || labels.length === 0) return { matched: [], strippedDescription: d }
+  const words = d.split(/\s+/)
+  const matched: ItemLabel[] = []
+  const seenIds = new Set<string>()
+  for (const word of words) {
+    if (isDescriptionLabelToken(word)) continue
+    const label = labels.find((l) => l.name.toLowerCase() === word.toLowerCase())
+    if (label && !seenIds.has(label.id)) {
+      seenIds.add(label.id)
+      matched.push({ id: label.id, name: label.name, color: label.color, type: label.type, slug: label.slug })
+    }
+  }
+  let stripped = d
+  for (const m of matched) {
+    const escaped = m.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    stripped = stripped.replace(new RegExp(`(?:^|\\s)${escaped}(?:$|\\s)`, 'gi'), ' ').replace(/\s+/g, ' ').trim()
+  }
+  return { matched, strippedDescription: stripped }
 }
 
 const LABEL_COLOR_CLASSES: Record<string, string> = {
@@ -261,8 +292,35 @@ export default function ShoppingListItem({
   const descriptionInputRef = useRef<HTMLInputElement>(null)
   const clearButtonTouchedRef = useRef(false)
   const labelButtonTouchedRef = useRef(false)
+  const { data: labels = [] } = useLabels()
+  const setLabelsMutation = useSetItemLabels()
+
   const handleSaveDescription = () => {
-    onUpdateDescription(item.id, editValue.trim())
+    let descToSave = editValue.trim()
+    const hasLater = hasLaterDayToken(descToSave)
+    const hasLaterLabel = (item.labels ?? []).some((l) => l.slug === 'later')
+
+    if (hasLater && !hasLaterLabel) {
+      const laterLabel = labels.find((l) => l.slug === 'later')
+      if (laterLabel) {
+        const currentIds = (item.labels ?? []).map((l) => l.id)
+        const nextIds = [...currentIds.filter((id) => {
+          const lbl = labels.find((l) => l.id === id)
+          return !lbl || lbl.type !== 'smart' || lbl.slug === 'later'
+        }), laterLabel.id]
+        setLabelsMutation.mutate({ itemId: item.id, labelIds: nextIds })
+        const laterMatch = descToSave.match(LATER_DAY_PATTERN)
+        if (laterMatch && laterMatch[1].toLowerCase() === 'later') {
+          descToSave = stripLaterTokenFromDescription(descToSave) ?? ''
+        }
+      }
+    } else if (!hasLater && hasLaterLabel) {
+      const nextIds = (item.labels ?? [])
+        .filter((l) => l.slug !== 'later')
+        .map((l) => l.id)
+      setLabelsMutation.mutate({ itemId: item.id, labelIds: nextIds })
+    }
+    onUpdateDescription(item.id, descToSave)
     setIsEditingDescription(false)
   }
   const handleEditAreaBlur = (e: React.FocusEvent<HTMLDivElement>) => {
@@ -277,8 +335,7 @@ export default function ShoppingListItem({
       labelButtonTouchedRef.current = false
       return
     }
-    onUpdateDescription(item.id, editValue.trim())
-    setIsEditingDescription(false)
+    handleSaveDescription()
   }
 
   const handleCancelEdit = () => {
@@ -321,6 +378,12 @@ export default function ShoppingListItem({
     }
     return 'bg-white'
   }
+
+  const descriptionMatched = getDescriptionMatchedLabels(item.description, labels)
+  const descLabel = detectDescriptionLabel(item.description)
+  const labelsToShow = descLabel?.type === 'later'
+    ? [...displayLabels, ...descriptionMatched.matched].filter((l) => l.slug !== 'later')
+    : [...displayLabels, ...descriptionMatched.matched]
 
   return (
     <div className="relative" data-shopping-list-item>
@@ -401,14 +464,10 @@ export default function ShoppingListItem({
                 <span
                   className={`text-sm flex h-6 min-w-0 flex-1 flex-nowrap items-center overflow-hidden truncate ${item.description ? 'text-gray-500' : ''}`}
                 >
-                  {(() => {
-                    const label = detectDescriptionLabel(item.description)
-                    if (!label) return item.description ?? ''
-                    return stripLabelToken(item.description || '', label.token) ?? ''
-                  })()}
+                  {!descLabel ? descriptionMatched.strippedDescription || '' : stripLabelToken(descriptionMatched.strippedDescription, descLabel.token) ?? ''}
                 </span>
                 <span className="ml-auto flex h-6 shrink-0 flex-nowrap items-center gap-1.5">
-                  {[...displayLabels]
+                  {labelsToShow
                     .sort((a, b) => (a.type === 'smart' ? 1 : 0) - (b.type === 'smart' ? 1 : 0))
                     .map((l) => {
                     const Icon = l.type === 'smart' ? (l.slug === 'zsm' ? Zap : Clock) : null
@@ -422,21 +481,18 @@ export default function ShoppingListItem({
                       </span>
                     )
                   })}
-                  {(() => {
-                    const label = detectDescriptionLabel(item.description)
-                    if (!label) return null
-                    return (
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-1.5 text-[11px] font-medium leading-none shrink-0 ${
-                          label.type === 'check'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-gray-100 text-gray-500'
-                        }`}
-                      >
-                        {label.token.toLowerCase()}
-                      </span>
-                    )
-                  })()}
+                  {descLabel && (
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium leading-none shrink-0 ${
+                        descLabel.type === 'check'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-gray-100 text-gray-500'
+                      }`}
+                    >
+                      {descLabel.type === 'later' && <Clock className="h-3 w-3 shrink-0 opacity-80" />}
+                      {descLabel.token.toLowerCase()}
+                    </span>
+                  )}
                 </span>
               </div>
             ) : (

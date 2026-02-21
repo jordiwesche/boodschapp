@@ -573,7 +573,7 @@ export default function ShoppingList({
                   <span className="text-sm text-gray-400 shrink-0">
                     {product.days_until_expected === 0 ? 'vandaag' : `over ~ ${product.days_until_expected}d`}
                   </span>
-                  <div className="flex shrink-0 items-center gap-3">
+                  <div className="flex shrink-0 items-center gap-2">
                     {onSnoozeExpected && (
                       <button
                         type="button"
