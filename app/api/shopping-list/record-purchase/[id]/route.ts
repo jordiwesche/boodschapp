@@ -78,7 +78,10 @@ export async function POST(
       .from('shopping_list_item_labels')
       .select('label_id, labels!inner(slug)')
       .eq('item_id', id)
-    const hasCheckLabel = itemLabels?.some((r: { labels: { slug: string } }) => r.labels?.slug === 'check')
+    const hasCheckLabel = itemLabels?.some((r: { labels: { slug: string } | { slug: string }[] }) => {
+      const labels = r.labels
+      return Array.isArray(labels) ? labels.some((l) => l.slug === 'check') : labels?.slug === 'check'
+    })
     const description = (item.description || '').toLowerCase().trim()
     const hasCheckInDescription = /(?:^|[\s(])check(?:$|[\s)])/i.test(description)
     if (hasCheckLabel || hasCheckInDescription) {
