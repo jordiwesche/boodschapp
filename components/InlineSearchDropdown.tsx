@@ -115,7 +115,7 @@ function ActionButtons({
               e.stopPropagation()
               onFillForQuery!()
             }}
-            className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-colors"
             aria-label="Vul toelichting in"
           >
             <ArrowUpLeft className="h-4 w-4" strokeWidth={2} />
@@ -143,7 +143,7 @@ function ActionButtons({
               e.stopPropagation()
               onFillForQuery!()
             }}
-            className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-colors"
             aria-label="Vul toelichting in"
           >
             <ArrowUpLeft className="h-4 w-4" strokeWidth={2} />
@@ -262,7 +262,7 @@ export default function InlineSearchDropdown({
                   e.stopPropagation()
                   onFillIntoSearch(result)
                 }}
-                className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-colors"
                 aria-label="Vul productnaam in"
               >
                 <ArrowUpLeft className="h-4 w-4" strokeWidth={2} />

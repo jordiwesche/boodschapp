@@ -300,7 +300,7 @@ export default function LabelDropdown({
                         key={color}
                         type="button"
                         onClick={() => setNewLabelColor(color)}
-                        className={`h-8 w-8 rounded-full border-2 transition-colors ${
+                        className={`h-10 w-10 rounded-full border-2 transition-colors ${
                           newLabelColor === color
                             ? 'border-gray-900 ' + COLOR_CLASSES[color].filled
                             : 'border-transparent ' + COLOR_CLASSES[color].light
@@ -424,7 +424,7 @@ export default function LabelDropdown({
                   <button
                     type="button"
                     onClick={() => setIsAddingLabel(true)}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-gray-200 text-gray-500 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-gray-200 text-gray-500 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>

@@ -415,7 +415,7 @@ export default function ShoppingListItem({
                     return (
                       <span
                         key={l.id}
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium leading-none ${LABEL_COLOR_CLASSES[l.color] || LABEL_COLOR_CLASSES.gray}`}
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium leading-none ${LABEL_COLOR_CLASSES[l.color] || LABEL_COLOR_CLASSES.gray}`}
                       >
                         {Icon && <Icon className="h-3 w-3 shrink-0 opacity-80" />}
                         {l.name}
@@ -427,7 +427,7 @@ export default function ShoppingListItem({
                     if (!label) return null
                     return (
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-medium leading-none shrink-0 ${
+                        className={`inline-flex items-center rounded-full px-2 py-1.5 text-[11px] font-medium leading-none shrink-0 ${
                           label.type === 'check'
                             ? 'bg-yellow-100 text-yellow-700'
                             : 'bg-gray-100 text-gray-500'
@@ -461,7 +461,7 @@ export default function ShoppingListItem({
                         return (
                           <span
                             key={l.id}
-                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium leading-none ${LABEL_COLOR_CLASSES[l.color] || LABEL_COLOR_CLASSES.gray}`}
+                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium leading-none ${LABEL_COLOR_CLASSES[l.color] || LABEL_COLOR_CLASSES.gray}`}
                           >
                             {Icon && <Icon className="h-3 w-3 shrink-0 opacity-80" />}
                             {l.name}
@@ -503,7 +503,7 @@ export default function ShoppingListItem({
                   descriptionInputRef.current?.focus()
                 })
               }}
-              className="shrink-0 flex h-8 w-8 items-center justify-center rounded p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              className="shrink-0 flex h-10 w-10 items-center justify-center rounded p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               aria-label="Toelichting wissen"
             >
               <X className="h-4 w-4" />
@@ -528,7 +528,7 @@ export default function ShoppingListItem({
                   onLabelDropdownOpenChange?.(null)
                 }
               }}
-              className="shrink-0 flex h-8 min-w-8 items-center justify-center gap-0.5 rounded-full border border-gray-200 px-1.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
+              className="shrink-0 flex h-10 min-w-10 items-center justify-center gap-0.5 rounded-full border border-gray-200 px-1.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
               aria-label="Labels"
             >
               <Tag className="h-4 w-4" />
@@ -549,7 +549,7 @@ export default function ShoppingListItem({
               e.stopPropagation()
               onMoveToMain()
             }}
-            className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="shrink-0 flex h-10 w-10 items-center justify-center rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
             aria-label="Verplaats naar hoofdlijst"
           >
             <Plus className="h-5 w-5" strokeWidth={2} />

@@ -350,7 +350,7 @@ export default function ShoppingList({
                 haptic('light')
                 setDropdownOpen((v) => !v)
               }}
-              className="flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded text-gray-500 hover:text-gray-600 hover:bg-gray-100 transition-colors"
               aria-expanded={dropdownOpen}
               aria-label="Lijstopties"
             >
@@ -527,7 +527,7 @@ export default function ShoppingList({
                   haptic('light')
                   setShowClearCheckedModal(true)
                 }}
-                className="shrink-0 flex h-8 w-8 items-center justify-center rounded text-gray-500 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                className="shrink-0 flex h-10 w-10 items-center justify-center rounded text-gray-500 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                 aria-label="Wis alle afgevinkte items"
               >
                 <Trash2 className="h-4 w-4" strokeWidth={2} />
@@ -578,7 +578,7 @@ export default function ShoppingList({
                       <button
                         type="button"
                         onClick={() => onSnoozeExpected(product)}
-                        className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:text-gray-600 hover:bg-gray-50 transition-colors"
                         aria-label="Snooze 24 uur"
                       >
                         <SnoozeIcon size={16} className="text-current" />
@@ -588,7 +588,7 @@ export default function ShoppingList({
                     <button
                       type="button"
                       onClick={() => !isAdding && handleAddWithAnimation(product.id, () => onAddExpectedToMain(product))}
-                      className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 transition-colors duration-300 ${isAdding ? 'bg-white text-green-800' : 'text-gray-500 hover:text-gray-600 hover:bg-gray-50'}`}
+                      className={`shrink-0 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 transition-colors duration-300 ${isAdding ? 'bg-white text-green-800' : 'text-gray-500 hover:text-gray-600 hover:bg-gray-50'}`}
                       aria-label="Toevoegen aan hoofdlijst"
                       disabled={isAdding}
                     >
@@ -648,7 +648,7 @@ export default function ShoppingList({
                             haptic('light')
                             onRemoveBasicFromMain(product)
                           }}
-                          className="shrink-0 flex h-8 w-8 items-center justify-center text-green-600 hover:text-green-700"
+                          className="shrink-0 flex h-10 w-10 items-center justify-center text-green-600 hover:text-green-700"
                           aria-label="Verwijder van hoofdlijst"
                         >
                           <Check className="h-5 w-5" strokeWidth={2.5} />
@@ -657,7 +657,7 @@ export default function ShoppingList({
                         <button
                           type="button"
                           onClick={() => !isAdding && handleAddWithAnimation(product.id, () => onAddBasicToMain!(product))}
-                          className={`shrink-0 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 transition-colors duration-300 ${isAdding ? 'bg-white text-green-800' : 'text-gray-500 hover:text-gray-600 hover:bg-gray-50'}`}
+                          className={`shrink-0 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 transition-colors duration-300 ${isAdding ? 'bg-white text-green-800' : 'text-gray-500 hover:text-gray-600 hover:bg-gray-50'}`}
                           aria-label="Toevoegen aan hoofdlijst"
                           disabled={isAdding}
                         >

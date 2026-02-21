@@ -479,7 +479,7 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
               {i > 0 && <div className="mx-4 border-t border-gray-200" />}
               <div className="px-4 py-3 flex items-center gap-4">
               <span
-                className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm ${
+                className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm ${
                   showTodayHighlight && i === todayDayOfWeek ? 'bg-blue-600 font-bold text-white' : 'bg-gray-100 font-medium text-gray-400'
                 }`}
               >
@@ -531,7 +531,7 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
               <div className="py-4 px-4">
               <div className="flex flex-wrap items-center gap-4">
               <span
-                className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm leading-none ${
+                className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm leading-none ${
                   showTodayHighlight && day.day_of_week === todayDayOfWeek
                     ? 'bg-blue-600 font-bold text-white'
                     : 'bg-gray-100 font-medium text-gray-600'
@@ -624,7 +624,7 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
                           e.preventDefault()
                           openUrlDropdown(day.day_of_week)
                         }}
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white transition-colors ${
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white transition-colors ${
                           hasLink
                             ? 'text-blue-600 hover:bg-gray-50 hover:border-gray-300'
                             : 'text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-600'
