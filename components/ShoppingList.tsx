@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { haptic } from '@/lib/haptics'
-import { ChevronDown, ChevronRight, Clock, Zap, Plus, Check, Trash2, Star, ShoppingCart, MoreVertical, Package } from 'lucide-react'
+import { ChevronDown, ChevronRight, Zap, Plus, Check, Trash2, Star, ShoppingCart, MoreVertical, Package } from 'lucide-react'
+import SnoozeIcon from './icons/SnoozeIcon'
 import type { ItemLabel } from '@/lib/hooks/use-shopping-list'
 
 const STORAGE_KEY_CATEGORY = 'boodschapp-show-category-titles'
@@ -111,6 +112,7 @@ interface ShoppingListProps {
   onUpdateDescription: (id: string, description: string) => void
   onClearChecked?: () => void
   onAddExpectedToMain?: (product: ExpectedProduct) => void
+  onSnoozeExpected?: (product: ExpectedProduct) => void
   onAddBasicToMain?: (product: BasicProduct) => void
   onRemoveBasicFromMain?: (product: BasicProduct) => void
   onMainListHeaderClick?: () => void
@@ -127,6 +129,7 @@ export default function ShoppingList({
   onUpdateDescription,
   onClearChecked,
   onAddExpectedToMain,
+  onSnoozeExpected,
   onAddBasicToMain,
   onRemoveBasicFromMain,
   onMainListHeaderClick,
@@ -570,7 +573,18 @@ export default function ShoppingList({
                   <span className="text-sm text-gray-400 shrink-0">
                     {product.days_until_expected === 0 ? 'vandaag' : `over ~ ${product.days_until_expected}d`}
                   </span>
-                  {onAddExpectedToMain && (
+                  <div className="flex shrink-0 items-center gap-3">
+                    {onSnoozeExpected && (
+                      <button
+                        type="button"
+                        onClick={() => onSnoozeExpected(product)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+                        aria-label="Snooze 24 uur"
+                      >
+                        <SnoozeIcon size={16} className="text-current" />
+                      </button>
+                    )}
+                    {onAddExpectedToMain && (
                     <button
                       type="button"
                       onClick={() => !isAdding && handleAddWithAnimation(product.id, () => onAddExpectedToMain(product))}
@@ -580,7 +594,8 @@ export default function ShoppingList({
                     >
                       {isAdding ? <Check className="h-5 w-5" strokeWidth={2.5} /> : <Plus className="h-5 w-5" strokeWidth={2} />}
                     </button>
-                  )}
+                    )}
+                  </div>
                 </div>
               )
             })}

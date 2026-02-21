@@ -8,6 +8,7 @@ import { EMOJI_PICKER_LIST } from '@/lib/emoji-picker-list'
 import EmptyListItem from './EmptyListItem'
 import InlineSearchDropdown from './InlineSearchDropdown'
 import ShoppingList from './ShoppingList'
+import Snackbar from './Snackbar'
 import ShoppingListSkeleton from './ShoppingListSkeleton'
 import PullToRefresh from './PullToRefresh'
 import { createClient } from '@/lib/supabase/client'
@@ -325,6 +326,9 @@ export default function ShoppingListPage() {
   const [emptyItemEntering, setEmptyItemEntering] = useState(false)
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [snackbarMessage, setSnackbarMessage] = useState('')
+  const [showSnackbar, setShowSnackbar] = useState(false)
+  const handleSnackbarHide = useCallback(() => setShowSnackbar(false), [])
   const [lastUpdate, setLastUpdate] = useState<{ userName: string; updatedAt: string } | null>(null)
   const [isOnline, setIsOnline] = useState(true)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -1010,11 +1014,16 @@ export default function ShoppingListPage() {
     setShowEmptyItemDropdown(false)
 
     try {
-      const requestBody = {
+      const expectedProduct = expectedProducts.find((p) => p.id === result.id)
+      const requestBody: Record<string, unknown> = {
         product_id: result.id,
         category_id: categoryId,
         quantity: '1',
         description: effectiveDescription,
+      }
+      if (expectedProduct) {
+        requestBody.from_verwacht = true
+        requestBody.expected_days = expectedProduct.days_until_expected
       }
 
       const response = await fetch('/api/shopping-list', {
@@ -1030,6 +1039,8 @@ export default function ShoppingListPage() {
           const filtered = old.filter((item) => item.id !== tempId)
           return [data.item, ...filtered]
         })
+        queryClient.invalidateQueries({ queryKey: queryKeys.expectedProducts })
+        queryClient.invalidateQueries({ queryKey: queryKeys.suggestions })
         // Keep empty item open and force remount for focus
         emptyItemJustAddedRef.current = true
         setShouldFocusEmptyItem(true)
@@ -1297,6 +1308,12 @@ export default function ShoppingListPage() {
       afterMain={
         <>
           <FloatingAddButton onClick={handleOpenEmptyItem} />
+          <Snackbar
+            message={snackbarMessage}
+            visible={showSnackbar}
+            onHide={handleSnackbarHide}
+            durationMs={3000}
+          />
           {errorMessage && (
             <div className="fixed top-4 left-1/2 z-50 -translate-x-1/2 transform">
               <div className="mx-auto max-w-md rounded-[16px] bg-red-50 border border-red-200 px-4 py-3 shadow-lg">
@@ -1520,6 +1537,22 @@ export default function ShoppingListPage() {
                     setErrorMessage('Kon item niet toevoegen. Probeer het opnieuw.')
                     setTimeout(() => setErrorMessage(null), 5000)
                     console.error('Error adding expected product:', error)
+                  }
+                }}
+                onSnoozeExpected={async (product) => {
+                  haptic('light')
+                  try {
+                    const res = await fetch(`/api/products/expected/snooze/${product.id}`, { method: 'POST' })
+                    if (!res.ok) {
+                      const data = await res.json().catch(() => ({}))
+                      throw new Error(data.error || 'Kon product niet snoozen')
+                    }
+                    queryClient.invalidateQueries({ queryKey: queryKeys.expectedProducts })
+                    setSnackbarMessage('Product gesnoozed voor 24 uur.')
+                    setShowSnackbar(true)
+                  } catch (error) {
+                    setErrorMessage(error instanceof Error ? error.message : 'Kon product niet snoozen.')
+                    setTimeout(() => setErrorMessage(null), 5000)
                   }
                 }}
                 onAddBasicToMain={async (product) => {

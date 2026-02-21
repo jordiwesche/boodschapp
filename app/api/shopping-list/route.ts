@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { CATEGORY_EMOJI_MAP } from '@/lib/predict-category-emoji'
+import { findProductIdByName } from '@/lib/search'
 
 // GET /api/shopping-list - Get all shopping list items for household
 export async function GET(request: NextRequest) {
@@ -220,6 +221,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If product_id provided, verify it exists and belongs to household
+    let resolvedProductId = product_id || null
     if (product_id) {
       const { data: product, error: productError } = await supabase
         .from('products')
@@ -234,6 +236,14 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
+    } else if (product_name?.trim()) {
+      // List-only add: try to match product_name to existing product (exact or singular/plural)
+      const { data: products } = await supabase
+        .from('products')
+        .select('id, name')
+        .eq('household_id', user.household_id)
+      const matchedId = findProductIdByName(products || [], product_name.trim())
+      if (matchedId) resolvedProductId = matchedId
     }
 
     // Create shopping list item (optionally track Verwacht add for algorithm analysis)

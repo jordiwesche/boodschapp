@@ -136,7 +136,18 @@ export async function GET() {
       .in('product_id', productIds)
 
     const onListIds = new Set((listItems ?? []).map((r) => r.product_id).filter(Boolean))
-    const idsToReturn = productIds.filter((id) => !onListIds.has(id))
+    let idsToReturn = productIds.filter((id) => !onListIds.has(id))
+
+    // Exclude snoozed products (snoozed_until > now)
+    const now = new Date().toISOString()
+    const { data: snoozedRows } = await supabase
+      .from('product_snoozes')
+      .select('product_id')
+      .eq('household_id', householdId)
+      .gt('snoozed_until', now)
+      .in('product_id', idsToReturn)
+    const snoozedIds = new Set((snoozedRows ?? []).map((r) => r.product_id).filter(Boolean))
+    idsToReturn = idsToReturn.filter((id) => !snoozedIds.has(id))
 
     if (idsToReturn.length === 0) {
       return NextResponse.json({ expected: [] })

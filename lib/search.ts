@@ -26,7 +26,7 @@ function normalizeForTokens(text: string): string {
 }
 
 /** Dutch singular/plural pairs (normalized). Used so "banaan" matches product "Bananen". */
-const DUTCH_SINGULAR_PLURAL: Record<string, string> = {
+export const DUTCH_SINGULAR_PLURAL: Record<string, string> = {
   banaan: 'bananen',
   bananen: 'banaan',
   appel: 'appels',
@@ -61,6 +61,31 @@ function queryTokens(query: string): string[] {
   return normalizeForTokens(query)
     .split(' ')
     .filter((t) => t.length > 0)
+}
+
+/**
+ * Find product ID by name when there is exactly one match.
+ * Uses exact match or Dutch singular/plural (e.g. "banaan" matches "Bananen").
+ * Returns null if 0 or >1 matches (avoids wrong links).
+ */
+export function findProductIdByName(
+  products: { id: string; name: string }[],
+  query: string
+): string | null {
+  const trimmed = query?.trim()
+  if (!trimmed || trimmed.length < 2) return null
+
+  const queryNorm = normalizeForTokens(trimmed)
+  const matches = products.filter((p) => {
+    const nameNorm = normalizeForTokens(p.name || '')
+    return (
+      queryNorm === nameNorm ||
+      (DUTCH_SINGULAR_PLURAL[queryNorm] && DUTCH_SINGULAR_PLURAL[queryNorm] === nameNorm) ||
+      (DUTCH_SINGULAR_PLURAL[nameNorm] && DUTCH_SINGULAR_PLURAL[nameNorm] === queryNorm)
+    )
+  })
+
+  return matches.length === 1 ? matches[0].id : null
 }
 
 /**
