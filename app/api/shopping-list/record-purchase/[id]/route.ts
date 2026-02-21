@@ -72,14 +72,20 @@ export async function POST(
       )
     }
 
-    // Smart detection: items with "check" in description are not real purchases
+    // Smart detection: items with "check" label or "check" in description are not real purchases
     // (user is just checking if they have the item at home)
+    const { data: itemLabels } = await supabase
+      .from('shopping_list_item_labels')
+      .select('label_id, labels!inner(slug)')
+      .eq('item_id', id)
+    const hasCheckLabel = itemLabels?.some((r: { labels: { slug: string } }) => r.labels?.slug === 'check')
     const description = (item.description || '').toLowerCase().trim()
-    if (/(?:^|[\s(])check(?:$|[\s)])/i.test(description)) {
-      console.log(`⏭️ Skipped purchase history for product ${item.product_id}: description contains "check"`)
+    const hasCheckInDescription = /(?:^|[\s(])check(?:$|[\s)])/i.test(description)
+    if (hasCheckLabel || hasCheckInDescription) {
+      console.log(`⏭️ Skipped purchase history for product ${item.product_id}: check label or description`)
       return NextResponse.json({
         success: true,
-        message: 'Item heeft "check" in toelichting, geen echte aankoop',
+        message: 'Item heeft check-label of "check" in toelichting, geen echte aankoop',
         skipped: true,
       })
     }

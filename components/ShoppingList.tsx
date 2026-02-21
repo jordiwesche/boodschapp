@@ -30,8 +30,8 @@ const LATER_DAY_ORDER: Record<string, number> = {
   vrijdag: 4, vr: 4, zaterdag: 5, za: 5, zondag: 6, zo: 6,
   later: 99, // no specific day → sort at end of Later section
 }
-// Match standalone token: at start, after whitespace, or inside ( ). "later" + day names (longer first so "ma" doesn't match inside "maandag").
-const LATER_DAY_PATTERN = /(?:^|[\s(])(later|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag|ma|di|wo|do|vr|za|zo)(?:$|[\s)])/i
+// Match day/later token only when in parentheses: (ma), (di), (later) etc.
+const LATER_DAY_PATTERN = /\(\s*(later|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag|ma|di|wo|do|vr|za|zo)\s*\)/i
 
 function hasLaterDayToken(description: string | null): boolean {
   const d = description?.trim()
@@ -397,9 +397,9 @@ export default function ShoppingList({
                 z.s.m.
               </h3>
             )}
-            <div>
+            <div className="min-w-0 overflow-hidden">
               {sortedZsmUnchecked.map((item) => (
-                <div key={item.id} data-shopping-list-item>
+                <div key={item.id} data-shopping-list-item className="min-w-0">
                   <ShoppingListItem
                     item={item}
                     onCheck={onCheck}
@@ -445,11 +445,12 @@ export default function ShoppingList({
                     {categoryGroup.category?.name || 'Overig'}
                   </h3>
                 )}
-                <div>
+                <div className="min-w-0 overflow-hidden">
                   {itemsToRender.map((item) => (
                     <div
                       key={item.id}
                       data-shopping-list-item
+                      className="min-w-0"
                     >
                       <ShoppingListItem
                         item={item}
@@ -476,12 +477,13 @@ export default function ShoppingList({
               Later
             </h3>
             )}
-            <div>
-              {sortedLaterUnchecked.map((item) => (
-                <div
-                  key={item.id}
-                  data-shopping-list-item
-                >
+                <div className="min-w-0 overflow-hidden">
+                  {sortedLaterUnchecked.map((item) => (
+                    <div
+                      key={item.id}
+                      data-shopping-list-item
+                      className="min-w-0"
+                    >
                   <ShoppingListItem
                     item={item}
                     onCheck={onCheck}

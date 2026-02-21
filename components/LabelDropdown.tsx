@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Tag, Zap, Clock, Plus, Pencil } from 'lucide-react'
+import { Tag, Zap, Clock, Eye, Plus, Pencil } from 'lucide-react'
 import { haptic } from '@/lib/haptics'
 import { useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
@@ -256,7 +256,7 @@ export default function LabelDropdown({
                 <div className="flex flex-wrap gap-1.5 justify-end">
                   {smartLabels.map((label) => {
                     const isSelected = selectedIds.has(label.id)
-                    const Icon = label.slug === 'zsm' ? Zap : Clock
+                    const Icon = label.slug === 'zsm' ? Zap : label.slug === 'check' ? Eye : Clock
                     return (
                       <button
                         key={label.id}
@@ -424,9 +424,10 @@ export default function LabelDropdown({
                   <button
                     type="button"
                     onClick={() => setIsAddingLabel(true)}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-gray-200 text-gray-500 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-gray-200 text-gray-500 transition-colors hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"
+                    aria-label="Label toevoegen"
                   >
-                    <Plus className="h-3.5 w-3.5" />
+                    <Plus className="h-4 w-4" />
                   </button>
                 </>
               ) : (

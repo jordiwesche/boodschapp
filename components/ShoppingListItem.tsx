@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Check, Trash2, Plus, X, Tag, Zap, Clock, ChevronDown, ChevronUp } from 'lucide-react'
+import { Check, Trash2, Plus, X, Tag, Zap, Clock, Eye, ChevronDown, ChevronUp } from 'lucide-react'
 import { haptic } from '@/lib/haptics'
 import Skeleton from './Skeleton'
 import LabelDropdown from './LabelDropdown'
@@ -11,27 +11,30 @@ import { useLabels, useSetItemLabels, type Label } from '@/lib/hooks/use-labels'
 const LONG_PRESS_MS = 600
 
 const CHECK_PATTERN = /(?:^|[\s(])(check)(?:$|[\s)])/i
-const LATER_DAY_PATTERN = /(?:^|[\s(])(later|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag|ma|di|wo|do|vr|za|zo)(?:$|[\s)])/i
+const LATER_DAY_PATTERN = /\(\s*(later|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag|ma|di|wo|do|vr|za|zo)\s*\)/i
 
-type DescriptionLabel = { type: 'check' | 'later'; token: string }
+type DescriptionLabel = { type: 'later'; token: string }
 
 function detectDescriptionLabel(description: string | null): DescriptionLabel | null {
   if (!description) return null
   const d = description.trim()
-  const checkMatch = d.match(CHECK_PATTERN)
-  if (checkMatch) return { type: 'check', token: checkMatch[1] }
   const laterMatch = d.match(LATER_DAY_PATTERN)
   if (laterMatch) return { type: 'later', token: laterMatch[1] }
   return null
 }
 
-function stripLabelToken(description: string, token: string): string {
+function hasCheckToken(description: string | null): boolean {
+  const d = description?.trim()
+  return !!d && CHECK_PATTERN.test(d)
+}
+
+function stripLabelToken(description: string, token: string, preserveWhitespace = false): string {
   const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return description
+  const result = description
     .replace(new RegExp(`\\(\\s*${escaped}\\s*\\)`, 'i'), '')
     .replace(new RegExp(`(?:^|\\s)${escaped}(?:$|\\s)`, 'i'), ' ')
     .replace(/\s+/g, ' ')
-    .trim()
+  return preserveWhitespace ? result : result.trim()
 }
 
 function hasLaterDayToken(description: string | null): boolean {
@@ -55,9 +58,9 @@ function getDescriptionMatchedLabels(
   description: string | null,
   labels: Label[]
 ): { matched: ItemLabel[]; strippedDescription: string } {
-  const d = description?.trim() ?? ''
-  if (!d || labels.length === 0) return { matched: [], strippedDescription: d }
-  const words = d.split(/\s+/)
+  const d = description ?? ''
+  if (!d.trim() || labels.length === 0) return { matched: [], strippedDescription: d }
+  const words = d.trim().split(/\s+/)
   const matched: ItemLabel[] = []
   const seenIds = new Set<string>()
   for (const word of words) {
@@ -71,7 +74,7 @@ function getDescriptionMatchedLabels(
   let stripped = d
   for (const m of matched) {
     const escaped = m.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    stripped = stripped.replace(new RegExp(`(?:^|\\s)${escaped}(?:$|\\s)`, 'gi'), ' ').replace(/\s+/g, ' ').trim()
+    stripped = stripped.replace(new RegExp(`(?:^|\\s)${escaped}(?:$|\\s)`, 'gi'), ' ').replace(/\s+/g, ' ')
   }
   return { matched, strippedDescription: stripped }
 }
@@ -299,6 +302,8 @@ export default function ShoppingListItem({
     let descToSave = editValue.trim()
     const hasLater = hasLaterDayToken(descToSave)
     const hasLaterLabel = (item.labels ?? []).some((l) => l.slug === 'later')
+    const hasCheck = hasCheckToken(descToSave)
+    const hasCheckLabel = (item.labels ?? []).some((l) => l.slug === 'check')
 
     if (hasLater && !hasLaterLabel) {
       const laterLabel = labels.find((l) => l.slug === 'later')
@@ -320,6 +325,25 @@ export default function ShoppingListItem({
         .map((l) => l.id)
       setLabelsMutation.mutate({ itemId: item.id, labelIds: nextIds })
     }
+
+    if (hasCheck && !hasCheckLabel) {
+      const checkLabel = labels.find((l) => l.slug === 'check')
+      if (checkLabel) {
+        const currentIds = (item.labels ?? []).map((l) => l.id)
+        const nextIds = [...currentIds.filter((id) => {
+          const lbl = labels.find((l) => l.id === id)
+          return !lbl || lbl.type !== 'smart' || lbl.slug === 'check'
+        }), checkLabel.id]
+        setLabelsMutation.mutate({ itemId: item.id, labelIds: nextIds })
+        descToSave = stripLabelToken(descToSave, 'check') ?? ''
+      }
+    } else if (!hasCheck && hasCheckLabel) {
+      const nextIds = (item.labels ?? [])
+        .filter((l) => l.slug !== 'check')
+        .map((l) => l.id)
+      setLabelsMutation.mutate({ itemId: item.id, labelIds: nextIds })
+    }
+
     onUpdateDescription(item.id, descToSave)
     setIsEditingDescription(false)
   }
@@ -378,21 +402,63 @@ export default function ShoppingListItem({
     }
     return 'bg-white'
   }
+  const rowBgColor = getRowBgClass().includes('gray-100') ? 'rgb(243 244 246)' : 'white'
 
-  const descriptionMatched = getDescriptionMatchedLabels(item.description, labels)
-  const descLabel = detectDescriptionLabel(item.description)
-  const labelsToShow = descLabel?.type === 'later'
-    ? [...displayLabels, ...descriptionMatched.matched].filter((l) => l.slug !== 'later')
-    : [...displayLabels, ...descriptionMatched.matched]
+  const descForLabels = isEditingDescription ? editValue : item.description
+  const descriptionMatched = getDescriptionMatchedLabels(descForLabels, labels)
+  const descLabel = detectDescriptionLabel(descForLabels)
+  const liveCheckLabel = hasCheckToken(descForLabels) ? labels.find((l) => l.slug === 'check') : null
+  const labelsToShow = (() => {
+    let list = [...displayLabels, ...descriptionMatched.matched]
+    if (descLabel?.type === 'later') list = list.filter((l) => l.slug !== 'later')
+    if (hasCheckToken(descForLabels)) {
+      const checkLbl = liveCheckLabel ?? { id: 'check-live', name: 'check', color: 'amber', type: 'smart' as const, slug: 'check' as string | null }
+      if (!list.some((l) => l.slug === 'check')) list = [...list, checkLbl]
+    }
+    if (!hasCheckToken(descForLabels)) list = list.filter((l) => l.slug !== 'check')
+    return list
+  })()
+
+  const strippedForInput = (() => {
+    let t = descriptionMatched.strippedDescription || ''
+    if (descLabel) t = stripLabelToken(t, descLabel.token) ?? ''
+    if (hasCheckToken(descForLabels)) t = stripLabelToken(t, 'check') ?? ''
+    return t
+  })()
+
+  const handleInputChange = (newRaw: string) => {
+    const parsed = (() => {
+      const dm = getDescriptionMatchedLabels(newRaw, labels)
+      const dl = detectDescriptionLabel(newRaw)
+      let stripped = dm.strippedDescription || ''
+      const tokens: string[] = []
+      if (dl) {
+        stripped = stripLabelToken(stripped, dl.token, true) ?? ''
+        tokens.push(dl.token)
+      }
+      if (hasCheckToken(newRaw)) {
+        stripped = stripLabelToken(stripped, 'check', true) ?? ''
+        tokens.push('check')
+      }
+      for (const m of dm.matched) tokens.push(m.name)
+      return { stripped, tokens }
+    })()
+    const existingTokens: string[] = []
+    if (hasCheckToken(descForLabels)) existingTokens.push('check')
+    if (descLabel) existingTokens.push(descLabel.token)
+    for (const m of descriptionMatched.matched) existingTokens.push(m.name)
+    const allTokens = [...new Set([...parsed.tokens, ...existingTokens])]
+    setEditValue(parsed.stripped + (allTokens.length ? ' ' + allTokens.join(' ') : ''))
+  }
 
   return (
-    <div className="relative" data-shopping-list-item>
+    <div className={`relative ${isEditingDescription && !showChecked ? 'overflow-visible' : ''}`} data-shopping-list-item>
       {/* White wrapper when this item has dropdown open; row + dropdown inside */}
       <div className={showLabelDropdownArea ? 'rounded-xl bg-white -mx-2 px-2 pt-2 pb-2' : ''}>
         {/* Row */}
         <div
           ref={itemRef}
-          className={`relative flex select-none items-center gap-3 py-2 transition-colors duration-200 transition-transform duration-150 ${
+          className={`relative flex select-none items-center gap-3 py-2 transition-colors duration-200 transition-transform duration-150 ${isEditingDescription && !showChecked ? 'overflow-visible' : 'overflow-hidden'} ${
             getRowBgClass()
           } ${isChecking ? 'scale-[0.98]' : ''} ${
             isPressing ? 'scale-[0.99]' : pressActive ? 'scale-[0.97]' : ''
@@ -433,139 +499,155 @@ export default function ShoppingListItem({
 
         {showEmoji && <span className="text-lg shrink-0">{item.emoji}</span>}
 
-        <div className={isEditingDescription && !showLabelDropdownArea ? 'shrink-0 min-w-0' : 'flex-1 min-w-0'}>
-          <div className="flex h-6 items-center gap-2 min-w-0 flex-1">
-            {!isEditingDescription ? (
-              <div
-                role={showChecked ? undefined : 'button'}
-                tabIndex={showChecked ? undefined : 0}
-                onClick={showChecked ? undefined : handleEditClick}
-                onKeyDown={showChecked ? undefined : (e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    setIsEditingDescription(true)
-                    setEditValue(item.description || '')
-                  }
-                }}
-                className={`flex h-6 min-w-0 flex-1 flex-nowrap items-center gap-2 ${showChecked ? '' : 'cursor-pointer'}`}
-                aria-label={showChecked ? undefined : 'Toelichting bewerken'}
-              >
-                {item.product_name != null ? (
-                  <span
-                    className={`flex h-6 shrink-0 items-center text-[16px] font-medium ${
-                      showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
-                    }`}
-                  >
-                    {item.product_name}
-                  </span>
-                ) : (
-                  <Skeleton variant="text" className="h-6 w-24 shrink-0" animation="pulse" />
-                )}
+        <div className={`min-w-0 flex-1 ${isEditingDescription && !showChecked ? 'overflow-visible' : 'overflow-hidden'}`}>
+          <div
+            role={!isEditingDescription && showChecked ? undefined : 'button'}
+            tabIndex={!isEditingDescription && showChecked ? undefined : 0}
+            onClick={!isEditingDescription && showChecked ? undefined : !isEditingDescription ? handleEditClick : undefined}
+            onKeyDown={isEditingDescription || showChecked ? undefined : (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setIsEditingDescription(true)
+                setEditValue(item.description || '')
+              }
+            }}
+            className={`flex h-6 min-w-0 items-center ${!isEditingDescription ? 'cursor-pointer' : ''}`}
+            aria-label={!isEditingDescription && showChecked ? undefined : 'Toelichting bewerken'}
+          >
+            {/* Product name + description overlay container */}
+            <div className="relative flex min-w-0 flex-1 items-center overflow-hidden">
+              {item.product_name != null ? (
                 <span
-                  className={`text-sm flex h-6 min-w-0 flex-1 flex-nowrap items-center overflow-hidden truncate ${item.description ? 'text-gray-500' : ''}`}
+                  className={`flex h-6 shrink-0 truncate text-[16px] font-medium ${
+                    showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
+                  }`}
                 >
-                  {!descLabel ? descriptionMatched.strippedDescription || '' : stripLabelToken(descriptionMatched.strippedDescription, descLabel.token) ?? ''}
+                  {item.product_name}
                 </span>
-                <span className="ml-auto flex h-6 shrink-0 flex-nowrap items-center gap-1.5">
-                  {labelsToShow
-                    .sort((a, b) => (a.type === 'smart' ? 1 : 0) - (b.type === 'smart' ? 1 : 0))
-                    .map((l) => {
-                    const Icon = l.type === 'smart' ? (l.slug === 'zsm' ? Zap : Clock) : null
-                    return (
-                      <span
-                        key={l.id}
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium leading-none ${LABEL_COLOR_CLASSES[l.color] || LABEL_COLOR_CLASSES.gray}`}
-                      >
-                        {Icon && <Icon className="h-3 w-3 shrink-0 opacity-80" />}
-                        {l.name}
-                      </span>
-                    )
-                  })}
-                  {descLabel && (
+              ) : (
+                <Skeleton variant="text" className="h-6 w-24 shrink-0" animation="pulse" />
+              )}
+              {/* Description overlays product name: gradient alleen links (fade), tekst alleen op wit (rechts van gradient) */}
+              {isEditingDescription && !showChecked ? (
+                <div
+                  className="absolute right-0 top-0 h-6 overflow-hidden"
+                  style={{
+                    minWidth: 112,
+                    width: Math.max(112, (strippedForInput.length || 1) * 8 + 34),
+                    background: `linear-gradient(to right, transparent 0px, ${rowBgColor} 34px)`,
+                  }}
+                >
+                  <input
+                    ref={descriptionInputRef}
+                    type="text"
+                    value={strippedForInput}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Toelichting"
+                    className="h-full w-full rounded bg-transparent pl-[34px] pr-2 py-1 text-right text-sm text-gray-600 placeholder:text-gray-400 focus:outline-none placeholder:text-[14px]"
+                    autoFocus
+                  />
+                </div>
+              ) : (
+                <span
+                  className={`absolute right-0 top-0 flex h-6 min-w-[112px] max-w-full items-center justify-end overflow-hidden truncate pl-[34px] pr-2 text-right text-sm ${item.description ? 'text-gray-500' : ''}`}
+                  style={{
+                    background: `linear-gradient(to right, transparent 0px, ${rowBgColor} 34px)`,
+                  }}
+                >
+                  {(() => {
+                    let text = descriptionMatched.strippedDescription || ''
+                    if (descLabel) text = stripLabelToken(text, descLabel.token) ?? ''
+                    if (hasCheckToken(descForLabels)) text = stripLabelToken(text, 'check') ?? ''
+                    return text
+                  })()}
+                </span>
+              )}
+            </div>
+            {/* Clear eerst, dan labels helemaal rechts – geen padding rechts in edit mode */}
+            <span className={`ml-2 flex h-6 shrink-0 flex-nowrap items-center gap-1.5 ${isEditingDescription && !showChecked ? '-mr-4' : ''}`}>
+            {isEditingDescription && !showChecked && (
+              <button
+                type="button"
+                onPointerDown={() => { clearButtonTouchedRef.current = true }}
+                onClick={() => {
+                  haptic('light')
+                  const tokens: string[] = []
+                  if (hasCheckToken(descForLabels)) tokens.push('check')
+                  if (descLabel) tokens.push(`(${descLabel.token})`)
+                  for (const m of descriptionMatched.matched) tokens.push(m.name)
+                  setEditValue(tokens.join(' ').trim() || '')
+                  requestAnimationFrame(() => descriptionInputRef.current?.focus())
+                }}
+                className="shrink-0 flex h-10 w-10 items-center justify-center rounded p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                aria-label="Toelichting wissen"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+              {labelsToShow
+                .sort((a, b) => (a.type === 'smart' ? 1 : 0) - (b.type === 'smart' ? 1 : 0))
+                .map((l) => {
+                  const Icon = l.type === 'smart' ? (l.slug === 'zsm' ? Zap : l.slug === 'check' ? Eye : Clock) : null
+                  const isFromDescription = l.slug === 'check' || descriptionMatched.matched.some((m) => m.id === l.id)
+                  const removeToken = l.slug === 'check' ? 'check' : descriptionMatched.matched.some((m) => m.id === l.id) ? l.name : null
+                  return (
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium leading-none shrink-0 ${
-                        descLabel.type === 'check'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-gray-100 text-gray-500'
-                      }`}
+                      key={l.id}
+                      className={`inline-flex shrink-0 items-center gap-1 rounded-full pl-2.5 pr-2.5 py-1.5 text-xs font-medium leading-none ${LABEL_COLOR_CLASSES[l.color] || LABEL_COLOR_CLASSES.gray}`}
                     >
-                      {descLabel.type === 'later' && <Clock className="h-3 w-3 shrink-0 opacity-80" />}
-                      {descLabel.token.toLowerCase()}
+                      {Icon && <Icon className="h-3 w-3 shrink-0 opacity-80" />}
+                      {l.name}
+                      {(isEditingDescription || !isFromDescription) && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            haptic('light')
+                            if (isFromDescription && removeToken) {
+                              const next = stripLabelToken(editValue, removeToken)
+                              setEditValue(next?.trim() ?? '')
+                            } else {
+                              const nextIds = (item.labels ?? []).filter((lb) => lb.id !== l.id).map((lb) => lb.id)
+                              setLabelsMutation.mutate({ itemId: item.id, labelIds: nextIds })
+                            }
+                          }}
+                          className="ml-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full opacity-70 hover:opacity-100 hover:bg-black/10 transition-colors"
+                          aria-label={`${l.name} verwijderen`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
                     </span>
+                  )
+                })}
+              {descLabel && (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full pl-2.5 pr-2.5 py-1.5 text-xs font-medium leading-none bg-gray-100 text-gray-500">
+                  <Clock className="h-3 w-3 shrink-0 opacity-80" />
+                  {descLabel.token.toLowerCase()}
+                  {isEditingDescription && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        haptic('light')
+                        const next = stripLabelToken(editValue, descLabel.token)
+                        setEditValue(next?.trim() ?? '')
+                      }}
+                      className="ml-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full opacity-70 hover:opacity-100 hover:bg-black/10 transition-colors"
+                      aria-label={`${descLabel.token} verwijderen`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
                   )}
                 </span>
-              </div>
-            ) : (
-              <>
-                {item.product_name != null ? (
-                  <span
-                    className={`flex h-6 items-center text-[16px] font-medium shrink-0 ${
-                      showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
-                    }`}
-                  >
-                    {item.product_name}
-                  </span>
-                ) : (
-                  <Skeleton variant="text" className="h-6 w-24 shrink-0" animation="pulse" />
-                )}
-                {showLabelDropdownArea && (
-                  <span className="ml-auto flex h-6 shrink-0 flex-nowrap items-center gap-1.5">
-                    {[...displayLabels]
-                      .sort((a, b) => (a.type === 'smart' ? 1 : 0) - (b.type === 'smart' ? 1 : 0))
-                      .map((l) => {
-                        const Icon = l.type === 'smart' ? (l.slug === 'zsm' ? Zap : Clock) : null
-                        return (
-                          <span
-                            key={l.id}
-                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium leading-none ${LABEL_COLOR_CLASSES[l.color] || LABEL_COLOR_CLASSES.gray}`}
-                          >
-                            {Icon && <Icon className="h-3 w-3 shrink-0 opacity-80" />}
-                            {l.name}
-                          </span>
-                        )
-                      })}
-                  </span>
-                )}
-              </>
-            )}
+              )}
+            </span>
           </div>
         </div>
 
         {isEditingDescription && !showChecked && (
-          <div ref={editAreaRef} onBlur={handleEditAreaBlur} className={`flex h-6 items-center gap-2 min-w-0 ${showLabelDropdownArea ? 'shrink-0' : 'flex-1'}`}>
-            {!showLabelDropdownArea && (
-              <>
-            <input
-              ref={descriptionInputRef}
-              type="text"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Toelichting"
-              className="flex-1 min-w-0 rounded bg-transparent px-2 py-1 text-left text-gray-600 placeholder:text-gray-400 focus:outline-none placeholder:text-[14px]"
-              style={{ fontSize: '12px' }}
-              autoFocus
-            />
-            <button
-              type="button"
-              onPointerDown={() => {
-                clearButtonTouchedRef.current = true
-              }}
-              onClick={() => {
-                haptic('light')
-                setEditValue('')
-                // Focus terug op input zodat toetsenbord open blijft op mobiel
-                requestAnimationFrame(() => {
-                  descriptionInputRef.current?.focus()
-                })
-              }}
-              className="shrink-0 flex h-10 w-10 items-center justify-center rounded p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              aria-label="Toelichting wissen"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            </>
-            )}
+          <div ref={editAreaRef} onBlur={handleEditAreaBlur} className="flex h-6 shrink-0 items-center gap-2">
             <button
               ref={labelButtonRef}
               type="button"
@@ -584,7 +666,7 @@ export default function ShoppingListItem({
                   onLabelDropdownOpenChange?.(null)
                 }
               }}
-              className="shrink-0 flex h-10 min-w-10 items-center justify-center gap-0.5 rounded-full border border-gray-200 px-1.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
+              className="hidden shrink-0 flex h-10 min-w-10 items-center justify-center gap-0.5 rounded-full border border-gray-200 px-1.5 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
               aria-label="Labels"
             >
               <Tag className="h-4 w-4" />
