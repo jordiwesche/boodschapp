@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
       .insert({
         household_id: user.household_id,
         name: name.trim(),
-        emoji: finalEmoji || '📦',
+        emoji: finalEmoji || '🛒',
         category_id: finalCategoryId,
       })
       .select()

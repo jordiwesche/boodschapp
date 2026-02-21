@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
         id: row.id,
         product_id: row.product_id,
         product_name: p?.name ?? 'Onbekend product',
-        emoji: p?.emoji ?? '📦',
+        emoji: p?.emoji ?? '🛒',
         purchased_at: row.purchased_at,
       }
     })

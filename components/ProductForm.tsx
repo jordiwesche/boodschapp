@@ -41,7 +41,7 @@ export default function ProductForm({
   loading = false,
 }: ProductFormProps) {
   const emojiInputRef = useRef<HTMLInputElement>(null)
-  const [emoji, setEmoji] = useState(product?.emoji || '📦')
+  const [emoji, setEmoji] = useState(product?.emoji || '🛒')
   const [name, setName] = useState(product?.name || '')
   const [categoryId, setCategoryId] = useState(product?.category_id || '')
   const [isBasic, setIsBasic] = useState(product?.is_basic || false)
@@ -190,7 +190,7 @@ export default function ProductForm({
     { emoji: '☕', name: 'mok' },
     { emoji: '🫖', name: 'kan' },
     { emoji: '🧊', name: 'ijsklontje' },
-    { emoji: '📦', name: 'pakket' },
+    { emoji: '🛒', name: 'pakket' },
     { emoji: '🧼', name: 'zeep' },
     { emoji: '🧽', name: 'spons' },
     { emoji: '🧹', name: 'bezem' },
@@ -468,13 +468,13 @@ export default function ProductForm({
 
   useEffect(() => {
     if (product) {
-      setEmoji(product.emoji || '📦')
+      setEmoji(product.emoji || '🛒')
       setName(product.name || '')
       setCategoryId(product.category_id || '')
       setIsBasic(product.is_basic || false)
     } else {
       // Reset form for new product
-      setEmoji('📦')
+      setEmoji('🛒')
       setName('')
       setCategoryId('')
       setIsBasic(false)
@@ -490,7 +490,7 @@ export default function ProductForm({
     // 4. The name has at least 3 characters (to avoid matching on short words and jumping to Overig too quickly)
     if (name && name.trim().length >= 3 && categories.length > 0) {
       // Auto-select emoji (only for new products or when emoji is default)
-      if (!product || emoji === '📦') {
+      if (!product || emoji === '🛒') {
         const suggestedEmoji = findEmojiByName(name)
         if (suggestedEmoji && suggestedEmoji !== emoji) {
           setEmoji(suggestedEmoji)
@@ -533,7 +533,7 @@ export default function ProductForm({
 
     try {
       await onSave({
-        emoji: emoji.trim() || '📦',
+        emoji: emoji.trim() || '🛒',
         name: name.trim(),
         description: product?.description?.trim() || null,
         category_id: categoryId,
@@ -624,7 +624,7 @@ export default function ProductForm({
             onClick={handleEmojiClick}
             className="flex h-10 w-full items-center justify-center rounded-md border border-gray-300 bg-white text-2xl shadow-sm hover:bg-gray-50 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {emoji || '📦'}
+            {emoji || '🛒'}
           </button>
           {showEmojiPicker && (
             <div className="absolute z-10 mt-2 w-full rounded-md border border-gray-200 bg-white shadow-lg">

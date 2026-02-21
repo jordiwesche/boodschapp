@@ -90,7 +90,7 @@ export async function copyHouseholdDataFromSeed(
 
     const { error: prodInsertError } = await supabase.from('products').insert({
       household_id: targetHouseholdId,
-      emoji: prod.emoji ?? '📦',
+      emoji: prod.emoji ?? '🛒',
       name: prod.name,
       description: prod.description ?? null,
       category_id: newCategoryId,

@@ -91,7 +91,7 @@ export const EMOJI_PICKER_LIST: Array<{ emoji: string; name: string }> = [
   { emoji: '🧊', name: 'ijsklontje' },
   { emoji: '🫙', name: 'pot' },
   { emoji: '🧂', name: 'zout' },
-  { emoji: '📦', name: 'pakket' },
+  { emoji: '🛒', name: 'winkelwagen' },
   { emoji: '🧼', name: 'zeep' },
   { emoji: '🧴', name: 'lotion' },
   { emoji: '🪥', name: 'tandenborstel' },

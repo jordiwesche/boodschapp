@@ -157,7 +157,7 @@ export async function PATCH(
       id: item.id,
       product_id: item.product_id,
       product_name: item.product_name || (product ? product.name : null),
-      emoji: product ? product.emoji : '📦',
+      emoji: product ? product.emoji : '🛒',
       quantity: item.quantity,
       description: item.description,
       category_id: item.category_id,

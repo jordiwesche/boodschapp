@@ -17,7 +17,7 @@ export const CATEGORY_EMOJI_MAP: Record<string, string> = {
   'Dranken': '🥤',
   'Huishouden & Verzorging': '🧴',
   'Diepvries': '🧊',
-  'Overig': '📦',
+  'Overig': '🛒',
 }
 
 /**
@@ -84,7 +84,7 @@ export function predictCategoryAndEmoji(productName: string): CategoryPrediction
         const emojiFromPicker = emojiFromName ?? getEmojiFromPickerList(nameLower) ?? getEmojiFromPickerList(termLower)
         return {
           categoryName: concept.categoryName,
-          emoji: emojiFromPicker ?? CATEGORY_EMOJI_MAP[concept.categoryName] ?? '📦',
+          emoji: emojiFromPicker ?? CATEGORY_EMOJI_MAP[concept.categoryName] ?? '🛒',
         }
       }
     }
@@ -93,6 +93,6 @@ export function predictCategoryAndEmoji(productName: string): CategoryPrediction
   // Default: Overig — still try name-based emoji and picker list first
   return {
     categoryName: 'Overig',
-    emoji: getEmojiByName(nameLower) ?? getEmojiFromPickerList(nameLower) ?? '📦',
+    emoji: getEmojiByName(nameLower) ?? getEmojiFromPickerList(nameLower) ?? '🛒',
   }
 }

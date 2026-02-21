@@ -66,7 +66,7 @@ const CATEGORY_EMOJI_MAP: Record<string, string> = {
   'Dranken': '🥤',
   'Huishouden & Verzorging': '🧴',
   'Diepvries': '🧊',
-  'Overig': '📦',
+  'Overig': '🛒',
 }
 
 // Fetch functions
@@ -196,7 +196,7 @@ async function fetchShoppingListItems(householdId: string): Promise<ShoppingList
 
     const emoji = product
       ? product.emoji
-      : (category?.name ? CATEGORY_EMOJI_MAP[category.name] ?? '📦' : '📦')
+      : (category?.name ? CATEGORY_EMOJI_MAP[category.name] ?? '🛒' : '🛒')
 
     return {
       id: item.id,
@@ -298,7 +298,7 @@ async function fetchCheckedItems(householdId: string): Promise<ShoppingListItemD
   return items.map((item) => {
     const rp = item.products
     const product = rp && (Array.isArray(rp) ? rp[0] : rp) as { id: string; emoji: string; name: string } | null
-    const emoji = product?.emoji ?? '📦'
+    const emoji = product?.emoji ?? '🛒'
     const rawCat = item.product_categories
     const category = rawCat && (Array.isArray(rawCat) ? rawCat[0] : rawCat) as { id: string; name: string; display_order: number } | null
     return {
@@ -587,7 +587,7 @@ export function useAddItem() {
         id: `temp-${Date.now()}`,
         product_id: newItemData.product_id || null,
         product_name: newItemData.product_name || null,
-        emoji: '📦',
+        emoji: '🛒',
         quantity: newItemData.quantity || '1',
         description: newItemData.description || null,
         category_id: newItemData.category_id,

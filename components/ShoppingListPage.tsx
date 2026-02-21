@@ -339,7 +339,7 @@ export default function ShoppingListPage() {
   const [saveProductModalName, setSaveProductModalName] = useState('')
   const [saveProductModalDescription, setSaveProductModalDescription] = useState<string | null>(null)
   const [saveProductModalCategoryId, setSaveProductModalCategoryId] = useState('')
-  const [saveProductModalEmoji, setSaveProductModalEmoji] = useState('📦')
+  const [saveProductModalEmoji, setSaveProductModalEmoji] = useState('🛒')
   const [saveProductModalCategories, setSaveProductModalCategories] = useState<{ id: string; name: string; display_order: number }[]>([])
   const [saveProductModalSaving, setSaveProductModalSaving] = useState(false)
   const [saveProductModalError, setSaveProductModalError] = useState<string | null>(null)
@@ -521,7 +521,7 @@ export default function ShoppingListPage() {
     setSaveProductModalName('')
     setSaveProductModalDescription(null)
     setSaveProductModalCategoryId('')
-    setSaveProductModalEmoji('📦')
+    setSaveProductModalEmoji('🛒')
     setSaveProductModalCategories([])
     setSaveProductModalError(null)
     setShowSaveProductEmojiPicker(false)
@@ -552,7 +552,7 @@ export default function ShoppingListPage() {
       id: tempId,
       product_id: null,
       product_name: name,
-      emoji: saveProductModalEmoji || '📦',
+      emoji: saveProductModalEmoji || '🛒',
       quantity: '1',
       description: saveProductModalDescription,
       category_id: categoryId,
@@ -576,7 +576,7 @@ export default function ShoppingListPage() {
         body: JSON.stringify({
           name,
           category_id: categoryId,
-          emoji: saveProductModalEmoji?.trim() || '📦',
+          emoji: saveProductModalEmoji?.trim() || '🛒',
         }),
       })
       if (!createRes.ok) {
@@ -724,7 +724,7 @@ export default function ShoppingListPage() {
       id: tempId,
       product_id: null,
       product_name: productName.trim(),
-      emoji: '📦',
+      emoji: '🛒',
       quantity: '1',
       description: description,
       category_id: '',
@@ -749,7 +749,7 @@ export default function ShoppingListPage() {
       let searchResponse = await fetch(`/api/products/search?q=${encodeURIComponent(productName.trim())}`)
       let productId: string | null = null
       let categoryId: string | null = null
-      let emoji = '📦'
+      let emoji = '🛒'
 
       if (searchResponse.ok) {
         const searchData = await searchResponse.json()
@@ -1389,7 +1389,7 @@ export default function ShoppingListPage() {
                         onClick={() => setShowSaveProductEmojiPicker((v) => !v)}
                         className="flex h-12 w-full items-center justify-center rounded-md border border-gray-300 bg-white text-2xl shadow-sm hover:bg-gray-50 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        {saveProductModalEmoji || '📦'}
+                        {saveProductModalEmoji || '🛒'}
                       </button>
                       {showSaveProductEmojiPicker &&
                         createPortal(

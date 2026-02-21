@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
       .from('products')
       .insert({
         household_id: user.household_id,
-        emoji: emoji || '📦',
+        emoji: emoji || '🛒',
         name: name.trim(),
         description: description?.trim() || null,
         category_id: category_id,
