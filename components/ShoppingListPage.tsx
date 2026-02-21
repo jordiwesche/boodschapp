@@ -877,7 +877,7 @@ export default function ShoppingListPage() {
       id: tempId,
       product_id: null,
       product_name: name,
-      emoji: prediction.emoji,
+      emoji: '🛒',
       quantity: '1',
       description: effectiveDesc,
       category_id: '',

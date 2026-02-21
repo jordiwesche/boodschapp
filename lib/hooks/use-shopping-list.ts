@@ -66,7 +66,7 @@ const CATEGORY_EMOJI_MAP: Record<string, string> = {
   'Dranken': '🥤',
   'Huishouden & Verzorging': '🧴',
   'Diepvries': '🧊',
-  'Overig': '🛒',
+  'Overig': '📦',
 }
 
 // Fetch functions
@@ -194,9 +194,11 @@ async function fetchShoppingListItems(householdId: string): Promise<ShoppingList
       category = categoryMap[item.category_id]
     }
 
-    const emoji = product
-      ? product.emoji
-      : (category?.name ? CATEGORY_EMOJI_MAP[category.name] ?? '🛒' : '🛒')
+    const emoji = !item.product_id
+      ? '🛒'
+      : category?.name === 'Overig'
+        ? '📦'
+        : (product ? product.emoji : (category?.name ? CATEGORY_EMOJI_MAP[category.name] ?? '🛒' : '🛒'))
 
     return {
       id: item.id,

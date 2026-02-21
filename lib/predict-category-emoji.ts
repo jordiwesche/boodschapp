@@ -17,7 +17,7 @@ export const CATEGORY_EMOJI_MAP: Record<string, string> = {
   'Dranken': '🥤',
   'Huishouden & Verzorging': '🧴',
   'Diepvries': '🧊',
-  'Overig': '🛒',
+  'Overig': '📦',
 }
 
 /**
