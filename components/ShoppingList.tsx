@@ -566,7 +566,7 @@ export default function ShoppingList({
               return (
                 <div
                   key={product.id}
-                  className={`flex items-center gap-3 py-2 rounded-lg transition-colors duration-300 ${isAdding ? 'bg-green-50' : ''}`}
+                  className={`flex items-center gap-3 py-1 rounded-lg transition-colors duration-300 ${isAdding ? 'bg-green-50' : ''}`}
                 >
                   {showEmojis && <span className="text-lg shrink-0">{product.emoji}</span>}
                   <span className="flex-1 min-w-0 text-[15px] font-medium text-gray-900">{product.name}</span>
@@ -637,7 +637,7 @@ export default function ShoppingList({
                   return (
                     <div
                       key={product.id}
-                      className={`flex items-center gap-3 py-2 px-4 transition-colors duration-300 ${isOnList || isAdding ? 'bg-green-50' : ''}`}
+                      className={`flex items-center gap-3 py-1 px-4 transition-colors duration-300 ${isOnList || isAdding ? 'bg-green-50' : ''}`}
                     >
                       {showEmojis && <span className="text-lg shrink-0">{product.emoji}</span>}
                       <span className="flex-1 min-w-0 text-[15px] font-medium text-gray-900">{product.name}</span>
