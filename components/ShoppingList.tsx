@@ -569,7 +569,7 @@ export default function ShoppingList({
                   className={`flex items-center gap-3 py-1 rounded-lg transition-colors duration-300 ${isAdding ? 'bg-green-50' : ''}`}
                 >
                   {showEmojis && <span className="text-lg shrink-0">{product.emoji}</span>}
-                  <span className="flex-1 min-w-0 text-[15px] font-medium text-gray-900">{product.name}</span>
+                  <span className="flex-1 min-w-0 text-[16px] font-medium text-gray-900">{product.name}</span>
                   <span className="text-sm text-gray-400 shrink-0">
                     {product.days_until_expected === 0 ? 'vandaag' : `over ~ ${product.days_until_expected}d`}
                   </span>
@@ -640,7 +640,7 @@ export default function ShoppingList({
                       className={`flex items-center gap-3 py-1 px-4 transition-colors duration-300 ${isOnList || isAdding ? 'bg-green-50' : ''}`}
                     >
                       {showEmojis && <span className="text-lg shrink-0">{product.emoji}</span>}
-                      <span className="flex-1 min-w-0 text-[15px] font-medium text-gray-900">{product.name}</span>
+                      <span className="flex-1 min-w-0 text-[16px] font-medium text-gray-900">{product.name}</span>
                       {isOnList && onRemoveBasicFromMain ? (
                         <button
                           type="button"

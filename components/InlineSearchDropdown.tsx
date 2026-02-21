@@ -103,7 +103,7 @@ function ActionButtons({
             e.stopPropagation()
             onAddToListOnly(q, desc)
           }}
-          className="flex flex-1 min-w-0 items-center gap-2 text-left text-sm font-medium text-gray-900"
+          className="flex flex-1 min-w-0 items-center gap-2 text-left text-[16px] font-medium text-gray-900"
         >
           <AddToListRow />
         </button>
@@ -131,7 +131,7 @@ function ActionButtons({
             e.stopPropagation()
             onAddToListAndSaveProduct(q, desc)
           }}
-          className="flex flex-1 min-w-0 items-center gap-2 text-left text-sm font-medium"
+          className="flex flex-1 min-w-0 items-center gap-2 text-left text-[16px] font-medium"
         >
           <AddAndSaveRow />
         </button>
@@ -233,7 +233,7 @@ export default function InlineSearchDropdown({
                 <span className="text-lg shrink-0">{result.emoji}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-medium text-gray-900">
+                    <p className="text-[16px] font-medium text-gray-900">
                       {result.name}
                     </p>
                     {(effectiveDesc || result.description) && (

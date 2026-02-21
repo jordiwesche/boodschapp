@@ -389,7 +389,7 @@ export default function ShoppingListItem({
               >
                 {item.product_name != null ? (
                   <span
-                    className={`flex h-6 shrink-0 items-center text-[15px] font-medium ${
+                    className={`flex h-6 shrink-0 items-center text-[16px] font-medium ${
                       showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
                     }`}
                   >
@@ -443,7 +443,7 @@ export default function ShoppingListItem({
               <>
                 {item.product_name != null ? (
                   <span
-                    className={`flex h-6 items-center text-[15px] font-medium shrink-0 ${
+                    className={`flex h-6 items-center text-[16px] font-medium shrink-0 ${
                       showChecked ? 'text-gray-500 line-through' : 'text-gray-900'
                     }`}
                   >

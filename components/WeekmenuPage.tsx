@@ -166,7 +166,7 @@ function WeekmenuGerechtTextarea({
       disabled={disabled}
       autoFocus={autoFocus}
       rows={1}
-      className="min-w-0 flex-1 resize-none overflow-hidden border-0 bg-transparent !text-[15px] font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none box-border"
+      className="min-w-0 flex-1 resize-none overflow-hidden border-0 bg-transparent !text-[16px] font-medium text-gray-900 placeholder:text-gray-500 focus:outline-none box-border"
       style={{
         lineHeight: `${LINE_HEIGHT_PX}px`,
         minHeight: MIN_HEIGHT_PX,
@@ -547,7 +547,7 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
                       setEditingDay(day.day_of_week)
                       setLocalText((prev) => ({ ...prev, [day.day_of_week]: savedText }))
                     }}
-                    className="flex min-h-8 min-w-0 flex-1 items-center text-left text-[15px] font-semibold text-gray-900 leading-none"
+                    className="flex min-h-8 min-w-0 flex-1 items-center text-left text-[16px] font-semibold text-gray-900 leading-none"
                   >
                     {savedText}
                   </button>
@@ -707,7 +707,7 @@ export default function WeekmenuPage({ isActive = true }: { isActive?: boolean }
                     onClick={() => goToLink(day.link_url!)}
                     className="flex w-full items-center gap-2 rounded-[16px] bg-blue-50 px-3 py-2 text-left hover:bg-blue-100"
                   >
-                    <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-gray-900">
+                    <span className="min-w-0 flex-1 truncate text-[16px] font-medium text-gray-900">
                       {linkDisplayText(day)}
                     </span>
                     <ExternalLink className="h-3.5 w-3.5 shrink-0 text-gray-500" />

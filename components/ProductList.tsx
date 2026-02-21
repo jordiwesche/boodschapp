@@ -430,10 +430,10 @@ export default function ProductList({ products, categories, onRefresh, error: er
                         {section.items.map((item) => (
                           <li
                             key={item.id}
-                            className="flex items-center gap-2 text-sm text-gray-700"
+                            className="flex items-center gap-2 text-gray-700"
                           >
                             <span className="text-lg shrink-0">{item.emoji}</span>
-                            <span>{item.product_name || 'Onbekend product'}</span>
+                            <span className="text-[16px]">{item.product_name || 'Onbekend product'}</span>
                           </li>
                         ))}
                       </ul>
